@@ -14,7 +14,6 @@
 | 语言 | GDScript，数据用自定义 `Resource` | 策划在编辑器里改表，不改代码 |
 | 物理 | 不参与玩法 | Jolt Physics 是脚手架默认值，保留即可，全程无碰撞体 |
 | 数据载体 | `.tres` 资源文件为主，`user://` JSON 存档 | 静态数据与运行时状态严格分离 |
-| 逻辑测试 | GdUnit4 / GUT | `scripts/core/` 是纯逻辑，可脱离场景树单测 |
 
 核心纪律：**表现层不写规则，规则层不碰节点。**
 
@@ -112,16 +111,22 @@ res://
 │   └─ endings/       结局定义
 │
 ├─ scenes/
-│   ├─ boot/          boot.tscn
-│   ├─ menu/          main_menu.tscn / settings.tscn
-│   ├─ day/           day_loop.tscn（每日流程容器）/ day_briefing.tscn
-│   ├─ screening/     screening_list.tscn / candidate_card.tscn / resume_panel.tscn
-│   ├─ interview/     interview_panel.tscn / question_picker.tscn / answer_log.tscn
-│   ├─ team/          team_builder.tscn / team_slot.tscn
-│   ├─ report/        battle_report.tscn / report_entry.tscn / day_result.tscn
-│   ├─ handbook/      handbook_overlay.tscn / handbook_index.tscn
-│   ├─ ending/        ending.tscn
-│   └─ common/        modal_dialog.tscn / loading_veil.tscn / toast.tscn
+│   ├─ boot/                   boot.tscn
+│   ├─ menu/                   main_menu.tscn（收容新游戏 / 继续 / 设置 / 图鉴回顾等子场景）
+│   ├─ day/                    day_loop.tscn（每日流程容器）
+│   │   ├─ interview/          interview.tscn（面试流程容器）
+│   │   │   ├─ interview_ui.tscn       面试系统 UI：暂停、设置、候选人列表、今日事件
+│   │   │   ├─ interviewee.tscn        面试者立绘、表情差分、对话框
+│   │   │   ├─ resume/                  resume.tscn（候选人完整简历）
+│   │   │   │   └─ resume_token.tscn    单条简历词条（复用控件）
+│   │   │   └─ handbook_overlay.tscn   随时可呼出的手册浮层，按关键词检索
+│   │   ├─ team_builder/       team_builder.tscn（组队容器）
+│   │   │   ├─ team_builder_ui.tscn     组队 UI：队伍人数、空位、羁绊、当日事件
+│   │   │   └─ candidate.tscn          当日候选人的简历
+│   │   └─ battle_report.tscn          战报演出容器（车夫对话、逐条事件、分数）
+│   ├─ ending/                 ending.tscn（收容结局相关子场景）
+│   └─ common/                 dialogue.tscn / interview_background.tscn / haohan.tscn
+│                                 （可在多场景实例化复用的通用场景）
 │
 ├─ ui/
 │   ├─ components/    stat_bar.tscn / tag_chip.tscn / trait_tooltip.tscn / portrait_frame.tscn
@@ -175,9 +180,14 @@ class_name CandidateResource extends Resource
 @export var skill_levels: Dictionary            # skill_id -> 0..100（自称值）
 @export var traits: Array[TraitDef]             # 性格 / 特殊癖好（对玩家可见部分）
 @export var claims: Array[ClaimResource]        # 简历与口述经历
-@export var portrait: Texture2D
+@export var portrait: Texture2D                 # TODO: 拼五官自动生成 Portrait
 @export var hidden: HiddenProfile               # 隐藏属性，UI 永不直接显示
 ```
+
+> 以下一段需要修正，根据游戏具体设计
+
+
+/*
 
 `HiddenProfile` 是设计的核心，玩家永远看不到，只通过面试与战报间接感知：
 
@@ -188,6 +198,8 @@ class_name CandidateResource extends Resource
 | `courage` / `loyalty` / `teamwork` / `ego` / `greed` | 性格内核 | 战报事件触发、相性计算 |
 | `patience` | 追问容忍度 | 追问过度会翻脸、拒答，甚至当场退赛 |
 | `luck` | 运气修正 | 极端战报的开关 |
+
+*/
 
 ### 3.2 履历主张（说谎机制的载体）
 
@@ -201,21 +213,20 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 @export var exaggeration: float          # 0 真实 .. 1 完全造假（中间值为夸大）
 @export var verification: StringName     # 验证路径：手册条目 / 技能细节 / 数字矛盾
 @export var related_skill_ids: Array[StringName]
-@export var rebuttals: Array[String]     # 被追问时的回应，按追问强度分级
+@export var rebuttals: String     # 被追问时的回应
 ```
 
-设计的妙处：**谎言不是一个 bool，而是一条可被戳破的链。** 同一份 claim 在不同追问强度下的回答不同，玩家用手册里的知识去对齐，才能判断真假。
+
 
 ### 3.3 其它数据定义
 
 | 类 | 关键字段 | 用途 |
 | --- | --- | --- |
 | `JobDef` | `id` / `skill_tree` / `stat_profile` / `counter_tags` | 剑士、法师、牧师 |
-| `SkillDef` | `id` / `damage_type`（近战/远程/魔法）/ `range` / `tags` | 属性适配与克制判定 |
-| `RaceDef` | `id` / `base_modifiers` / `naming_table` | 种族差异与姓名生成 |
+| `SkillDef` | `id` / `damage_type`（近战/远程/魔法） / `tags` | 属性适配与克制判定 |
 | `TraitDef` | `id` / `category`（性格 or 癖好）/ `synergy_tags` | 相性计算 |
 | `TraitInteractionTable` | `pairs: Array[{a, b, delta, note}]` | 相性 / 克制矩阵，单文件集中维护 |
-| `MonsterDef` | `id` / `tags`（群居、重甲、再生、畏光）/ `weaknesses` / `counters` / `threat` | 特殊事件与战报 |
+| `MonsterDef` | `id` / `tags`（群居、重甲、再生、畏光等） | 特殊事件与战报 |
 | `HandbookEntry` | `id` / `category` / `body`（BBCode）/ `unlock_condition` | 可随时翻阅的手册 |
 | `QuestionDef` | `id` / `topic` / `min_day` / `pressure` / `requires_skill` | 追问问题库 |
 | `DayConfig` | `day_index` / `candidate_count` / `slots` / `questions_per_candidate` / `unlocked_topics` / `event_pool` / `tutorial_step` | 每一天的规则与教程进度 |
@@ -231,28 +242,41 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 | --- | --- | --- |
 | `boot.tscn` | 加载 `DataDB`，检查存档，跳到主菜单 | — |
 | `main_menu.tscn` | 用于收容所有与开始菜单相关的细分场景，新游戏 / 继续 / 设置 / 图鉴回顾 | `new_run_requested` |
-| `interview.tscn` | 用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | — |
 | `day_loop.tscn` | **每日流程容器**，按 `DayPhase` 状态机切换子场景 | `phase_changed` |
-| `day_briefing.tscn` | 国王下旨：今日名额、新解锁的面试内容、教程提示 | `briefing_confirmed` |
-| `screening_list.tscn` | 当日候选人列表，显示"已审 / 未审 / 剩余名额" | `candidate_opened` |
-| `candidate_card.tscn` | 单张简历卡（复用控件） | `selected` |
-| `resume_panel.tscn` | 完整简历：基础信息、自称技能、经历、癖好 | — |
-| `interview_panel.tscn` | 面试主界面：问答记录 + 追问入口 + 判定按钮 | `verdict_issued` |
-| `question_picker.tscn` | 从当日可用问题库中选问题（受主题解锁与次数限制） | `question_chosen` |
-| `handbook_overlay.tscn` | 随时可呼出的手册浮层，按关键词检索 | `entry_bookmarked` |
-| `settlement.tscn` | 用于收容所有与面试后总结相关的细分场景，作为实际游戏过程中与队伍编排，战报呈现相关的场景 | — |
-| `team_builder.tscn` | 从通过者中挑满名额组队 | `team_submitted` |
-| `battle_report.tscn` | 战报演出：逐条事件播报 + 结局等级 | `report_finished` |
-| `day_result.tscn` | 当日得分明细、累计分、手册新解锁 | `day_closed` |
+| `interview.tscn` | 在day_loop下，用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | — |
+| `interview_ui.tscn` | 在 interview 下，用于展示面试中的 UI，包括暂停、设置按钮等系统向 UI 和候选人列表、今日事件等 | — |
+| `interviewee.tscn` | 在 interview 下，管理面试者立绘、管理表情差分、对话框 | — |
+| `resume.tscn` | 在 interview 下，候选者的完整简历：基础信息、自称技能、经历、癖好 | — |
+| `resume_token.tscn` | 在 resume 下，单个张简历词条以及相关的信息（复用控件） | `selected` |
+| `handbook_overlay.tscn` | 在 interview 下，随时可呼出的手册浮层，按关键词检索 | `entry_bookmarked` |
+| `team_builder.tscn` | 在 day_loop 下，用于收容从通过者中挑满名额组队这一过程的相关场景 | `team_submitted` |
+| `team_builder_ui.tscn` | 在 team_builder 下，用于展示组队过程中的 UI，包括队伍人数，剩余空位，当前激活的羁绊、当日的事件等 | — |
+| `candidate.tscn` | 在 team_builder 下，用于展示当日的候选人的简历 | — |
+| `battle_report.tscn` | 在 day_loop 下，用于收容下班马车上看战报演出，车夫对话，逐条事件播报，以及分数这一过程的场景 | `report_finished` |
 | `ending.tscn` | 用于收容所有与结局场景相关的细分场景，十天后按总分与 flag 判定结局 | `restart_requested` |
+| `dialogue.tscn` | 用于在多个场景下创建实例化的对话框 |  |
+| `interview_background.tscn` | 用于在多个场景下实现背景相关动画 | 多种（动画种类） |
+| `haohan.tscn` | 用于在剧情等地方创建实例化的主角的手 |  |
 
 每日流程由 `day_loop.tscn` 持有状态机驱动：
 
 ```
-DayBriefing → SpecialEvent → Screening ⇄ Interview → TeamBuild → BattleReport → DayResult
-																	↑              │
-																	└── 天数 +1 ───┘
-														第 10 天结束 → Ending
+每日流程（第 1..10 天，每天都必须完成一次招人）：
+
+  DayBriefing       国王下旨：今日名额 / 新解锁的面试内容 / 教程提示
+        ↓
+  SpecialEvent      记者报道今日魔物 / 特殊规则
+        ↓
+  招人（每天一次）  Screening 浏览简历 ⇄ Interview 追问面试，两者可来回切换
+        ↓
+  TeamBuild         从通过者中挑满名额，组成今日队伍
+        ↓
+  BattleReport      马车上看战报演出、车夫对话、逐条事件播报、当日分数
+        ↓
+  DayResult         当日得分明细、累计分、手册新解锁
+        ↓
+  ├─ 第 1〜9 天：天数 +1，回到 DayBriefing 开始下一天
+  └─ 第 10 天：→ Ending（按累计分与 flag 判定结局）
 ```
 
 ---
@@ -260,6 +284,8 @@ DayBriefing → SpecialEvent → Screening ⇄ Interview → TeamBuild → Battl
 ## 5. 信号约定（EventBus）
 
 命名统一用「名词 + 过去式」，避免 UI 直接调用逻辑：
+
+暂定这些，如有需要再加
 
 ```gdscript
 signal day_started(day_index: int)
@@ -286,9 +312,7 @@ signal run_finished(ending_id: StringName)
 `interview_session.gd` 管理单个候选人的问答循环：
 
 1. 展示简历（`claims` 中的自称内容）；
-2. 玩家从 `question_picker` 选题 → `answer_builder.gd` 依据 `honesty` + `exaggeration` + `追问强度` + RNG 生成回答；
-3. `lie_detector.gd` 只负责**给出可被玩家观察的线索**（语气、细节矛盾、数据不符），不替玩家下结论；
-4. `pressure_tracker.gd` 累积追问强度，触顶则候选人拒答 / 翻脸 / 提前离场。
+2. 玩家可以根据简历上的内容进行追问，调用简历当前词条中写好的追问问题和回答
 
 ### 6.3 手册（玩家能力锚点）
 `handbook_overlay` 是全局浮层，任何阶段都能呼出。`data/handbook/` 的条目承担两件事：
@@ -372,13 +396,3 @@ priority = 10
 | M4 评分结局 | 每日评分、累计分、结局判定 | 好/坏两条结局都能打出来 |
 | M5 内容 | 填满 10 天数据、手册、文案、立绘占位 | 一局可玩通 |
 | M6 打磨 | 演出、音频、存档、图鉴回顾 | 存档读档一致，可复现整局 |
-
----
-
-## 10. 预留扩展点
-
-- **新职业 / 新种族**：加 `.tres` 即可，无需改逻辑。
-- **多周目**：`GameState` 增加 flag 继承层，结局判定读取上一周目记录。
-- **候选人导入**：`ClaimResource` 的表结构可直接由 CSV 导出，便于批量产出上百份简历。
-- **本地化**：所有文案集中在 `data/`，`text_formatter.gd` 统一做占位符替换，便于日后接翻译。
-- **Mod 支持**：`DataDB` 支持覆盖目录，玩家自制数据包可直接替换同名 ID。
