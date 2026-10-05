@@ -136,8 +136,8 @@ res://
 │   └─ shaders/       羊皮纸、印章等 UI 效果
 │
 └─ tests/
-    ├─ unit/          test_candidate_generator.gd / test_scorer.gd …
-    └─ fixtures/      固定种子的期望输出
+	├─ unit/          test_candidate_generator.gd / test_scorer.gd …
+	└─ fixtures/      固定种子的期望输出
 ```
 
 ---
@@ -230,7 +230,8 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 | 场景 | 职责 | 主要信号 |
 | --- | --- | --- |
 | `boot.tscn` | 加载 `DataDB`，检查存档，跳到主菜单 | — |
-| `main_menu.tscn` | 新游戏 / 继续 / 设置 / 图鉴回顾 | `new_run_requested` |
+| `main_menu.tscn` | 用于收容所有与开始菜单相关的细分场景，新游戏 / 继续 / 设置 / 图鉴回顾 | `new_run_requested` |
+| `interview.tscn` | 用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | — |
 | `day_loop.tscn` | **每日流程容器**，按 `DayPhase` 状态机切换子场景 | `phase_changed` |
 | `day_briefing.tscn` | 国王下旨：今日名额、新解锁的面试内容、教程提示 | `briefing_confirmed` |
 | `screening_list.tscn` | 当日候选人列表，显示"已审 / 未审 / 剩余名额" | `candidate_opened` |
@@ -239,18 +240,19 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 | `interview_panel.tscn` | 面试主界面：问答记录 + 追问入口 + 判定按钮 | `verdict_issued` |
 | `question_picker.tscn` | 从当日可用问题库中选问题（受主题解锁与次数限制） | `question_chosen` |
 | `handbook_overlay.tscn` | 随时可呼出的手册浮层，按关键词检索 | `entry_bookmarked` |
+| `settlement.tscn` | 用于收容所有与面试后总结相关的细分场景，作为实际游戏过程中与队伍编排，战报呈现相关的场景 | — |
 | `team_builder.tscn` | 从通过者中挑满名额组队 | `team_submitted` |
 | `battle_report.tscn` | 战报演出：逐条事件播报 + 结局等级 | `report_finished` |
 | `day_result.tscn` | 当日得分明细、累计分、手册新解锁 | `day_closed` |
-| `ending.tscn` | 十天后按总分与 flag 判定结局 | `restart_requested` |
+| `ending.tscn` | 用于收容所有与结局场景相关的细分场景，十天后按总分与 flag 判定结局 | `restart_requested` |
 
 每日流程由 `day_loop.tscn` 持有状态机驱动：
 
 ```
 DayBriefing → SpecialEvent → Screening ⇄ Interview → TeamBuild → BattleReport → DayResult
-                                                                    ↑              │
-                                                                    └── 天数 +1 ───┘
-                                                        第 10 天结束 → Ending
+																	↑              │
+																	└── 天数 +1 ───┘
+														第 10 天结束 → Ending
 ```
 
 ---
@@ -315,10 +317,10 @@ priority = 10
 
 ```
 当日分 = 队伍真实战力
-       + 相性加成（synergy_calculator）
-       − 谎言处罚（录用说谎者，越假扣越多）
-       + 特殊事件加成（是否针对今日魔物选人）
-       + 运气修正
+	   + 相性加成（synergy_calculator）
+	   − 谎言处罚（录用说谎者，越假扣越多）
+	   + 特殊事件加成（是否针对今日魔物选人）
+	   + 运气修正
 累计分 = Σ 当日分
 ```
 
@@ -380,4 +382,3 @@ priority = 10
 - **候选人导入**：`ClaimResource` 的表结构可直接由 CSV 导出，便于批量产出上百份简历。
 - **本地化**：所有文案集中在 `data/`，`text_formatter.gd` 统一做占位符替换，便于日后接翻译。
 - **Mod 支持**：`DataDB` 支持覆盖目录，玩家自制数据包可直接替换同名 ID。
-
