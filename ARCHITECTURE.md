@@ -396,3 +396,58 @@ priority = 10
 | M4 评分结局 | 每日评分、累计分、结局判定 | 好/坏两条结局都能打出来 |
 | M5 内容 | 填满 10 天数据、手册、文案、立绘占位 | 一局可玩通 |
 | M6 打磨 | 演出、音频、存档、图鉴回顾 | 存档读档一致，可复现整局 |
+
+---
+
+## 10. M0 实现记录（Autoload）
+
+本节记录 §2 那 7 个单例的实际落地接口，供 M1 之后直接调用。
+
+### 10.1 加载顺序（有约束）
+
+`project.godot` 的 `[autoload]` 顺序即 `_ready` 顺序，**EventBus 必须最先**（别人要发信号），
+`SceneRouter` 放最后（依赖 EventBus）：
+
+```
+EventBus → RngService → DataDB → GameState → SaveService → AudioService → SceneRouter
+```
+
+调换顺序会导致后加载者取不到前面的单例。
+
+### 10.2 对外接口摘要
+
+| 单例 | 主要接口 |
+| --- | --- |
+| `EventBus` | §5 全部信号；另加 `run_started` / `run_loaded` / `candidate_hired` / `save_written` / `save_loaded` / `scene_change_started` / `scene_changed` / `volume_changed`。只有信号，无状态 |
+| `GameState` | `start_new_run(seed)` / `apply_run_state(state)` / `clear_run()`；`get_day()` / `advance_day()` / `is_last_day()`；`get_phase()` / `set_phase(DayPhase.Phase)`；`record_day_score()` / `get_total_score()`；`hire()` / `issue_verdict()` / `get_passed_ids()`；`get_flag()` / `set_flag()` / `add_flag()`；`unlock_handbook_entry()`；`set_current_candidates()` / `set_current_team()` |
+| `DataDB` | `get_job/skill/race/trait/monster/handbook_entry/question/event(id)`、`get_day_config(day)`、`get_narrative_rules()`、`get_interaction_table()`、`search_handbook(keyword)`、`get_ids(kind)` / `count(kind)` / `reload()` |
+| `RngService` | `start_run(seed)`、`day_seed(day)`、`day_rng(day)`、`stream(name)`；便捷封装 `randi_in` / `randf_in` / `chance` / `pick` / `pick_many` / `shuffled` / `weighted_pick` |
+| `SaveService` | `autosave()` / `load_auto()`、`save_to_slot(n)` / `load_from_slot(n)`、`has_any_save()` / `has_slot(n)` / `delete_slot(n)` / `list_slots()` / `peek(path)`；`to_dict(RunState)` / `from_dict(Dictionary)` |
+| `AudioService` | `play_bgm()` / `stop_bgm()`、`play_sfx()`、`set_master_volume()` / `set_bgm_volume()` / `set_sfx_volume()` / `set_volumes()`；BGM/SFX 总线缺失时自动创建 |
+| `SceneRouter` | `goto_scene(key)` / `goto_path(path)` / `go_back()` / `reload_current()` / `goto_main_menu()`、`scene_path_for(key)` / `current_scene_key()` / `history()`、`set_fade_duration(s)` |
+
+### 10.3 约定与实现细节
+
+- 全局常量放 `GameConfig`（`scripts/util/`，`class_name` 而非 Autoload），阶段枚举放 `DayPhase`；
+  `RunState.phase` 存 `StringName`，用 `DayPhase.to_name()` / `from_name()` 与枚举互转。
+- `DataDB` 按 `data/` 的**一级子目录名**归类，新增一类数据只需建目录 + Resource 脚本，不必改代码。
+  资源未填 `id` 时回退为 `job.fighter` 这样的「前缀.文件名」并给出警告——骨架 `.tres` 因此仍可用。
+- `GameState` 里只有 `run_state` 是存档内容；`current_candidates` / `passed_ids` / `current_team`
+  属于**本日过程量**，读档后靠种子重放，不进 JSON。
+- 存档 JSON 读回来时 `flags` 的键会从 String 转回 `StringName`，整数型数字会从 float 转回 int，
+  否则读档后 `get_flag()` 查不到、`3 != 3.0`。
+- 场景跳转一律走 `SceneRouter.goto_scene()`，场景脚本不直接调 `change_scene_to_file`；
+  过场遮罩挂在 Autoload 下（`TransitionOverlay`），切场景时不会闪断。
+
+### 10.4 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_m0.tscn
+```
+
+`tools/smoke_m0.gd` 覆盖上表接口与 M0 验收：单例齐备、DataDB 扫描、同种子可复现、
+十天空流程（第 10 天不再推进）、存读档一致、以及真实跑一遍 主菜单 → 每日循环 的切换。
+全绿时退出码 0。
+
+> M0 尚未完成的部分：`boot.tscn` / `main_menu.tscn` / `day_loop.tscn` 的场景脚本与 `main_scene` 设置
+> （让菜单按钮真的触发 `GameState.start_new_run()` + `SceneRouter.goto_scene(&"day_loop")`）。
