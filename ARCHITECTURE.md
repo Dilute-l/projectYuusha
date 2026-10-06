@@ -264,17 +264,17 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 每日流程（第 1..10 天，每天都必须完成一次招人）：
 
   DayBriefing       国王下旨：今日名额 / 新解锁的面试内容 / 教程提示
-        ↓
+		↓
   SpecialEvent      记者报道今日魔物 / 特殊规则
-        ↓
+		↓
   招人（每天一次）  Screening 浏览简历 ⇄ Interview 追问面试，两者可来回切换
-        ↓
+		↓
   TeamBuild         从通过者中挑满名额，组成今日队伍
-        ↓
+		↓
   BattleReport      马车上看战报演出、车夫对话、逐条事件播报、当日分数
-        ↓
+		↓
   DayResult         当日得分明细、累计分、手册新解锁
-        ↓
+		↓
   ├─ 第 1〜9 天：天数 +1，回到 DayBriefing 开始下一天
   └─ 第 10 天：→ Ending（按累计分与 flag 判定结局）
 ```

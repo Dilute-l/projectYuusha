@@ -1,3 +1,5 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://ctmyyt3n6ch2r"]
 
-[node name="Dialogue" type="Control"]
+[node name="Dialogue" type="Control" unique_id=408599518]
+layout_mode = 3
+anchors_preset = 0

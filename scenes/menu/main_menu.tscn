@@ -1,3 +1,11 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://pwbk4clsjugj"]
 
-[node name="MainMenu" type="Control"]
+[ext_resource type="Texture2D" uid="uid://dr8n7e7pa5jw3" path="res://assets/art/main_menu_bg_pholder.png" id="1_nl8w3"]
+
+[node name="MainMenu" type="Control" unique_id=913117480]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="MainMenuBgPholder" type="Sprite2D" parent="." unique_id=1260226298]
+texture = ExtResource("1_nl8w3")
+centered = false
