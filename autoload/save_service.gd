@@ -238,8 +238,8 @@ static func _normalize_number(value: Variant) -> Variant:
 
 static func _names_to_strings(names: Array[StringName]) -> Array:
 	var result: Array = []
-	for name in names:
-		result.append(String(name))
+	for entry_name in names:
+		result.append(String(entry_name))
 	return result
 
 

@@ -12,6 +12,7 @@ extends Node
 ##   · GameState 能连续走完 10 天（第 10 天不再推进，应走结局）
 ##   · SaveService 存读档后状态一致
 ##   · SceneRouter 能真实完成 主菜单 → 每日循环 的场景切换
+##   · 在真实 day_loop 场景里点满 10 天 × 7 阶段，并落到结局场景
 ##
 ## 全部通过退出码 0；有失败项退出码 1。
 
@@ -58,12 +59,28 @@ func _process(_delta: float) -> void:
 		1:
 			if not SceneRouter.is_transitioning:
 				_check(SceneRouter.current_scene_key() == &"main_menu", "SceneRouter 切到主菜单")
+				_press_start_button()
 				_step = 2
-				SceneRouter.goto_scene(&"day_loop", true)
 		2:
 			if not SceneRouter.is_transitioning:
-				_check(SceneRouter.current_scene_key() == &"day_loop", "SceneRouter 从主菜单切到每日循环")
+				_check(SceneRouter.current_scene_key() == &"day_loop", "主菜单 Start 按钮把自己带到了每日循环")
+				_check(GameState.has_run(), "Start 按钮开出了一局")
 				_check(SceneRouter.can_go_back(), "SceneRouter 记下了返回栈")
+				_run_day_loop_walk()
+				_step = 3
+		3:
+			# 第 10 天走完会请求切到结局场景，等它落地
+			if not SceneRouter.is_transitioning:
+				if SceneRouter.current_scene_key() == &"ending":
+					_check(true, "十天走完后进入结局场景")
+					_press_ending_back_button()
+					_step = 4
+				else:
+					_failures.append("十天走完后没有进入结局场景（当前：%s）" % SceneRouter.current_scene_key())
+					_finish()
+		4:
+			if not SceneRouter.is_transitioning:
+				_check(SceneRouter.current_scene_key() == &"main_menu", "结局场景「返回主菜单」把闭环收上了")
 				_finish()
 
 # ---------------------------------------------------------------------------
@@ -251,6 +268,75 @@ func _check_scene_router() -> void:
 	_check(all_exist, "SCENES 表里的场景文件都存在")
 	_check(SceneRouter.key_for_path("res://scenes/day/day_loop.tscn") == &"day_loop", "路径反查 key")
 	_check(SceneRouter.has_node("TransitionOverlay"), "过场遮罩已建立（切场景时不会随场景释放）")
+
+
+## 按主菜单上真实的 Startgame 按钮 —— 验证的是玩家会走的那条路
+func _press_start_button() -> void:
+	print("[8.1] 主菜单 Start 按钮")
+	var menu: Node = get_tree().current_scene
+	# 注意用 BaseButton：Startgame 是 TextureButton，不是 Button
+	var button: BaseButton = menu.get_node_or_null("Startgame") as BaseButton
+	_check(button != null, "主菜单上有 Startgame 按钮")
+	_check(button != null and not button.pressed.get_connections().is_empty(), "Startgame 按钮已接上脚本方法")
+	if button == null:
+		return
+	GameState.clear_run()
+	button.pressed.emit()
+
+
+## 按结局场景的「返回主菜单」——确认十天流程是个闭环，不是死胡同
+func _press_ending_back_button() -> void:
+	var ending_scene: Node = get_tree().current_scene
+	var button: BaseButton = ending_scene.get_node_or_null("Hud/Margin/Layout/BackButton") as BaseButton
+	_check(button != null, "结局场景上有返回按钮")
+	if button == null:
+		return
+	button.pressed.emit()
+
+
+## 在真实的 day_loop 场景上按阶段顺序点满十天 —— M0 的「能连续走完 10 天空流程」
+func _run_day_loop_walk() -> void:
+	print("[9] 每日流程（真实 day_loop 场景，点的是 HUD 上的按钮）")
+	var loop_scene: Node = get_tree().current_scene
+	_check(loop_scene != null and loop_scene.has_method("advance"), "当前场景是带脚本的 day_loop")
+	if loop_scene == null:
+		return
+
+	# 前面的存读档检查把状态留在第 10 天，这里重开一局从头走
+	GameState.start_new_run(20261010)
+	_check(
+		GameState.get_day() == 1 and GameState.get_phase() == DayPhase.Phase.DAY_BRIEFING,
+		"重开一局后回到第 1 天 DAY_BRIEFING"
+	)
+
+	var button: BaseButton = loop_scene.get_node_or_null("FlowHud/Hud/Margin/Layout/NextButton") as BaseButton
+	_check(button != null and not button.pressed.get_connections().is_empty(), "占位 HUD 的推进按钮已接线")
+
+	var day_phases := DayDirector.phases_of_day()
+	var walk_ok := true
+	var presses := 0
+	var phase_log: Array[String] = []
+	for day in range(1, GameConfig.TOTAL_DAYS + 1):
+		for phase in day_phases:
+			if GameState.get_day() != day or GameState.get_phase() != phase:
+				walk_ok = false
+				phase_log.append("第 %d 天期望 %s，实际 %s（第 %d 天）" % [
+					day, DayPhase.to_name(phase), DayPhase.to_name(GameState.get_phase()), GameState.get_day(),
+				])
+			if button != null:
+				button.pressed.emit()
+			else:
+				loop_scene.call("advance")
+			presses += 1
+
+	_check(walk_ok, "按 DayBriefing→SpecialEvent→Screening→Interview→TeamBuild→BattleReport→DayResult 走完 10 天")
+	if not walk_ok:
+		for line in phase_log:
+			printerr("   " + line)
+	_check(presses == GameConfig.TOTAL_DAYS * day_phases.size(), "共推进 %d 次（10 天 × 7 阶段）" % presses)
+	_check(GameState.get_day() == GameConfig.TOTAL_DAYS, "走完后停在第 %d 天" % GameConfig.TOTAL_DAYS)
+	_check(GameState.get_phase_name() == DayPhase.to_name(DayPhase.Phase.ENDING), "走完后阶段是 ENDING")
+	_check(SaveService.has_auto_save(), "每日流程里自动存档已生成")
 
 # ---------------------------------------------------------------------------
 # 收尾

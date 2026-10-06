@@ -1,3 +1,61 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://v2yatku7dvif"]
 
-[node name="DayLoop" type="Node"]
+[ext_resource type="Script" path="res://scenes/day/day_loop.gd" id="1_yek01"]
+
+[node name="DayLoop" type="Node" unique_id=539264072]
+script = ExtResource("1_yek01")
+
+[node name="PhaseContainer" type="Node" parent="." unique_id=1689580800]
+
+[node name="FlowHud" type="CanvasLayer" parent="." unique_id=942022579]
+layer = 10
+
+[node name="Hud" type="Control" parent="FlowHud" unique_id=616640023]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Backdrop" type="ColorRect" parent="FlowHud/Hud" unique_id=886458414]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.06, 0.06, 0.09, 0.75)
+
+[node name="Margin" type="MarginContainer" parent="FlowHud/Hud" unique_id=316593216]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 72
+theme_override_constants/margin_top = 56
+theme_override_constants/margin_right = 72
+theme_override_constants/margin_bottom = 56
+
+[node name="Layout" type="VBoxContainer" parent="FlowHud/Hud/Margin" unique_id=1051310786]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="DayLabel" type="Label" parent="FlowHud/Hud/Margin/Layout" unique_id=2073732663]
+layout_mode = 2
+text = "Day 1 / 10"
+
+[node name="PhaseLabel" type="Label" parent="FlowHud/Hud/Margin/Layout" unique_id=814637427]
+layout_mode = 2
+text = "Phase DAY_BRIEFING"
+
+[node name="ScoreLabel" type="Label" parent="FlowHud/Hud/Margin/Layout" unique_id=120536465]
+layout_mode = 2
+text = "Score 0"
+
+[node name="Spacer" type="Control" parent="FlowHud/Hud/Margin/Layout" unique_id=538437791]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HintLabel" type="Label" parent="FlowHud/Hud/Margin/Layout" unique_id=1164930979]
+layout_mode = 2
+text = "M0 placeholder HUD - press Continue to walk the 10-day loop"
+
+[node name="NextButton" type="Button" parent="FlowHud/Hud/Margin/Layout" unique_id=1311675672]
+layout_mode = 2
+text = "Continue  >"

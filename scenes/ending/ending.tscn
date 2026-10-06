@@ -1,3 +1,53 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bbqb0sxn6xhn2"]
 
-[node name="Ending" type="Control"]
+[ext_resource type="Script" path="res://scenes/ending/ending.gd" id="1_uhqb6"]
+
+[node name="Ending" type="Control" unique_id=1241658543]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_uhqb6")
+
+[node name="Backdrop" type="ColorRect" parent="." unique_id=1523882459]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.06, 0.06, 0.09, 0.85)
+
+[node name="Hud" type="Control" parent="." unique_id=414770545]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Margin" type="MarginContainer" parent="Hud" unique_id=166208827]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 96
+theme_override_constants/margin_top = 72
+theme_override_constants/margin_right = 96
+theme_override_constants/margin_bottom = 72
+
+[node name="Layout" type="VBoxContainer" parent="Hud/Margin" unique_id=54453986]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="TitleLabel" type="Label" parent="Hud/Margin/Layout" unique_id=2114665363]
+layout_mode = 2
+text = "Ending  (M0 placeholder)"
+
+[node name="ScoreLabel" type="Label" parent="Hud/Margin/Layout" unique_id=2020601262]
+layout_mode = 2
+text = "Final score 0"
+
+[node name="Spacer" type="Control" parent="Hud/Margin/Layout" unique_id=1730941269]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HintLabel" type="Label" parent="Hud/Margin/Layout" unique_id=1236516167]
+layout_mode = 2
+text = "Ending grading is M4 work - this screen only closes the M0 loop."
+
+[node name="BackButton" type="Button" parent="Hud/Margin/Layout" unique_id=208300148]
+layout_mode = 2
+text = "Back to Menu"

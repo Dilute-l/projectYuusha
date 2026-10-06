@@ -1,0 +1,59 @@
+class_name DayDirector
+extends RefCounted
+
+## 每日流程推进规则（ARCHITECTURE.md §4）。**纯静态函数：不碰节点、不改状态**。
+##
+## day_loop.gd 只做两件事：问 DayDirector「下一步是什么」，然后按 DayPhase 换子场景。
+## 这样「第 10 天走完该进结局」这类规则可以被测试直接调用，不需要跑起场景树。
+##
+## 流程（§4）：
+##   DayBriefing → SpecialEvent → 招人（Screening ⇄ Interview）→ TeamBuild
+##   → BattleReport → DayResult → 第 1〜9 天回到 DayBriefing；第 10 天进 Ending
+
+## 推进结果的三种走向
+enum Step {
+	PHASE,    ## 当天内推进到下一个阶段
+	DAY_END,  ## 当天流程走完，进入下一天
+	RUN_END,  ## 十天走完，进结局场景
+}
+
+## 当天最后一个阶段
+const LAST_PHASE: int = DayPhase.Phase.DAY_RESULT
+
+
+## 问：当前阶段之后是什么？
+## 返回 { "step": Step, "phase": int, "day": int }
+##   step = PHASE   → 把阶段切到 phase（同一天内）
+##   step = DAY_END → 天数 +1，阶段切到 phase（DAY_BRIEFING）
+##   step = RUN_END → 去结局场景，phase = ENDING
+static func advance(phase: int, day_index: int) -> Dictionary:
+	if phase == DayPhase.Phase.ENDING:
+		return { "step": Step.RUN_END, "phase": DayPhase.Phase.ENDING, "day": day_index }
+	if phase == LAST_PHASE:
+		if day_index >= GameConfig.TOTAL_DAYS:
+			return { "step": Step.RUN_END, "phase": DayPhase.Phase.ENDING, "day": day_index }
+		return { "step": Step.DAY_END, "phase": DayPhase.Phase.DAY_BRIEFING, "day": day_index + 1 }
+	# 注：招人阶段实际可以在 Screening / Interview 之间来回切换（§4），
+	# 这里给出的是一条默认推进路线，够 M0 的空壳流程跑通；M2 再由面试流程自己决定何时离开。
+	return { "step": Step.PHASE, "phase": DayPhase.next(phase), "day": day_index }
+
+
+## 阶段对应的子场景 key；空字符串表示该阶段暂时没有独立场景（由 day_loop 的占位 HUD 顶上）
+static func scene_key_for(phase: int) -> StringName:
+	match phase:
+		DayPhase.Phase.SCREENING, DayPhase.Phase.INTERVIEW:
+			return &"interview"
+		DayPhase.Phase.TEAM_BUILD:
+			return &"team_builder"
+		DayPhase.Phase.BATTLE_REPORT:
+			return &"battle_report"
+		DayPhase.Phase.ENDING:
+			return &"ending"
+	return &""
+
+
+## 一天要走过的阶段序列（含首尾），供测试与进度显示用
+static func phases_of_day() -> Array[int]:
+	var phases: Array[int] = []
+	phases.assign(DayPhase.ORDER)
+	return phases

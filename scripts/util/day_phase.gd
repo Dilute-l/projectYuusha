@@ -42,12 +42,31 @@ const ORDER: Array[int] = [
 	Phase.DAY_RESULT,
 ]
 
+## 便于在占位 HUD / 调试输出里显示的中文阶段名，索引与 Phase 一一对应
+const DISPLAY_NAMES: Array[String] = [
+	"国王下旨",
+	"今日事件",
+	"浏览简历",
+	"追问面试",
+	"组队",
+	"战报",
+	"当日结算",
+	"结局",
+]
+
 
 ## 枚举 -> 存档用名字
 static func to_name(phase: int) -> StringName:
 	if phase < 0 or phase >= NAMES.size():
 		return NAMES[Phase.DAY_BRIEFING]
 	return NAMES[phase]
+
+
+## 枚举 -> 显示名（占位 HUD / 调试用；正式文案在 M5 定稿）
+static func display_name(phase: int) -> String:
+	if phase < 0 or phase >= DISPLAY_NAMES.size():
+		return DISPLAY_NAMES[Phase.DAY_BRIEFING]
+	return DISPLAY_NAMES[phase]
 
 
 ## 存档用名字 -> 枚举；无法识别时回退到 DAY_BRIEFING

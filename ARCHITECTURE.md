@@ -446,8 +446,25 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 ```
 
 `tools/smoke_m0.gd` 覆盖上表接口与 M0 验收：单例齐备、DataDB 扫描、同种子可复现、
-十天空流程（第 10 天不再推进）、存读档一致、以及真实跑一遍 主菜单 → 每日循环 的切换。
+存读档一致、真实跑一遍 主菜单 Start 按钮 → 每日循环 → 十天四十步 → 结局 → 返回主菜单。
 全绿时退出码 0。
 
-> M0 尚未完成的部分：`boot.tscn` / `main_menu.tscn` / `day_loop.tscn` 的场景脚本与 `main_scene` 设置
-> （让菜单按钮真的触发 `GameState.start_new_run()` + `SceneRouter.goto_scene(&"day_loop")`）。
+> 自检脚本是 `tools/smoke_m0.tscn` 这个空场景，自检逻辑挂在 root 下的常驻 runner 上
+> ——因为自检过程本身要切场景，而切场景会释放 current_scene。
+
+### 10.5 场景层（M0 完成部分）
+
+| 场景 | 脚本 | 职责 |
+| --- | --- | --- |
+| `scenes/menu/main_menu.tscn` | `main_menu.gd` | **项目启动场景**（`application/run/main_scene`）。Startgame → `GameState.start_new_run()` + `SceneRouter.goto_scene("day_loop")`；Exitgame 二次点击确认退出 |
+| `scenes/day/day_loop.tscn` | `day_loop.gd` | 每日流程容器：订阅 `day_phase_changed` 换阶段子场景；`advance()` 向 `DayDirector` 问下一步；进入每天时自动存档 |
+| `scenes/ending/ending.tscn` | `ending.gd` | 十天的落点：占位显示累计分 + 「返回主菜单」，对外发 `restart_requested` |
+| `scenes/boot/boot.tscn` | `boot.gd` | 备用入口：DataDB 兜底检查 → 主菜单。当前**不是**启动场景，要开场演出时把 `run/main_scene` 改回来即可 |
+| `scripts/core/flow/day_director.gd` | — | 每日流程推进规则（纯静态）：`advance(phase, day)` / `scene_key_for(phase)` |
+
+- 一天走 7 个阶段：DayBriefing → SpecialEvent → Screening → Interview → TeamBuild → BattleReport → DayResult；
+  第 10 天的 DayResult 之后进 Ending，其余天数回到 DayBriefing。招人阶段实际可在
+  Screening / Interview 之间来回切换，`DayDirector` 给的是一条默认推进路线。
+- `day_loop` 与 `ending` 里各有一块 **占位 HUD**：M0 的阶段子场景还是空壳，得有东西点着才能走完十天。
+  占位文案暂时是 ASCII —— `assets/fonts` 还没接入中文主字体，默认字体没有中文字形，中文会变方块。
+  做出真正的阶段界面后直接删掉这两个节点即可：脚本对它们的引用全部走 `get_node_or_null`。

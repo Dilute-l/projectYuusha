@@ -53,6 +53,8 @@ func start_new_run(seed_value: int = 0) -> RunState:
 	passed_ids = []
 	EventBus.run_started.emit(used_seed)
 	EventBus.day_started.emit(run_state.day)
+	# 开新局等于把阶段拨回起点：广播一次，已经在场的 day_loop 之类的订阅者才会跟着复位
+	EventBus.day_phase_changed.emit(DayPhase.Phase.DAY_BRIEFING)
 	return run_state
 
 

@@ -4,6 +4,11 @@ extends Node
 ##
 ## UI 与逻辑之间只通过信号通信，不互相持有引用。
 ## 命名统一「名词 + 过去式」，**只放信号与转发，不写任何状态与规则**。
+##
+## 这里全是「只声明、由别处 emit」的信号，GDScript 会为此报 unused_signal 警告，
+## 对整个文件统一静音——事件总线本来就该是这样。
+
+@warning_ignore_start("unused_signal")
 
 # ---------------------------------------------------------------------------
 # 每日流程与玩法（§5 约定）
@@ -74,3 +79,5 @@ signal scene_changed(scene_key: StringName, scene_path: String)
 
 ## 音量变化：bus 名 -> 线性值 0..1
 signal volume_changed(bus_name: StringName, linear_volume: float)
+
+@warning_ignore_restore("unused_signal")
