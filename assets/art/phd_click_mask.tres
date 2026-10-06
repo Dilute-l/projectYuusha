@@ -1,0 +1,7 @@
+[gd_resource type="BitMap" format=4 uid="uid://c1yqwgvtuxb7c"]
+
+[resource]
+data = {
+"data": PackedByteArray("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDjgwMAAAAAALD/n38AAAAAAPD///8BAAAAAOD///9/AAAAAMD////fBwAAAAD/////HwAAAAD8/////wAAAID//////x8AAAD///////8AAAD+//////8HAAD4////////AADg////////BwDw////////PwDA/////////wCA/////////wMA/v///////w8A+P///////z8A4P///////38AgP////////8BAP7///////8PAPz///////8/APj/////////AfD/////////B8D/////////DwD/////////HwD8////////PwDg/////////wAA/////////wMA+P///////w8AwP///////z8AAP///////38AAPz///////8AAPD///////8BAMD///////8HAAD///////8fAAD8//////9/AADw////////AACA////////AwAA4P//////AAAAgP//////AQAAAP7///9/AAAAAPD//////wAAAID//////wcAAACc/////z8AAAAA/P////8BAAAA4P////8PAAAAAP////8/AAAAAP7/////AAAAAP7/////AwAAAPz/////HwAAAPj/////fwAAAOD//////wEAAMD//////wcAAAD//////x8AAAD8////f3wAAADw/////+EBAADA/////9sDAAAA/////+cPAAAA/P///w8fAAAA8P///x8AAAAAwA//fx8AAAAAAH/4/zgAAAAAAPgB/wAAAAAAAMAHAAAAAAAAAAAAAAAAAAAAAA=="),
+"size": Vector2i(74, 73)
+}

@@ -1,11 +1,27 @@
 [gd_scene format=3 uid="uid://pwbk4clsjugj"]
 
+[ext_resource type="Script" uid="uid://cq3veurloj544" path="res://scenes/menu/main_menu.gd" id="1_kiqgm"]
 [ext_resource type="Texture2D" uid="uid://dr8n7e7pa5jw3" path="res://assets/art/main_menu_bg_pholder.png" id="1_nl8w3"]
+[ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="3_hj162"]
+[ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="4_xn6kt"]
 
 [node name="MainMenu" type="Control" unique_id=913117480]
 layout_mode = 3
 anchors_preset = 0
+script = ExtResource("1_kiqgm")
 
 [node name="MainMenuBgPholder" type="Sprite2D" parent="." unique_id=1260226298]
 texture = ExtResource("1_nl8w3")
 centered = false
+
+[node name="TextureButton" type="TextureButton" parent="." unique_id=229930480]
+layout_mode = 0
+offset_left = 536.0
+offset_top = 184.00003
+offset_right = 610.0
+offset_bottom = 257.00003
+scale = Vector2(6.24, 6.24)
+texture_normal = ExtResource("3_hj162")
+texture_click_mask = ExtResource("4_xn6kt")
+
+[connection signal="pressed" from="TextureButton" to="." method="_on_texture_button_pressed"]
