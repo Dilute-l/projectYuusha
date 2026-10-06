@@ -4,6 +4,8 @@
 [ext_resource type="Texture2D" uid="uid://dr8n7e7pa5jw3" path="res://assets/art/main_menu_bg_pholder.png" id="1_nl8w3"]
 [ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="3_hj162"]
 [ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="4_xn6kt"]
+[ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="5_hj162"]
+[ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialogue.tscn" id="6_xn6kt"]
 
 [node name="MainMenu" type="Control" unique_id=913117480]
 layout_mode = 3
@@ -14,14 +16,37 @@ script = ExtResource("1_kiqgm")
 texture = ExtResource("1_nl8w3")
 centered = false
 
-[node name="TextureButton" type="TextureButton" parent="." unique_id=229930480]
+[node name="Exitgame" type="TextureButton" parent="." unique_id=229930480]
 layout_mode = 0
-offset_left = 536.0
-offset_top = 184.00003
-offset_right = 610.0
-offset_bottom = 257.00003
-scale = Vector2(6.24, 6.24)
+offset_left = 912.0
+offset_top = -32.00003
+offset_right = 986.0
+offset_bottom = 40.99997
+rotation = 0.6667158
+scale = Vector2(3.6, 3.6)
 texture_normal = ExtResource("3_hj162")
 texture_click_mask = ExtResource("4_xn6kt")
 
-[connection signal="pressed" from="TextureButton" to="." method="_on_texture_button_pressed"]
+[node name="Startgame" type="TextureButton" parent="." unique_id=1904601391]
+layout_mode = 0
+offset_left = 168.00002
+offset_top = 96.0
+offset_right = 242.00002
+offset_bottom = 169.0
+scale = Vector2(3.6, 4.595)
+texture_normal = ExtResource("3_hj162")
+texture_click_mask = ExtResource("4_xn6kt")
+
+[node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("5_hj162")]
+layout_mode = 0
+
+[node name="Dialogue" parent="." unique_id=408599518 instance=ExtResource("6_xn6kt")]
+visible = false
+layout_mode = 0
+offset_left = -8.0
+offset_right = -8.0
+
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
+[connection signal="mouse_exited" from="Exitgame" to="." method="_on_exitgame_mouse_exited"]
+[connection signal="pressed" from="Exitgame" to="." method="_on_exitgame_pressed"]
+[connection signal="pressed" from="Startgame" to="." method="_on_startgame_pressed"]
