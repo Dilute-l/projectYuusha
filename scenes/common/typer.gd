@@ -40,8 +40,9 @@ const DEFAULT_SOUND: StringName = &"normal"
 const SOUND_DIR: String = "res://assets/sound/text"
 
 ## 音效名 -> 文件名（不含扩展名）。显示名与文件名不一致时在这里映射。
+## 注意：DEFAULT_SOUND 必须是这里的键之一，否则「没写 sound 的段」会解析失败、静音。
 const SOUND_FILES: Dictionary = {
-	&"no": "normal",
+	&"normal": "normal",
 	&"su": "susie",
 }
 
@@ -118,6 +119,9 @@ var _segment_silents: Dictionary = {}
 
 ## 当前这段对话的基准字间隔（段级或默认）。行级覆盖只临时生效，每行开始时复位到它。
 var _base_char_duration: float = DEFAULT_CHAR_DURATION
+
+## 当前这段对话的基准音效名（段级或默认）。行级覆盖同样只临时生效。
+var _base_sound: StringName = DEFAULT_SOUND
 
 ## 当前这段对话用的音效名（config.sound，缺省为 DEFAULT_SOUND）
 var char_sound: StringName = DEFAULT_SOUND
@@ -282,12 +286,17 @@ func _clamp_frame_delta(delta: float) -> float:
 ## 都没写时使用节点上的 `char_duration`（初值 = DEFAULT_CHAR_DURATION）。
 ## 每次 load_dialogue() 都会按所选段重新设定间隔，所以两段对话可以不同速。
 ##
-## 逐字音效（sound）同样在段级 config 里指定，每打出一个字响一次：
+## 逐字音效（sound）每打出一个字响一次，和字间隔一样支持两个层级，粒度细的优先：
 ##
-##   { "id": "second", "config": { "char_duration": 0.02, "sound": "su" } }
+##   段级 —— 写在该段的 config 里：
+##       { "id": "second", "config": { "char_duration": 0.02, "sound": "su" } }
+##
+##   行级 —— 直接写在某一行的对象里，只影响这一句（同一段里可以每句不同音效）：
+##       { "id": "second", "speaker_name": "勇者", "sound": "normal", "text": "..." }
 ##
 ## 音效名 -> 文件的映射见 SOUND_FILES： "normal" -> normal.wav（默认）、"su" -> susie.wav。
-## 没写 sound 的段用 DEFAULT_SOUND。可用 typer.sound_enabled = false 整体关掉。
+## 都没写时用 DEFAULT_SOUND。行级覆盖只在本行有效，下一句会回到本段音效。
+## 可用 typer.sound_enabled = false 整体关掉。
 ##
 ## 动作语法：静音字符（SILENT_CHAR）。标点 / 空白 / 数字默认**不发声**
 ## （它们本来就「没有发音」，配音效只会变成杂音），但仍然按间隔正常显示。
@@ -338,7 +347,8 @@ func load_dialogue(id: String = "") -> bool:
 	_base_char_duration = segment_duration if segment_duration > 0.0 else DEFAULT_CHAR_DURATION
 	char_duration = _base_char_duration
 	# 同理应用这一段的逐字音效：写了 sound 就用它，没写则用默认音效。
-	char_sound = _segment_sounds.get(chosen, DEFAULT_SOUND)
+	_base_sound = _segment_sounds.get(chosen, DEFAULT_SOUND)
+	char_sound = _base_sound
 	# 以及这一段的静音字符集合（动作语法 SILENT_CHAR）。
 	_silent_chars = _segment_silents.get(chosen, DEFAULT_SILENT_CHARS)
 	return true
@@ -581,6 +591,16 @@ func start_line(index: int) -> void:
 		if ld > 0.0:
 			char_duration = ld
 
+	# 音效同理：先复位到本段基准，再让本行的 sound 临时覆盖（只影响这一句）
+	char_sound = _base_sound
+	var line_sound: Variant = line.get("sound")
+	if line_sound != null and not String(line_sound).is_empty():
+		var ls := StringName(String(line_sound))
+		if SOUND_FILES.has(ls):
+			char_sound = ls
+		else:
+			push_warning("[Typer] 行内音效名「%s」未知，沿用本段音效「%s」" % [ls, _base_sound])
+
 	# 一次性写入完整文本，再用 visible_characters 控制露出进度
 	text = _full_text
 	visible_characters = 0
@@ -791,9 +811,11 @@ func _finish_line() -> void:
 	is_typing = false
 	_char_timer = 0.0
 	set_process(false)
-	# 行级覆盖只在本行有效：本行结束就回到本段的基准间隔，
-	# 否则 char_duration 会一直停留在被覆盖的值上（外部读到的就不是「本段间隔」）。
+	# 行级覆盖只在本行有效：本行结束就回到本段的基准值，
+	# 否则 char_duration / char_sound 会一直停留在被覆盖的值上
+	# （外部读到的就不是「本段间隔 / 本段音效」了）。
 	char_duration = _base_char_duration
+	char_sound = _base_sound
 	line_finished.emit(current_index)
 	# 本行打完后**不自动进入下一行**：由调用方（dialoguer）在玩家点击时推进。
 	# 所以这里只报告「这一行打完了」，不触碰 current_index，
@@ -828,4 +850,13 @@ func _normalize_line(entry: Dictionary) -> Dictionary:
 	var duration := _as_positive_float(entry.get("char_duration"))
 	if duration > 0.0:
 		line["char_duration"] = duration
+	# 行级音效（可选）。同样没写就不放这个键，开始播时回退到段级音效。
+	var sound: Variant = entry.get("sound")
+	if sound != null:
+		var sname := StringName(String(sound).strip_edges())
+		if SOUND_FILES.has(sname):
+			line["sound"] = sname
+		elif not sname.is_empty():
+			push_warning("[Typer] 行内音效名「%s」未知，已忽略（可用：%s）" % [
+				sname, ", ".join(SOUND_FILES.keys())])
 	return line
