@@ -11,6 +11,10 @@ extends Label
 ##   - 本脚本**只管一个字一个字地显示**：不加载场景、不发场景跳转、不读输入。
 ##     一句话打完之后要做什么（等确认 / 播下一句 / 关掉对话框）由调用方决定。
 ##
+## 文本里支持的动作语法：
+##   `^n`  在此处额外停顿 n * PAUSE_UNIT 秒（默认 0.2s/单位），控制记号不显示。
+##   标点 / 空白 / 数字默认不发声（见 DEFAULT_SILENT_CHARS），但仍正常显示。
+##
 ## 最小用法（把本脚本挂到对话框里的正文 Label 上）：
 ##     var typer = $Dialoguer/Dialogue          # 该节点已挂本脚本
 ##     typer.load_dialogue("second")            # 从 res://data/dialogue.json 取 id 为 second 的那段
@@ -25,6 +29,10 @@ extends Label
 ## JSON 里没写间隔时也回退到它。
 const DEFAULT_CHAR_DURATION: float = 0.03
 
+## 停顿语法 `^n` 的单位：n 个 `^n` 单位 = n * PAUSE_UNIT 秒。
+## 例：「你好^3」= 打完「好」之后停 3 * 0.2 = 0.6 秒。
+const PAUSE_UNIT: float = 0.2
+
 ## 默认的逐字音效（config 里没写 sound 时用它）
 const DEFAULT_SOUND: StringName = &"normal"
 
@@ -33,7 +41,7 @@ const SOUND_DIR: String = "res://assets/sound/text"
 
 ## 音效名 -> 文件名（不含扩展名）。显示名与文件名不一致时在这里映射。
 const SOUND_FILES: Dictionary = {
-	&"normal": "normal",
+	&"no": "normal",
 	&"su": "susie",
 }
 
@@ -133,8 +141,24 @@ var is_typing: bool = false
 ## 距下一个字还需等待的秒数（累加器）
 var _char_timer: float = 0.0
 
-## 当前行完整文本（含 BBCode 时是原文，长度口径与 visible_characters 一致）
+## 当前行完整文本（**已剥掉 `^n` 控制记号**，与 Label 上显示的内容一致）
 var _full_text: String = ""
+
+## 当前行经过解析的字序列：`^n` 记号被剥掉，换成每个字「之前」的额外停顿
+var _op_chars: Array[String] = []
+var _op_delays: Array[float] = []
+
+## 行尾遗留的停顿（`^2` 写在整行最后时）
+var _trailing_pause: float = 0.0
+
+## 当前字「之前」要额外等待的秒数（由 _op_delays 取用）
+var _pending_delay: float = 0.0
+
+## 正在等待的停顿剩余秒数（> 0 时不推进任何字）
+var _pause_left: float = 0.0
+
+## 行首停顿：进 _process 时再转成 _pause_left，避免被 _parse_line 重置
+var _leading_wait: float = 0.0
 
 
 func _ready() -> void:
@@ -149,13 +173,39 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# 固定间隔累加：不足一个间隔就攒着，攒够几次就推进几个字。
-	# 这样即便某帧卡顿（delta 很大）也不会丢字，且与帧率解耦。
-	#
-	# 但 delta 需要截断：引擎冷启动的第一帧、或窗口被拖动/最小化后恢复的那一帧，
-	# delta 会是正常帧的几十倍（实测约 0.13s），不截断的话此处会一次蹦出好几个字，
-	# 看起来像「没有逐字」。截断相当于把这类异常帧按最多 max_frame_delta 计。
-	_char_timer += _clamp_frame_delta(delta)
+	# 本帧实际计入的时长（已截断异常大的 delta）
+	var d := _clamp_frame_delta(delta)
+
+	# ^n 停顿：停顿期间**不推进任何字**，直到等待时间耗尽。
+	# 注意：不能把停顿加进 _char_timer —— 那是「该露出几个字」的预算，
+	# 加上去反而会把剩下的字一口气全推出来（等同于没有停顿）。
+	if _pause_left > 0.0:
+		_pause_left -= d
+		if _pause_left <= 0.0 and not is_typing:
+			# 停顿走完且这一行已经没有字要出了（行首/行尾停顿的情况）
+			_finish_line()
+		return
+
+	# 行首的 ^n：先等够再出第一个字
+	if _leading_wait > 0.0:
+		_pause_left = _leading_wait
+		_leading_wait = 0.0
+		_pause_left -= d
+		return
+
+	# 整行没有任何可见字符（写成 "^2" 这种只有停顿记号的行）：
+	# 仍然要先把行尾停顿等完，再算这一行结束。否则会「零耗时」通过。
+	if _full_text.is_empty():
+		_pause_left = _trailing_pause
+		_trailing_pause = 0.0
+		if _pause_left > 0.0:
+			_pause_left -= d
+			return
+		_finish_line()
+		return
+
+	_char_timer += d
+
 	# 一帧内可能推进多个字（掉帧/预热），但音效每帧最多响一次：
 	# 否则同一瞬间叠好几个相同音效，听感上只会变成噪音。
 	# 另外只有「会发声」的字符才算数——标点/空白/数字等静音字符不触发音效，
@@ -163,10 +213,31 @@ func _process(delta: float) -> void:
 	var voiced := false
 	while is_typing and _char_timer >= char_duration:
 		_char_timer -= char_duration
+		var was_last: bool = visible_characters == _full_text.length() - 1
 		if _reveal_next_char():
 			voiced = true
+		# ^n 停顿记在下一个字上：转成暂停状态，循环到此为止
+		if _pending_delay > 0.0:
+			_pause_left = _pending_delay
+			_pending_delay = 0.0
+			break
+		if was_last:
+			# 整行最后一个字已经露出。_reveal_next_char() 内部已经调过 _finish_line()，
+			# 那一并把 set_process(false) 关掉了 —— 所以「行尾还有 ^n」必须在这里
+			# 就地转成暂停状态并重新打开 _process，否则那个停顿永远不会被执行。
+			if _trailing_pause > 0.0:
+				_pause_left = _trailing_pause
+				_trailing_pause = 0.0
+				is_typing = true
+				set_process(true)
+			break
 	if voiced:
 		_play_char_sound()
+
+
+## 把异常大的帧间隔截断到 max_frame_delta（0 表示不截断）。
+## 引擎冷启动的第一帧、或窗口被拖动/最小化后恢复的那一帧，delta 会是正常帧的
+## 几十倍（实测约 0.13s），不截断的话一次就会蹦出好几个字，看起来像「没有逐字」。
 
 
 ## 把异常大的帧间隔截断到 max_frame_delta（0 表示不截断）
@@ -225,6 +296,15 @@ func _clamp_frame_delta(delta: float) -> float:
 ##   { "id": "x", "config": { "silent": "，。！？" } }       替换为自定义集合
 ##   { "id": "x", "config": { "extra_silent": "……——" } }    在默认集合外追加
 ##   { "id": "x", "config": { "silent": "" } }               明确置空（每个字符都发声）
+##
+## 动作语法：停顿。文本里写 `^n`（n 为十进制数字）表示在此处额外停顿
+## n * PAUSE_UNIT 秒（PAUSE_UNIT 默认 0.2，即 `^3` 停 0.6 秒）：
+##
+##   "你好^3，欢迎。^10"   → 「好」之后停 0.6s，「。」之后停 2.0s
+##
+## `^n` 是控制记号，**不会显示出来**，也不影响字符间隔本身。
+## 写在行首则先停顿再出第一个字；写在行尾则整行打完后还要停一下才算结束。
+## 单独的 `^`（后面不是数字）按普通字符原样显示。
 func load_dialogue(id: String = "") -> bool:
 	lines.clear()
 	current_index = -1
@@ -485,7 +565,8 @@ func start_line(index: int) -> void:
 
 	current_index = index
 	var line: Dictionary = lines[index]
-	_full_text = String(line.get("text", ""))
+	# 解析动作语法：剥掉 ^n 控制记号，把停顿记到对应字符上
+	_parse_line(String(line.get("text", "")))
 
 	# 先刷说话人再出字：本行该显示谁的名字
 	if _speaker_label != null:
@@ -504,6 +585,7 @@ func start_line(index: int) -> void:
 	text = _full_text
 	visible_characters = 0
 	_char_timer = 0.0
+	# 行首的 ^n 由 _parse_line 记入 _leading_wait，进 _process 后再转成暂停状态
 
 	line_started.emit(current_index, _full_text)
 
@@ -573,15 +655,68 @@ func _reveal_next_char() -> bool:
 	visible_characters += 1
 	if visible_characters >= _full_text.length():
 		_finish_line()
+		_pending_delay = 0.0
+	else:
+		# 下一个字之前要额外等的停顿（来自 ^n）
+		_pending_delay = _op_delays[index + 1] if index + 1 < _op_delays.size() else 0.0
 	return is_voiced_char(char)
 
 
 ## 取第 index 个字符（越界返回空串）。
 ## visible_characters 的口径就是「已显示几个字符」，所以它正好是下一个要显示的字符下标。
 func _char_at(index: int) -> String:
-	if index < 0 or index >= _full_text.length():
+	if index < 0 or index >= _op_chars.size():
 		return ""
-	return _full_text[index]
+	return _op_chars[index]
+
+
+## 解析一行的动作语法：
+##   `^n`  → 在此处停顿 n * PAUSE_UNIT 秒；n 为十进制数字（可多位）
+##   单独的 `^`（后面不是数字）→ 当作普通字符原样显示，便于写出真的尖号
+## 控制记号不会出现在显示文本里，只影响推进节奏。
+func _parse_line(raw: String) -> void:
+	_op_chars.clear()
+	_op_delays.clear()
+	_trailing_pause = 0.0
+	_pending_delay = 0.0
+	_pause_left = 0.0
+	_leading_wait = 0.0
+
+	var pending := 0.0
+	var i := 0
+	var total := raw.length()
+	while i < total:
+		var ch := raw[i]
+		if ch == "^":
+			var digits := _digits_at(raw, i + 1)
+			if not digits.is_empty():
+				pending += float(digits.to_int()) * PAUSE_UNIT
+				i += 1 + digits.length()
+				continue
+		_op_chars.append(ch)
+		_op_delays.append(pending)
+		pending = 0.0
+		i += 1
+
+	# ^n 写在行尾：这段停顿没有「下一个字」可挂，单独记下来
+	_trailing_pause = pending
+	if not _op_delays.is_empty():
+		_leading_wait = _op_delays[0]
+	_full_text = "".join(_op_chars)
+
+
+## 从 from 开始连续读到的十进制数字串（没有数字则返回空串）
+func _digits_at(text: String, from: int) -> String:
+	var out := ""
+	var i := from
+	while i < text.length():
+		var ch := text[i]
+		if ch >= "0" and ch <= "9":
+			out += ch
+			i += 1
+		else:
+			break
+	return out
 
 
 ## 该字符是否应该发声：默认音效开启、且不在静音集合里
