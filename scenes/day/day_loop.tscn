@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://v2yatku7dvif"]
 
-[ext_resource type="Script" path="res://scenes/day/day_loop.gd" id="1_yek01"]
+[ext_resource type="Script" uid="uid://4ji78th0o6d8" path="res://scenes/day/day_loop.gd" id="1_yek01"]
 
 [node name="DayLoop" type="Node" unique_id=539264072]
 script = ExtResource("1_yek01")
@@ -8,13 +8,15 @@ script = ExtResource("1_yek01")
 [node name="PhaseContainer" type="Node" parent="." unique_id=1689580800]
 
 [node name="FlowHud" type="CanvasLayer" parent="." unique_id=942022579]
-layer = 10
+layer = -1
 
 [node name="Hud" type="Control" parent="FlowHud" unique_id=616640023]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Backdrop" type="ColorRect" parent="FlowHud/Hud" unique_id=886458414]
 layout_mode = 0

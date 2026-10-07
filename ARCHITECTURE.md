@@ -479,3 +479,75 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 - `day_loop` 与 `ending` 里各有一块 **占位 HUD**：M0 的阶段子场景还是空壳，得有东西点着才能走完十天。
   占位文案暂时是 ASCII —— `assets/fonts` 还没接入中文主字体，默认字体没有中文字形，中文会变方块。
   做出真正的阶段界面后直接删掉这两个节点即可：脚本对它们的引用全部走 `get_node_or_null`。
+  `day_loop` 这块（`FlowHud`）已经挪到 `layer = -1`，让有真正界面的阶段能盖住它 —— 见 §10.6。
+
+### 10.6 resume / resume_token（简历版面）
+
+M1 之前的简历版面骨架，已经能单独跑起来看：编辑器里打开 `resume.tscn` 按 F6 即可。
+
+| 文件 | 职责 |
+| --- | --- |
+| `scenes/day/interview/resume/resume.gd` / `.tscn` | 简历整页。`assets/art/interview/resume_page_phd.png` 让 `Sprite2D(centered=false)` 铺在 (0,0)，右侧纸面（约 624,62 ～ 980,549）上叠一列信息 |
+| `scenes/day/interview/resume/resume_token.gd` / `.tscn` | 单条词条，根节点是 `Button`（`class_name ResumeToken`），对外信号 `selected(entry_index)` |
+| `ui/styles/resume_token_normal.tres` · `resume_token_hover.tres` | 词条的 normal / hover 两个 StyleBox。独立成资源而不是内联，以后做 `ui/themes/` 时能直接复用 |
+
+版面自上而下：**抬头**（`Paper/Rows/HeaderInfo`，一个 Label）→ `RESUME ENTRIES` 小标题 → 词条列表（`Paper/Rows/TokenList`）。
+
+- **抬头是一个字符串，不是一个字段一个 Label**：姓名 / 职业 + 等级 / 三项属性 / 特质全部拼进
+  `HeaderInfo` 这**一个** Label 的 `text`（用 `\n` 分行），脚本侧就是常量 `PLACEHOLDER_INFO` 一个字符串 +
+  `set_info(text)` 一个参数。想调抬头版式（换行、字段间距、字段顺序）只改字符串，不用动场景。
+  `RESUME ENTRIES` 那行**没有**并进去 —— 它是词条区的段标题，不是候选人信息。
+  代价是所有行共用一个字号（现在 15）。若想让姓名单独放大，把这一个节点换成 `RichTextLabel` 走 BBCode
+  即可（`HandbookEntry.body` 已经是这个路子），仍然是一个字符串。
+
+- **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（半透明琥珀底 + 描边），normal 是一条细下划线。
+  脚本里没有任何 `_on_mouse_entered`：hover 由 Button 自己驱动，改配色只动 `.tres`。
+- **点击目前没有任何效果**：`pressed` 与 `normal` 指向**同一个** `.tres`，按下去的画法和没按一模一样；
+  `focus_mode = 0` 关掉焦点框，点完不会残留高亮。`selected` 按 §4 预留并照常 emit，只是当前没有订阅者。
+  → §6.2 的追问流程（先给 `question`、再展开 `answer`）留到 M2，届时由 `resume.gd` 订阅 `selected`。
+- **不落任何数据**：`resume.gd` 顶部那组 `PLACEHOLDER_*` 常量就是纸上全部内容，既不读 `DataDB`、
+  也不读 `CandidateResource` / `GameState.current_candidates`。接真实数据时只改 `_ready()` 那一个调用：
+  `_apply_placeholder()` → `set_info(...)` + `set_entries(candidate.resume.map(description))`。
+- **条目数量自适应**：`set_entries()` 会先复用场景里预摆的 5 个实例（编辑器里直接看到真实版面），
+  数据比预摆多就现场 `instantiate()`，少就把富余的 `visible = false`。所以「若干项」都不用回头改场景。
+- 占位文案同样是 ASCII —— 原因见 §10.5：中文字体没接入前，中文会变方块。
+
+#### 挂载点
+
+`resume.tscn` 已作为 **`interview.tscn` 的子节点**实例化，和 `Interviewee` 是兄弟：
+
+```
+DayLoop (Node)
+├─ PhaseContainer (Node)
+│   └─ Interview (Control)          ← interview.tscn，DayLoop._swap_phase_scene() 按阶段实例化
+│       ├─ ItvBkgPhd   (0)  背景
+│       ├─ Interviewee (1)  立绘
+│       ├─ TablePhd    (2)  桌子
+│       ├─ Resume      (3)  ← 简历，压在立绘/桌子之上
+│       ├─ NoticeBoard (4)  公告板按钮，保持在最上层
+│       └─ Dialoguer   (5)
+└─ FlowHud (CanvasLayer, layer -1)  ← M0 占位 HUD，在默认画布层（0）**之下**
+```
+
+所以 `DayLoop` 一进 Screening / Interview 阶段把 `interview.tscn` 挂到 `PhaseContainer` 下，
+简历和立绘就是**同时**出现的；离开阶段时跟着 `interview.tscn` 一起 `queue_free`，再回来会重新实例化
+（`_swap_phase_scene()` 里 `scene_key` 相同则不重建，Screening ⇄ Interview 之间切换不会闪）。
+简历不用自己管显隐，也就没有额外的 show/hide 代码 —— §4 把 `resume.tscn` 定在 `interview` 之下就是这个意思。
+
+#### 占位 HUD 挪到了最下层（layer -1）
+
+`FlowHud` 原本在 `layer = 10`，压在一切之上，两个副作用：
+
+1. 它的 `Backdrop`（全屏 `Color(0.06,0.06,0.09,0.75)`）把 Interview 阶段的整幅画面压暗到约 25%；
+2. 更要命的是 `FlowHud/Hud` 是个**全屏 `MOUSE_FILTER_STOP`** 的 Control，抢在阶段子场景之前吃掉鼠标
+   —— 简历词条的悬停高亮在真实流程里**根本不触发**（实测 hover 命中的是 `FlowHud/Hud/Margin/Layout/Spacer`）。
+
+改成 `layer = -1` 后，占位 HUD 落到默认画布层（0）之下：有真正阶段界面的阶段（Screening / Interview）
+由 `interview.tscn` 的全屏背景整个盖住它，没有阶段场景的阶段（DayBriefing / SpecialEvent / DayResult）
+它照常露出来，流程仍然走得通。实测改完后 `gui_get_hovered_control()` 正确落在
+`Resume/Paper/Rows/TokenList/ResumeTokenN` 上，悬停高亮生效。
+
+> ⚠️ 副作用：`itv_bkg_phd.png` 是**全屏 100% 不透明**，所以 Interview 阶段里 HUD 连"Continue"按钮
+> 一起被盖住、看不见了。按钮本身仍然**可点**——它在 y 561~592，而简历纸面只到 y 549，没有东西遮住它，
+> 实测点击依然能推进阶段（SCREENING → INTERVIEW）。等 M2 给面试场景做出真正的推进控件后，
+> `FlowHud` 按 §10.5 的既定计划整个删掉即可。

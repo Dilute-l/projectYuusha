@@ -1,11 +1,12 @@
-[gd_scene format=3 uid="uid://dvdusjuloxc7j"]
+[gd_scene format=3 uid="uid://bnnwb5iopqe28"]
 
 [ext_resource type="Script" uid="uid://v31l2hifnnvk" path="res://scenes/day/interview/interview.gd" id="1_fa01g"]
 [ext_resource type="Texture2D" uid="uid://bugfrjmjd4qa0" path="res://assets/art/interview/itv_bkg_phd.png" id="1_x7pen"]
 [ext_resource type="Texture2D" uid="uid://vvalhoxhfslq" path="res://assets/art/interview/table_phd.png" id="2_vgtep"]
 [ext_resource type="Texture2D" uid="uid://bvisgb5i4xwiw" path="res://assets/art/interview/noticebd_phd.png" id="4_8dvi3"]
+[ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="5_asawf"]
 [ext_resource type="BitMap" uid="uid://4wg2b4fu0ffy" path="res://assets/art/interview/noticebd_phd.tres" id="5_ytunt"]
-[ext_resource type="PackedScene" uid="uid://cu45yv8cffejs" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
+[ext_resource type="PackedScene" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
 
 [node name="Interview" type="Control" unique_id=190169890]
@@ -28,6 +29,11 @@ scale = Vector2(1.5, 1.5)
 [node name="TablePhd" type="Sprite2D" parent="." unique_id=1819501187]
 texture = ExtResource("2_vgtep")
 centered = false
+
+[node name="Resume" parent="." unique_id=429165533 instance=ExtResource("5_asawf")]
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="NoticeBoard" type="TextureButton" parent="." unique_id=1916152136]
 layout_mode = 0

@@ -1,3 +1,75 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://btulexr2cglap"]
 
-[node name="Resume" type="Control"]
+[ext_resource type="Script" uid="uid://7phbtsuitjkn" path="res://scenes/day/interview/resume/resume.gd" id="1_w6vme"]
+[ext_resource type="Texture2D" uid="uid://dhmx2jff8wa2f" path="res://assets/art/interview/resume_page_phd.png" id="2_vnthk"]
+[ext_resource type="PackedScene" uid="uid://c30g1ll4c2ch5" path="res://scenes/day/interview/resume/resume_token.tscn" id="3_yu2w1"]
+
+[node name="Resume" type="Control" unique_id=429165533]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("1_w6vme")
+
+[node name="ResumePagePhd" type="Sprite2D" parent="." unique_id=408166664]
+texture = ExtResource("2_vnthk")
+centered = false
+
+[node name="Paper" type="MarginContainer" parent="." unique_id=1772566327]
+layout_mode = 0
+offset_left = 624.0
+offset_top = 62.0
+offset_right = 980.0
+offset_bottom = 542.0
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Rows" type="VBoxContainer" parent="Paper" unique_id=1053778975]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="HeaderInfo" type="Label" parent="Paper/Rows" unique_id=1467143720]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_font_sizes/font_size = 15
+text = "Kaede the Vagrant
+Job: Sword      Lv.3
+STR 12      INT 04      WIS 07
+Traits: hot-blooded / light-fingered"
+
+[node name="Spacer" type="Control" parent="Paper/Rows" unique_id=2141977583]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="EntriesCaption" type="Label" parent="Paper/Rows" unique_id=502821112]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.37, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "RESUME ENTRIES"
+
+[node name="TokenList" type="VBoxContainer" parent="Paper/Rows" unique_id=1833902498]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ResumeToken1" parent="Paper/Rows/TokenList" unique_id=1212916358 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+text = "01  Slew three ogres single-handedly on the Border Watch."
+
+[node name="ResumeToken2" parent="Paper/Rows/TokenList" unique_id=2054330971 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+text = "02  Graduated first in class from the Royal Sword Academy."
+
+[node name="ResumeToken3" parent="Paper/Rows/TokenList" unique_id=1083534431 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+text = "03  Fluent in Ancient Draconic, Elvish and Dwarvish."
+
+[node name="ResumeToken4" parent="Paper/Rows/TokenList" unique_id=283527975 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+text = "04  Survived fourteen days alone in the Cursed Marsh."
+
+[node name="ResumeToken5" parent="Paper/Rows/TokenList" unique_id=793925309 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+text = "05  Never lost a duel in six years of royal service."
