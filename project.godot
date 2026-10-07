@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 EventBus="*res://autoload/event_bus.gd"
 RngService="*res://autoload/rng_service.gd"
 DataDB="*res://autoload/data_db.gd"
