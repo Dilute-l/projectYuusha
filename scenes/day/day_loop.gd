@@ -7,6 +7,9 @@ extends Node
 ##   状态 → GameState
 ##   跳转 → SceneRouter
 ##
+## 阶段场景的「我做完了」由它自己报告：场景发 `phase_finished`，这里接到 advance()。
+## 挂载时会用 has_signal 检查这个约定，缺了就 push_warning —— 不会静默不推进。
+##
 ## 关于 FlowHud：M0 阶段各阶段子场景（interview / team_builder / battle_report）还是空壳，
 ## 需要有个东西点着才能走完十天，所以 day_loop.tscn 里挂了一个**占位 HUD**。
 ## M1〜M5 做出真正的阶段界面后，直接删掉 FlowHud 节点即可：
@@ -23,6 +26,19 @@ var _next_button: Button = null
 ## 当前挂在 PhaseContainer 下的子场景 key 与实例
 var _phase_scene_key: StringName = &""
 var _phase_instance: Node = null
+
+## 正在推进中的重入保护 —— **同一帧内只允许推进一次**。
+##
+## 它挡的是「推进过程中又被推进一次」：阶段切换是同步的，
+## 所以若某个 day_phase_changed 的监听者顺手再调一次 advance()，
+## 就会在同一个调用栈里连环推进、整段跳过。解锁必须延后到帧末才有效
+## （在 _swap_phase_scene 里同步解锁等于没有锁）。
+##
+## 它**不**挡「同一阶段里隔了几百毫秒的第二次点击」：那时阶段已经变了，
+## GameState.get_phase() 已是新值，没法再判断「这次请求属于哪个阶段」。
+## 那种**跨来源**重复（占位 HUD 的按钮 + 阶段场景自己的按钮同时可用）
+## 靠「M1〜M5 做完后删掉占位 HUD」消除；要现在就挡得按时间做去抖。
+var _advance_locked := false
 
 
 func _ready() -> void:
@@ -47,10 +63,15 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 
-## 推进到下一步。M0 由占位 HUD 的「继续」按钮调用；M1 起由各阶段子场景自己决定何时推进
+## 推进到下一步。
+## M0 由占位 HUD 的「继续」按钮调用；M1 起由各阶段子场景发 phase_finished 调它。
 func advance() -> void:
-	if SceneRouter.is_transitioning:
+	if SceneRouter.is_transitioning or _advance_locked:
 		return
+	_advance_locked = true
+	# 延后解锁：整个 day_phase_changed 的 emit 链跑完之前，不允许再次推进。
+	_unlock_advance.call_deferred()
+
 	var step := DayDirector.advance(GameState.get_phase(), GameState.get_day())
 	match int(step["step"]):
 		DayDirector.Step.PHASE:
@@ -61,6 +82,10 @@ func advance() -> void:
 			GameState.set_phase(DayPhase.Phase.ENDING)
 			# 结局判定（ending_resolver）是 M4 的事，这里只负责把流程交给结局场景
 			SceneRouter.goto_scene(&"ending")
+
+
+func _unlock_advance() -> void:
+	_advance_locked = false
 
 # ---------------------------------------------------------------------------
 # 事件
@@ -94,7 +119,8 @@ func _swap_phase_scene(phase: int) -> void:
 		return
 
 	var scene_key := DayDirector.scene_key_for(phase)
-	# 招人阶段的 Screening / Interview 共用 interview.tscn，不重建实例
+	# 同一个 scene_key 表示共用一个场景实例（国王下旨 / 今日事件 / 浏览简历 / 追问面试
+	# 都挂在 interview.tscn 下）；此时不重建，只把新阶段告诉它。
 	if scene_key == _phase_scene_key:
 		if _phase_instance != null and _phase_instance.has_method("set_phase"):
 			_phase_instance.call("set_phase", phase)
@@ -112,6 +138,13 @@ func _swap_phase_scene(phase: int) -> void:
 	var packed: PackedScene = load(scene_path)
 	_phase_instance = packed.instantiate()
 	_phase_container.add_child(_phase_instance)
+
+	# 阶段场景自己决定何时结束：它发 phase_finished，这里接上推进。
+	# 用字符串形式连接，避免把 _phase_instance 收窄成某个具体脚本类型。
+	if _phase_instance.has_signal(&"phase_finished"):
+		_phase_instance.connect(&"phase_finished", advance)
+	else:
+		push_warning("[DayLoop] %s 没有 phase_finished 信号，只能用占位 HUD 的按钮推进" % scene_key)
 
 
 func _clear_phase_instance() -> void:

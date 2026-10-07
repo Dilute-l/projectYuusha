@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://bnnwb5iopqe28"]
+[gd_scene format=3 uid="uid://dvdusjuloxc7j"]
 
 [ext_resource type="Script" uid="uid://v31l2hifnnvk" path="res://scenes/day/interview/interview.gd" id="1_fa01g"]
 [ext_resource type="Texture2D" uid="uid://bugfrjmjd4qa0" path="res://assets/art/interview/itv_bkg_phd.png" id="1_x7pen"]
@@ -6,8 +6,13 @@
 [ext_resource type="Texture2D" uid="uid://bvisgb5i4xwiw" path="res://assets/art/interview/noticebd_phd.png" id="4_8dvi3"]
 [ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="5_asawf"]
 [ext_resource type="BitMap" uid="uid://4wg2b4fu0ffy" path="res://assets/art/interview/noticebd_phd.tres" id="5_ytunt"]
-[ext_resource type="PackedScene" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
+[ext_resource type="PackedScene" uid="uid://cu45yv8cffejs" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
+[ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_asawf"]
+[ext_resource type="Texture2D" uid="uid://pqp26scrqywu" path="res://assets/art/interview/itv_approve_phd.png" id="10_jcwbe"]
+[ext_resource type="BitMap" uid="uid://nwlgkq883df0" path="res://assets/art/interview/itv_approve_phd.tres" id="11_hqfrh"]
+[ext_resource type="Texture2D" uid="uid://bmd57smaygn7x" path="res://assets/art/interview/itv_nah_phd.png" id="12_y6gwq"]
+[ext_resource type="BitMap" uid="uid://dsg0dr5kglx7m" path="res://assets/art/interview/itv_nah_phd.tres" id="13_h3fcf"]
 
 [node name="Interview" type="Control" unique_id=190169890]
 layout_mode = 3
@@ -46,4 +51,24 @@ texture_click_mask = ExtResource("5_ytunt")
 visible = false
 layout_mode = 0
 
+[node name="Approved" type="TextureButton" parent="." unique_id=1053593264]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture_normal = ExtResource("10_jcwbe")
+texture_click_mask = ExtResource("11_hqfrh")
+
+[node name="Nah" type="TextureButton" parent="." unique_id=1717759339]
+layout_mode = 0
+offset_left = 100.0
+offset_right = 1252.0
+offset_bottom = 648.0
+texture_normal = ExtResource("12_y6gwq")
+texture_click_mask = ExtResource("13_h3fcf")
+
+[node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("9_asawf")]
+layout_mode = 0
+
 [connection signal="pressed" from="NoticeBoard" to="." method="_on_notice_board_pressed"]
+[connection signal="pressed" from="Approved" to="." method="_on_approved_pressed"]
+[connection signal="pressed" from="Nah" to="." method="_on_nah_pressed"]

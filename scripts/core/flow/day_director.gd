@@ -20,6 +20,21 @@ enum Step {
 ## 当天最后一个阶段
 const LAST_PHASE: int = DayPhase.Phase.DAY_RESULT
 
+## 由 interview.tscn 承载的阶段：
+##   DAY_BRIEFING   国王下旨
+##   SPECIAL_EVENT  记者报道今日魔物 / 特殊规则
+##   SCREENING      浏览简历
+##   INTERVIEW      追问面试
+##
+## 这四段**共用同一个场景实例**：day_loop 在同一 scene_key 下不重建实例，只调 set_phase()，
+## 所以四段之间切换是无缝的（「招人」阶段本来就可以 Screening ⇄ Interview 来回切）。
+const INTERVIEW_HOSTED: Array[int] = [
+	DayPhase.Phase.DAY_BRIEFING,
+	DayPhase.Phase.SPECIAL_EVENT,
+	DayPhase.Phase.SCREENING,
+	DayPhase.Phase.INTERVIEW,
+]
+
 
 ## 问：当前阶段之后是什么？
 ## 返回 { "step": Step, "phase": int, "day": int }
@@ -38,11 +53,16 @@ static func advance(phase: int, day_index: int) -> Dictionary:
 	return { "step": Step.PHASE, "phase": DayPhase.next(phase), "day": day_index }
 
 
+## 该阶段是否由 interview.tscn 承载
+static func is_interview_hosted(phase: int) -> bool:
+	return INTERVIEW_HOSTED.has(phase)
+
+
 ## 阶段对应的子场景 key；空字符串表示该阶段暂时没有独立场景（由 day_loop 的占位 HUD 顶上）
 static func scene_key_for(phase: int) -> StringName:
+	if is_interview_hosted(phase):
+		return &"interview"
 	match phase:
-		DayPhase.Phase.SCREENING, DayPhase.Phase.INTERVIEW:
-			return &"interview"
 		DayPhase.Phase.TEAM_BUILD:
 			return &"team_builder"
 		DayPhase.Phase.BATTLE_REPORT:

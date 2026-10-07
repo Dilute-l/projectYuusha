@@ -1,3 +1,23 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dknvg2u31014o"]
 
-[node name="BattleReport" type="Control"]
+[ext_resource type="Texture2D" uid="uid://bxwueyowabxw1" path="res://assets/art/battle_report/driver_phd.png" id="1_m5q85"]
+[ext_resource type="Texture2D" uid="uid://byc2u8r2w06dk" path="res://assets/art/battle_report/car_bkg_phd.png" id="2_exidj"]
+[ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_x4kxj"]
+
+[node name="BattleReport" type="Control" unique_id=81862534]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="DriverPhd" type="Sprite2D" parent="." unique_id=1249870580]
+texture = ExtResource("1_m5q85")
+centered = false
+
+[node name="CarBkgPhd" type="Sprite2D" parent="." unique_id=1426394412]
+texture = ExtResource("2_exidj")
+centered = false
+
+[node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("3_x4kxj")]
+layout_mode = 0
+
+[node name="ColorNight" type="CanvasModulate" parent="." unique_id=2032092794]
+color = Color(0.6623526, 0.7189713, 0.98323464, 1)
