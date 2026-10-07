@@ -9,14 +9,17 @@
 	{ "speaker_name": "棍木", "text": "再点一次退出游戏" }
   ],
   "second": [
-	{ "config": { "char_duration": 0.05, "sound": "no", "extra_silent": "……——" } },
+	{ "config": { "char_duration": 0.05, "sound": "normal", "extra_silent": "……——" } },
 	{ "speaker_name": "棍木", "text": "第二段测试对话：用来验证打字机能按 id 选段。" },
 	{ "speaker_name": "勇者", "text": "不过是路边的一条野狗罢了，看我一剑把它劈成两半。" },
 	{ "speaker_name": "棍木", "text": "……你简历上写自己是初级剑士。" },
 	{ "speaker_name": "勇者", "text": "对啊，这和砍野狗有什么关系？" },
 	{ "speaker_name": "棍木", "text": "没关系。下一位。" },
 	{ "speaker_name": "棍木", "char_duration": 0.08, "text": "多行测试，第一行。\n第二行：应该另起一行显示。\n第三行：用来检查换行与行距是否正常。\n第四行：到此为止。" },
-	{ "speaker_name": "棍木", "text": "停顿测试：这句话^5 中间会停一秒，然后^1 再停一秒，最后^2 行尾也要停^3。" }
+	{ "speaker_name": "棍木", "text": "停顿测试：这句话^5 中间会停一秒，然后^1 再停一秒，最后^2 行尾也要停^3。" },
+	{ "speaker_name": "棍木", "sound": "normal", "text": "这一句单独用 normal 音效（本段基准是 susie）……" },
+	{ "speaker_name": "勇者", "sound": "su", "text": "……下一句又换回 su。" },
+	{ "speaker_name": "棍木", "text": "这一句不写 sound，应当回到本段的基准音效。" }
   ],
   "greeting": [
 	{ "config": { "char_duration": 0.04 } },
