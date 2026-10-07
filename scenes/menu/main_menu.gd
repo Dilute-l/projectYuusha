@@ -6,6 +6,30 @@ extends Control
 var _exit_confirming := false
 
 
+func _on_typertest_pressed() -> void:
+	# 点了退出确认后又点这个按钮时，先把退出确认收掉，避免两种文本叠在同一对话框里
+	_cancel_exit_confirm()
+	$Dialoguer.visible = true
+
+	var typer = get_node_or_null("Dialoguer/Dialogue")
+	if typer == null:
+		push_error("[MainMenu] 找不到 Dialoguer/Dialogue")
+		return
+	# 取 data/dialogue.json 里 id 为 "second" 的那段测试对话。
+	# 这里每次点击都重新读文件，改完 JSON 不用重启即可看到新文案。
+	if not typer.load_dialogue("second"):
+		$Dialoguer.visible = false
+		return
+	if not typer.dialogue_finished.is_connected(_on_test_dialogue_finished):
+		typer.dialogue_finished.connect(_on_test_dialogue_finished)
+	typer.start_dialogue()
+
+
+func _on_test_dialogue_finished() -> void:
+	# 打完了就把对话框收起来。注意退出确认可能已经把它关掉了，重复隐藏无害。
+	$Dialoguer.visible = false
+
+
 func _on_startgame_pressed() -> void:
 	if SceneRouter.is_transitioning:
 		return
@@ -20,9 +44,9 @@ func _on_exitgame_pressed() -> void:
 		SceneRouter.quit_game()
 		return
 	_exit_confirming = true
-	$Dialogue.visible = true
-	$Dialogue/Dialogue.text = "再点一次退出游戏"
-	$Dialogue/Name.text = "棍木"
+	$Dialoguer.visible = true
+	$Dialoguer/Dialogue.text = "再点一次退出游戏"
+	$Dialoguer/Name.text = "棍木"
 
 
 func _on_exitgame_mouse_exited() -> void:
@@ -38,4 +62,4 @@ func _cancel_exit_confirm() -> void:
 	if not _exit_confirming:
 		return
 	_exit_confirming = false
-	$Dialogue.visible = false
+	$Dialoguer.visible = false

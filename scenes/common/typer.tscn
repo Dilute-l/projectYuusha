@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://byjwt0kotk21d"]
+
+[ext_resource type="Script" uid="uid://crqvd255t7whm" path="res://scenes/common/typer.gd" id="1_544pw"]
+
+[node name="Typer" type="Label"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1140.0
+offset_bottom = 74.0
+script = ExtResource("1_544pw")

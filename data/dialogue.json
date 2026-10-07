@@ -1,0 +1,66 @@
+[
+ {
+	"speaker_name": "棍木",
+	"text": "如果出现了这段文字，那么可能是出现了bug"
+ },
+ {
+	"id": "test1",
+	"speaker_name": "棍木",
+	"text": "再点一次退出游戏"
+  },
+  {
+	"id": "second",
+	"speaker_name": "棍木",
+	"text": "第二段测试对话：用来验证打字机能按 id 选段。"
+  },
+  {
+	"id": "second",
+	"speaker_name": "勇者",
+	"text": "不过是路边的一条野狗罢了，看我一剑把它劈成两半。"
+  },
+  {
+	"id": "second",
+	"speaker_name": "棍木",
+	"text": "……你简历上写自己是初级剑士。"
+  },
+  {
+	"id": "second",
+	"speaker_name": "勇者",
+	"text": "对啊，这和砍野狗有什么关系？"
+  },
+  {
+	"id": "second",
+	"speaker_name": "棍木",
+	"text": "没关系。下一位。"
+  },
+  {
+	"id": "greeting",
+	"speaker_name": "棍木",
+	"text": "欢迎来到勇者面试会场。请坐。"
+  },
+  {
+	"id": "greeting",
+	"speaker_name": "棍木",
+	"text": "规则很简单：十天内，每天挑一支队伍去讨伐魔物。"
+  },
+  {
+	"id": "greeting",
+	"speaker_name": "棍木",
+	"text": "挑错了也不要紧——反正挨打的不是我。"
+  },
+  {
+	"id": "handbook_hint",
+	"speaker_name": "棍木",
+	"text": "手册随时可以翻，里面写着魔物的弱点，也写着常识。"
+  },
+  {
+	"id": "handbook_hint",
+	"speaker_name": "棍木",
+	"text": "比如——初级剑士不可能单枪匹马讨伐魔物。"
+  },
+  {
+	"id": "handbook_hint",
+	"speaker_name": "棍木",
+	"text": "他要是这么说，你就该知道他在撒谎了。"
+  }
+]

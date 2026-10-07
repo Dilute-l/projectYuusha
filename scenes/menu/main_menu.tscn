@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="3_hj162"]
 [ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="4_xn6kt"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="5_hj162"]
-[ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialogue.tscn" id="6_xn6kt"]
+[ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="6_xn6kt"]
 
 [node name="MainMenu" type="Control" unique_id=913117480]
 layout_mode = 3
@@ -37,10 +37,21 @@ scale = Vector2(3.6, 4.595)
 texture_normal = ExtResource("3_hj162")
 texture_click_mask = ExtResource("4_xn6kt")
 
+[node name="Typertest" type="TextureButton" parent="." unique_id=1214602148]
+layout_mode = 0
+offset_left = 906.0
+offset_top = 331.99994
+offset_right = 980.0
+offset_bottom = 404.99994
+rotation = 0.6667158
+scale = Vector2(3.6, 3.6)
+texture_normal = ExtResource("3_hj162")
+texture_click_mask = ExtResource("4_xn6kt")
+
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("5_hj162")]
 layout_mode = 0
 
-[node name="Dialogue" parent="." unique_id=408599518 instance=ExtResource("6_xn6kt")]
+[node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("6_xn6kt")]
 visible = false
 layout_mode = 0
 offset_left = -8.0
@@ -50,3 +61,4 @@ offset_right = -8.0
 [connection signal="mouse_exited" from="Exitgame" to="." method="_on_exitgame_mouse_exited"]
 [connection signal="pressed" from="Exitgame" to="." method="_on_exitgame_pressed"]
 [connection signal="pressed" from="Startgame" to="." method="_on_startgame_pressed"]
+[connection signal="pressed" from="Typertest" to="." method="_on_typertest_pressed"]

@@ -1,10 +1,14 @@
 [gd_scene format=3 uid="uid://ctmyyt3n6ch2r"]
 
 [ext_resource type="Texture2D" uid="uid://btnc14qcfgl27" path="res://assets/art/Textbox_phd.png" id="1_277l2"]
+[ext_resource type="Script" uid="uid://du8la2bxrncmc" path="res://scenes/common/dialoguer.gd" id="1_ldmwg"]
+[ext_resource type="Script" uid="uid://crqvd255t7whm" path="res://scenes/common/typer.gd" id="3_uy3cm"]
+[ext_resource type="PackedScene" uid="uid://byjwt0kotk21d" path="res://scenes/common/typer.tscn" id="4_lwyrp"]
 
 [node name="Dialogue" type="Control" unique_id=408599518]
 layout_mode = 3
 anchors_preset = 0
+script = ExtResource("1_ldmwg")
 
 [node name="TextboxPhd" type="Sprite2D" parent="." unique_id=1211659339]
 position = Vector2(579.00006, 75)
@@ -17,6 +21,7 @@ offset_left = 26.0
 offset_top = 12.0
 offset_right = 1128.0
 offset_bottom = 86.0
+script = ExtResource("3_uy3cm")
 
 [node name="Name" type="Label" parent="." unique_id=1242747217]
 layout_mode = 0
@@ -24,3 +29,6 @@ offset_left = 22.0
 offset_top = 101.0
 offset_right = 246.0
 offset_bottom = 137.0
+
+[node name="Typer" parent="." unique_id=53983469 instance=ExtResource("4_lwyrp")]
+layout_mode = 0
