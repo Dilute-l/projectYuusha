@@ -1,3 +1,18 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cu45yv8cffejs"]
 
-[node name="Interviewee" type="Control"]
+[ext_resource type="Script" uid="uid://crk1r1nyksvb7" path="res://scenes/day/interview/interviewee.gd" id="1_r3i4g"]
+
+[node name="Interviewee" type="Control" unique_id=1881224001]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_r3i4g")
+
+[node name="Body" type="Sprite2D" parent="." unique_id=1129747090]
+
+[node name="Eye" type="Sprite2D" parent="." unique_id=1665804804]
+
+[node name="Hair" type="Sprite2D" parent="." unique_id=2081189547]
+
+[node name="Mouth" type="Sprite2D" parent="." unique_id=889270090]
+
+[node name="HatForDwarf" type="Sprite2D" parent="." unique_id=294361713]

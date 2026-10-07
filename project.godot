@@ -24,7 +24,6 @@ GameState="*res://autoload/game_state.gd"
 SaveService="*res://autoload/save_service.gd"
 AudioService="*res://autoload/audio_service.gd"
 SceneRouter="*res://autoload/scene_router.gd"
-_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]
 

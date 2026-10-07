@@ -37,9 +37,13 @@ func _on_exitgame_pressed() -> void:
 		SceneRouter.quit_game()
 		return
 	_exit_confirming = true
-	$Dialoguer.visible = true
-	$Dialoguer/Dialogue.text = "再点一次退出游戏"
-	$Dialoguer/Name.text = "棍木"
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("test1"):
+		return
+	dialoguer.play()
 
 
 func _on_exitgame_mouse_exited() -> void:
