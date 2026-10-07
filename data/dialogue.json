@@ -27,9 +27,12 @@
 	{ "speaker_name": "棍木", "text": "规则很简单：十天内，每天挑一支队伍去讨伐魔物。" },
 	{ "speaker_name": "棍木", "text": "挑错了也不要紧——反正挨打的不是我。" }
   ],
-  "handbook_hint": [
+	"handbook_hint": [
 	{ "speaker_name": "棍木", "text": "手册随时可以翻，里面写着魔物的弱点，也写着常识。" },
 	{ "speaker_name": "棍木", "text": "比如——初级剑士不可能单枪匹马讨伐魔物。" },
 	{ "speaker_name": "棍木", "text": "他要是这么说，你就该知道他在撒谎了。" }
+  ],
+	"Boardery": [
+	{ "speaker_name": "阿板", "text": "Mysteries wind~" },
   ]
 }

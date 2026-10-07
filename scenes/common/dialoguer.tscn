@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://du8la2bxrncmc" path="res://scenes/common/dialoguer.gd" id="1_ldmwg"]
 [ext_resource type="Script" uid="uid://crqvd255t7whm" path="res://scenes/common/typer.gd" id="3_uy3cm"]
 
-[node name="Dialogue" type="Control" unique_id=408599518]
+[node name="Dialoguer" type="Control" unique_id=408599518]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_ldmwg")

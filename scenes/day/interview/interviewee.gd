@@ -1,3 +1,4 @@
+class_name Interviewee
 extends Control
 
 ## 立绘部位贴图目录——所有路径集中在这里，以后挪目录只改这一行
@@ -8,10 +9,10 @@ const TALL_RACES: Array[StringName] = [&"hu", &"el"]
 
 # ---- 数据 ----
 var race: StringName = &"hu"
-var eye: int = 0
-var hair: int = 0
-var mouth: int = 0
-var hat: int = 0
+var eye: int = 1
+var hair: int = 1
+var mouth: int = 1
+var hat: int = 1
 
 @onready var _body: Sprite2D = $Body
 @onready var _eye: Sprite2D = $Eye
