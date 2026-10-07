@@ -1,24 +1,18 @@
 class_name DayConfig
 extends Resource
 
-## 每一天的规则与教程进度。data/days/day_01.tres … day_10.tres
-## candidate_generator.gd 依据本配置 + RngService 一次性生成当日全部候选人。
+## 每一天的规则（ARCHITECTURE.md §3.4）。data/days/day_01.tres … day_10.tres
+## 当日候选人直接写死在本配置里（candidates），不再随机生成。
 
 ## 第几天，1..GameConfig.TOTAL_DAYS
 @export var day_index: int = 1
 
-## 当日候选人数
-@export var candidate_count: int = 4
+## 当日候选人，写死；数组顺序即出场顺序，size() 即当日人数。
+## 可直接内嵌 CandidateResource 子资源，也可引用 data/candidates/*.tres。
+@export var candidates: Array[CandidateResource] = []
 
 ## 队伍名额，挑满即进入 BattleReport
 @export var slots: int = 3
-
-## 每位候选人可追问的次数
-@export var questions_per_candidate: int = 3
-
-## 当日解锁的追问主题，取值来自 ClaimResource.Topic。
-## 注：枚举类型不能用作 Array 类型参数，故为 Array[int]。
-@export var unlocked_topics: Array[int] = []
 
 ## 当日事件池（DailyEventDef.id）
 @export var event_pool: Array[StringName] = []

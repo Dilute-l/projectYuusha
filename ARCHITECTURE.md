@@ -50,16 +50,13 @@ res://
 ├─ scripts/
 │   ├─ resources/                   ← 数据模型（class_name，无逻辑）
 │   │   ├─ candidate_resource.gd
-│   │   ├─ claim_resource.gd
-│   │   ├─ hidden_profile.gd
+│   │   ├─ resume_entry.gd
 │   │   ├─ job_def.gd
-│   │   ├─ skill_def.gd
 │   │   ├─ race_def.gd
 │   │   ├─ trait_def.gd
 │   │   ├─ trait_interaction_table.gd
 │   │   ├─ monster_def.gd
 │   │   ├─ handbook_entry.gd
-│   │   ├─ question_def.gd
 │   │   ├─ day_config.gd
 │   │   ├─ daily_event_def.gd
 │   │   ├─ narrative_rule.gd
@@ -67,15 +64,8 @@ res://
 │   │   └─ run_state.gd
 │   │
 │   ├─ core/                        ← 领域逻辑（纯逻辑，禁止实例化节点）
-│   │   ├─ generation/
-│   │   │   ├─ candidate_generator.gd
-│   │   │   ├─ claim_generator.gd
-│   │   │   └─ name_pool.gd
 │   │   ├─ interview/
-│   │   │   ├─ interview_session.gd
-│   │   │   ├─ answer_builder.gd
-│   │   │   ├─ lie_detector.gd
-│   │   │   └─ pressure_tracker.gd
+│   │   │   └─ interview_session.gd
 │   │   ├─ team/
 │   │   │   ├─ team_validator.gd
 │   │   │   └─ synergy_calculator.gd
@@ -98,16 +88,14 @@ res://
 │
 ├─ data/                            ← 静态数据实例（.tres）
 │   ├─ jobs/          sword.tres / mage.tres / priest.tres …
-│   ├─ skills/        按职业分组：剑术、弓箭、火球、治疗、驱魔 …
 │   ├─ races/         人类 / 精灵 / 矮人 / 兽人 …
 │   ├─ traits/        性格与癖好；interactions.tres 为相性矩阵
+│   ├─ candidates/    写死的候选人（每天固定名单，被 days/ 引用）
 │   ├─ monsters/      魔物图鉴数据（特点标签、弱点、克制倍率）
-│   ├─ handbook/      手册条目（玩家判断谎言的知识依据）
-│   ├─ questions/     追问问题库，按主题分类
+│   ├─ handbook/      手册条目（玩家判断简历真伪的常识依据）
 │   ├─ narrative/     战报叙事规则与文案模板
-│   ├─ days/          day_01.tres … day_10.tres
+│   ├─ days/          day_01.tres … day_10.tres（含当日固定候选人名单）
 │   ├─ events/        每日特殊事件池
-│   ├─ names/         姓名与种族命名表
 │   └─ endings/       结局定义
 │
 ├─ scenes/
@@ -135,14 +123,14 @@ res://
 │
 ├─ assets/
 │   ├─ art/           UI 边框、纸张背景、图标
-│   ├─ portraits/     立绘（按 race/job 分组，先放占位）
+│   ├─ portraits/     立绘（按 job 分组，先放占位）
 │   ├─ fonts/         中文主字体 + 数字字体
 │   ├─ audio/bgm/ · audio/sfx/
 │   └─ shaders/       羊皮纸、印章等 UI 效果
 │
 └─ tests/
-	├─ unit/          test_candidate_generator.gd / test_scorer.gd …
-	└─ fixtures/      固定种子的期望输出
+	├─ unit/          test_candidate.gd / test_scorer.gd …
+	└─ fixtures/      写死名单的期望输出
 ```
 
 ---
@@ -153,7 +141,7 @@ res://
 | --- | --- | --- |
 | `EventBus` | 全局信号中继。UI 与逻辑之间只通过信号通信，不互相持有引用 | 无 |
 | `GameState` | 一次「讨伐季」的全部运行时状态：当前天数、已录用名单、每日分数、剧情 flag、手册解锁项、当前队伍 | EventBus |
-| `DataDB` | 启动时扫描 `res://data/`，把所有 `.tres` 收进字典，提供 `get_job(id)` / `get_skill(id)` / `get_monster(id)` 等查询 | 无 |
+| `DataDB` | 启动时扫描 `res://data/`，把所有 `.tres` 收进字典，提供 `get_job(id)` / `get_candidate(id)` / `get_trait(id)` / `get_monster(id)` 等查询 | 无 |
 | `RngService` | 唯一随机源，可设种子；每日派生种子 `day_seed = run_seed ^ day_index`，保证同种子可复现整局 | 无 |
 | `SaveService` | 存档 / 读档 / 自动存档，只序列化 `RunState`，不写静态数据 | GameState |
 | `AudioService` | BGM 与音效播放、淡入淡出 | 无 |
@@ -166,55 +154,58 @@ res://
 
 ## 3. 数据模型（Resource 定义）
 
+> **与旧版的关键差异**：每天出场的候选人不再由生成器随机拼装，而是**全部直接写死**——
+> 策划在 `data/` 里逐条填好，`DayConfig.candidates` 指向当天固定名单；`RngService`
+> 不再参与造人，只服务战报等无关随机。
+
 ### 3.1 候选人
 
 ```gdscript
 class_name CandidateResource extends Resource
 @export var id: StringName
 @export var display_name: String
-@export var age: int
-@export var gender: StringName
-@export var race: RaceDef
-@export var job: JobDef
-@export var skill_ids: Array[StringName]        # 可用技能
-@export var skill_levels: Dictionary            # skill_id -> 0..100（自称值）
-@export var traits: Array[TraitDef]             # 性格 / 特殊癖好（对玩家可见部分）
-@export var claims: Array[ClaimResource]        # 简历与口述经历
-@export var portrait: Texture2D                 # TODO: 拼五官自动生成 Portrait
-@export var hidden: HiddenProfile               # 隐藏属性，UI 永不直接显示
+@export var strength: int = 0                   # 力量
+@export var intelligence: int = 0               # 智力
+@export var wisdom: int = 0                 # 感知
+@export var level: int = 1                      # 等级
+@export var job: JobDef                         # 职业
+@export var traits: Array[TraitDef] = []        # 特质（list，可含多项，也可为空）
+@export var resume: Array[ResumeEntry] = []     # 简历（见 §3.2）
+@export var portrait: Texture2D                 # 立绘（可选，UI 用）
 ```
 
-> 以下一段需要修正，根据游戏具体设计
+> 字段说明：
 
-
-/*
-
-`HiddenProfile` 是设计的核心，玩家永远看不到，只通过面试与战报间接感知：
-
-| 字段 | 含义 | 影响 |
+| 字段 | 含义 | 备注 |
 | --- | --- | --- |
-| `honesty` | 诚实度 −1..1 | 决定回答时的说谎概率与破绽多少 |
-| `true_skills` | 真实技能值 | 与自称值的差额 = 谎言严重程度 |
-| `courage` / `loyalty` / `teamwork` / `ego` / `greed` | 性格内核 | 战报事件触发、相性计算 |
-| `patience` | 追问容忍度 | 追问过度会翻脸、拒答，甚至当场退赛 |
-| `luck` | 运气修正 | 极端战报的开关 |
+| `strength` / `intelligence` / `wisdom` | 力量 / 智力 / 感知 | 玩家可见；对照简历描述的判断依据 |
+| `level` | 等级 | 与职业共同构成「常理上限」，是手册常识的锚点 |
+| `job` | 职业 | `JobDef`，见 §3.3 |
+| `traits` | 特质 | `Array[TraitDef]`，可含多项；相性计算输入（§6.4） |
+| `resume` | 简历 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问问题 + 追问回答 |
 
-*/
+> 真假不再由隐藏字段承载：玩家看到的 `strength / intelligence / wisdom / level / job / traits`
+> 就是全部数值，判断依据来自「属性与简历描述的落差」＋「手册常识」，见 §6.2 / §6.3。
 
-### 3.2 履历主张（说谎机制的载体）
+### 3.2 简历条目（ResumeEntry）
 
 ```gdscript
-class_name ClaimResource extends Resource
-enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
+class_name ResumeEntry extends Resource
 
-@export var topic: Topic
-@export var statement: String            # "我曾单独讨伐过三只食人魔。"
-@export var is_true: bool
-@export var exaggeration: float          # 0 真实 .. 1 完全造假（中间值为夸大）
-@export var verification: StringName     # 验证路径：手册条目 / 技能细节 / 数字矛盾
-@export var related_skill_ids: Array[StringName]
-@export var rebuttals: String     # 被追问时的回应
+## 简历上写的那句话，例如「我曾单独讨伐过三只食人魔。」
+@export_multiline var description: String = ""
+
+
+## 针对本条的追问，例如「你是怎么打败它们的？」
+@export_multiline var question: String = ""
+
+## 针对本条追问之后得到的回答，例如「那次是趁它们分食时逐个击破的。」
+@export_multiline var answer: String = ""
 ```
+
+简历由若干条目组成，**每条只有三样东西**：简历上写的那句话、追问问题、追问后得到的回答。
+面试交互见 §6.2：玩家点击某一条 → 先给出该条的 `question`，再展开对应的 `answer`；是否可信，由玩家结合
+`strength / intelligence / wisdom / level / job / traits` 与手册常识自行判断。
 
 
 
@@ -222,17 +213,35 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 
 | 类 | 关键字段 | 用途 |
 | --- | --- | --- |
-| `JobDef` | `id` / `skill_tree` / `stat_profile` / `counter_tags` | 剑士、法师、牧师 |
-| `SkillDef` | `id` / `damage_type`（近战/远程/魔法） / `tags` | 属性适配与克制判定 |
-| `TraitDef` | `id` / `category`（性格 or 癖好）/ `synergy_tags` | 相性计算 |
+| `JobDef` | `id` / `display_name` / `description` | 职业身份，简历展示 |
+| `TraitDef` | `id` / `category`（性格 or 癖好）/ `synergy_tags` / `description` | 特质展示与相性计算 |
 | `TraitInteractionTable` | `pairs: Array[{a, b, delta, note}]` | 相性 / 克制矩阵，单文件集中维护 |
 | `MonsterDef` | `id` / `tags`（群居、重甲、再生、畏光等） | 特殊事件与战报 |
-| `HandbookEntry` | `id` / `category` / `body`（BBCode）/ `unlock_condition` | 可随时翻阅的手册 |
-| `QuestionDef` | `id` / `topic` / `min_day` / `pressure` / `requires_skill` | 追问问题库 |
-| `DayConfig` | `day_index` / `candidate_count` / `slots` / `questions_per_candidate` / `unlocked_topics` / `event_pool` / `tutorial_step` | 每一天的规则与教程进度 |
+| `HandbookEntry` | `id` / `category` / `body`（BBCode）/ `unlock_condition` | 可随时翻阅的手册，判断简历真伪的常识依据 |
+| `DayConfig` | `day_index` / `candidates` / `slots` / `event_pool` / `tutorial_step` | 每一天写死的候选人名单与规则（见 §3.4） |
 | `DailyEventDef` | `id` / `monster` / `announce_text` / `bonus_rules` | 记者报道的特殊情况 |
 | `NarrativeRule` | `when`（条件）/ `template`（占位符文案）/ `weight` / `priority` | 战报叙事生成 |
 | `RunState` | 见第 7 节 | 存档根结构 |
+
+> 随旧机制一并移除：`HiddenProfile`、`ClaimResource`、`QuestionDef`（追问题库）、`SkillDef`
+> （技能定义）。追问不再查题库：问句与答句都直接读简历条目自带的 `question` / `answer`。
+
+### 3.4 每日配置（DayConfig）
+
+「每天出现的人直接写死」的落点就在这里：`candidates` 是当日固定名单，数组顺序即出场顺序。
+
+```gdscript
+class_name DayConfig extends Resource
+
+@export var day_index: int = 1                          # 第几天，1..GameConfig.TOTAL_DAYS
+@export var candidates: Array[CandidateResource] = []   # 当日候选人，写死；size() 即当日人数
+@export var slots: int = 3                              # 队伍名额，挑满即进入 BattleReport
+@export var event_pool: Array[StringName] = []          # 当日事件池（DailyEventDef.id）
+@export var tutorial_step: int = 0                      # 教程进度标识，0 = 本日无教程
+```
+
+> `candidates.size()` 取代旧的 `candidate_count`；`questions_per_candidate` / `unlocked_topics`
+> 随追问题库一起删除。候选人既可直接内嵌在 `day_XX.tres` 里，也可引用 `data/candidates/*.tres`。
 
 ---
 
@@ -246,7 +255,7 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 | `interview.tscn` | 在day_loop下，用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | — |
 | `interview_ui.tscn` | 在 interview 下，用于展示面试中的 UI，包括暂停、设置按钮等系统向 UI 和候选人列表、今日事件等 | — |
 | `interviewee.tscn` | 在 interview 下，管理面试者立绘、管理表情差分、对话框 | — |
-| `resume.tscn` | 在 interview 下，候选者的完整简历：基础信息、自称技能、经历、癖好 | — |
+| `resume.tscn` | 在 interview 下，候选者的完整简历：基础信息、三项属性、等级、职业、特质与简历条目 | — |
 | `resume_token.tscn` | 在 resume 下，单个张简历词条以及相关的信息（复用控件） | `selected` |
 | `handbook_overlay.tscn` | 在 interview 下，随时可呼出的手册浮层，按关键词检索 | `entry_bookmarked` |
 | `team_builder.tscn` | 在 day_loop 下，用于收容从通过者中挑满名额组队这一过程的相关场景 | `team_submitted` |
@@ -291,7 +300,7 @@ enum Topic { JOB, SKILL, EXPERIENCE, PERSONALITY, QUIRK }
 signal day_started(day_index: int)
 signal day_phase_changed(phase: int)
 signal candidate_opened(candidate_id: StringName)
-signal question_asked(candidate_id: StringName, question_id: StringName)
+signal resume_entry_asked(candidate_id: StringName, entry_index: int)
 signal verdict_issued(candidate_id: StringName, passed: bool)
 signal team_submitted(member_ids: Array[StringName])
 signal battle_report_ready(report: BattleReport)
@@ -304,15 +313,17 @@ signal run_finished(ending_id: StringName)
 
 ## 6. 核心机制的实现落点
 
-### 6.1 候选人生成
-`candidate_generator.gd` 依据 `DayConfig` + `RngService` 一次性生成当日全部候选人，写入 `GameState`。
-同一天刷新不会重掷（种子固定），读档后也完全一致。
+### 6.1 候选人出场（写死）
+`DayConfig.candidates` 直接把当天全部候选人写死（`data/days/day_XX.tres`），数组顺序即出场顺序。
+`DataDB` 读到当天配置后交给 `GameState`；刷新、读档拿到的都是同一份名单。
 
 ### 6.2 面试与追问
 `interview_session.gd` 管理单个候选人的问答循环：
 
-1. 展示简历（`claims` 中的自称内容）；
-2. 玩家可以根据简历上的内容进行追问，调用简历当前词条中写好的追问问题和回答
+1. 展示简历（逐条 `ResumeEntry.description`）；
+2. 玩家点击某一条追问，先显示该条的 `ResumeEntry.question`，再展开对应的 `ResumeEntry.answer`；
+3. 玩家对照候选人的 `strength / intelligence / wisdom / level / job / traits` 与手册常识，
+   自行判断这条描述与回答是否可信。
 
 ### 6.3 手册（玩家能力锚点）
 `handbook_overlay` 是全局浮层，任何阶段都能呼出。`data/handbook/` 的条目承担两件事：
@@ -328,8 +339,8 @@ signal run_finished(ending_id: StringName)
 `combat_resolver.gd` 计算基础结果，`narrative_engine.gd` 用 `NarrativeRule` 把结果翻译成人话：
 
 ```gdscript
-# data/narrative/lie_exposed.tres（示意）
-when     = "member.honesty < -0.3 and member.true_power < member.claimed_power * 0.5"
+# data/narrative/claim_exposed.tres（示意）
+when     = "member.level < 3 and member.strength + member.intelligence + member.wisdom < 30"
 template = "{actor} 在简历上说谎了，是个货真价实的水货，他把大家携带的装备全都搞坏了。"
 weight   = 1.0
 priority = 10
@@ -365,7 +376,7 @@ priority = 10
   "scores": [72, 68, 85],
   "roster": ["c_0012", "c_0031"],
   "flags": { "liar_hired": 3, "team_broke": 1 },
-  "handbook_unlocked": ["monster.ogre", "skill.sword_basic"],
+  "handbook_unlocked": ["monster.ogre", "job.sword"],
   "phase": "TEAM_BUILD"
 }
 ```
@@ -378,7 +389,7 @@ priority = 10
 
 - 场景与脚本：`snake_case.tscn` / `snake_case.gd`，同基名成对出现。
 - 自定义 Resource 类：`class_name` 用 `PascalCase`，文件名用 `snake_case`。
-- ID 统一 `StringName`，命名空间化：`job.sword`、`trait.ego`、`monster.ogre`、`skill.fireball`。
+- ID 统一 `StringName`，命名空间化：`job.sword`、`trait.ego`、`monster.ogre`、`candidate.c_0001`。
 - 常量 `UPPER_SNAKE_CASE`；全局配置放 `GameConfig`（`TOTAL_DAYS = 10` 等）。
 - 目录内不出现空场景；每个 `.tscn` 只做一件事。
 - `.godot/` 已在 `.gitignore` 中；`*.import` 由 Godot 生成，若版本间产生噪音，可在 `.gitignore` 追加 `*.import`。
@@ -390,7 +401,7 @@ priority = 10
 | 阶段 | 目标 | 验收标准 |
 | --- | --- | --- |
 | M0 骨架 | autoload 齐备、`SceneRouter` 可跑通 主菜单 → 每日循环（空壳） | 能连续走完 10 天空流程 |
-| M1 候选人 | 数据模型 + 生成器 + 简历卡 UI | 固定种子能复现同一批候选人 |
+| M1 候选人 | 数据模型 + 写死的每日名单 + 简历卡 UI | 每天按名单稳定出场同一批候选人 |
 | M2 面试 | 追问、回答、手册、判定 | 能靠手册推理戳破一个谎 |
 | M3 组队与战报 | 相性计算、战斗结算、叙事引擎 | 出现四种典型战报文案 |
 | M4 评分结局 | 每日评分、累计分、结局判定 | 好/坏两条结局都能打出来 |
@@ -420,7 +431,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | --- | --- |
 | `EventBus` | §5 全部信号；另加 `run_started` / `run_loaded` / `candidate_hired` / `save_written` / `save_loaded` / `scene_change_started` / `scene_changed` / `volume_changed`。只有信号，无状态 |
 | `GameState` | `start_new_run(seed)` / `apply_run_state(state)` / `clear_run()`；`get_day()` / `advance_day()` / `is_last_day()`；`get_phase()` / `set_phase(DayPhase.Phase)`；`record_day_score()` / `get_total_score()`；`hire()` / `issue_verdict()` / `get_passed_ids()`；`get_flag()` / `set_flag()` / `add_flag()`；`unlock_handbook_entry()`；`set_current_candidates()` / `set_current_team()` |
-| `DataDB` | `get_job/skill/race/trait/monster/handbook_entry/question/event(id)`、`get_day_config(day)`、`get_narrative_rules()`、`get_interaction_table()`、`search_handbook(keyword)`、`get_ids(kind)` / `count(kind)` / `reload()` |
+| `DataDB` | `get_job/candidate/race/trait/monster/handbook_entry/event(id)`、`get_day_config(day)`、`get_narrative_rules()`、`get_interaction_table()`、`search_handbook(keyword)`、`get_ids(kind)` / `count(kind)` / `reload()` |
 | `RngService` | `start_run(seed)`、`day_seed(day)`、`day_rng(day)`、`stream(name)`；便捷封装 `randi_in` / `randf_in` / `chance` / `pick` / `pick_many` / `shuffled` / `weighted_pick` |
 | `SaveService` | `autosave()` / `load_auto()`、`save_to_slot(n)` / `load_from_slot(n)`、`has_any_save()` / `has_slot(n)` / `delete_slot(n)` / `list_slots()` / `peek(path)`；`to_dict(RunState)` / `from_dict(Dictionary)` |
 | `AudioService` | `play_bgm()` / `stop_bgm()`、`play_sfx()`、`set_master_volume()` / `set_bgm_volume()` / `set_sfx_volume()` / `set_volumes()`；BGM/SFX 总线缺失时自动创建 |

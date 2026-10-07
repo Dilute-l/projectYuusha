@@ -3,7 +3,7 @@ extends Node
 ## GameState —— 一次「讨伐季」的全部运行时状态（ARCHITECTURE.md §2）。
 ##
 ## 关键纪律（§2 尾注）：**GameState 只存状态，所有规则放在 `scripts/core/` 里以静态函数实现**。
-## 这样「同一种子 → 同一份候选人 → 同一个战报」可以被测试完整复现。
+## 这样「同一种子 → 同一个战报」可以被测试完整复现。
 ##
 ## 可存档部分全部落在 `run_state: RunState`（§7 的存档根结构）；
 ## 当日候选人、当前队伍属于「本日过程量」，不入存档，读档后按种子重放即可得到。
@@ -11,7 +11,7 @@ extends Node
 ## 存档根结构（§7）。永远不为 null，便于菜单 / 调试在没有开局时安全访问
 var run_state: RunState = null
 
-## 当日候选人（由 candidate_generator 写入，本日过程量）
+## 当日候选人（由 DayConfig.candidates 载入，本日过程量）
 var current_candidates: Array[CandidateResource] = []
 
 ## 当前队伍（组队阶段挑满名额）
@@ -236,6 +236,18 @@ func is_handbook_unlocked(entry_id: StringName) -> bool:
 # ---------------------------------------------------------------------------
 # 当日候选人 / 当前队伍（本日过程量，不入存档）
 # ---------------------------------------------------------------------------
+
+
+## 从当天 DayConfig 载入写死的候选人名单（§6.1）。
+## 返回是否载入成功；data/days 中缺当天配置时清空并返回 false。
+func load_day_candidates(day_index: int = -1) -> bool:
+	var target_day := day_index if day_index > 0 else get_day()
+	var config := DataDB.get_day_config(target_day)
+	if config == null:
+		set_current_candidates([])
+		return false
+	set_current_candidates(config.candidates)
+	return true
 
 
 ## 写入当日候选人并广播 day_started 之外的 UI 刷新由订阅方自行处理

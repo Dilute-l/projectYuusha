@@ -5,10 +5,10 @@ extends Resource
 ## 承担两件事：给出魔物弱点，同时给出常识基线
 ## （例如「初级剑士不可能单人讨伐食人魔」），让撒谎能被推理而不是靠猜。
 
-## 命名空间化 ID，例如 monster.ogre / skill.sword_basic
+## 命名空间化 ID，例如 monster.ogre / job.sword
 @export var id: StringName
 
-## 分类，例如 monster / skill / rule
+## 分类，例如 monster / job / rule
 @export var category: StringName
 
 @export var title: String

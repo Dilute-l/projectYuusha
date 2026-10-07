@@ -6,7 +6,7 @@ extends Resource
 ## 规则按 priority 排序、weight 加权抽取，避免同一天重复同一模板。
 
 ## 条件表达式，例如：
-## "member.honesty < -0.3 and member.true_power < member.claimed_power * 0.5"
+## "member.level < 3 and member.strength + member.intelligence + member.wisdom < 30"
 @export_multiline var when: String = ""
 
 ## 占位符文案，例如：

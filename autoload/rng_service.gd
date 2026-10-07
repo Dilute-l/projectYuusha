@@ -3,10 +3,10 @@ extends Node
 ## RngService —— 唯一随机源（ARCHITECTURE.md §2）。
 ##
 ## 纪律：**玩法内任何随机都必须走这里**，不允许各脚本自己 `RandomNumberGenerator.new().randomize()`，
-## 否则「同种子 → 同一份候选人 → 同一个战报」无法复现。
+## 否则「同种子 → 同一个战报」无法复现。
 ##
 ## 每日派生种子固定为 `day_seed = run_seed ^ day_index`（§2 / RunState.run_seed 注释）。
-## 除每日流之外的其他用途（姓名池、事件池、叙事抽模板…）走命名流 `stream(name)`，
+## 除每日流之外的其他用途（事件池、叙事抽模板…）走命名流 `stream(name)`，
 ## 各自的种子由 run_seed 与流名字派生，互不干扰：多抽一个姓名不会影响战报结果。
 
 ## 本局种子。0 也合法，只是一个普通种子
@@ -46,7 +46,7 @@ func day_seed(day_index: int) -> int:
 	return run_seed ^ day_index
 
 
-## 当日主随机流：候选人生成等「当天一次性」的事情用它
+## 当日主随机流：战报结算等「当天一次性」的事情用它
 func day_rng(day_index: int) -> RandomNumberGenerator:
 	var stream_name := StringName("day:%d" % day_index)
 	if not _streams.has(stream_name):

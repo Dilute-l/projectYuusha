@@ -23,7 +23,7 @@ extends Resource
 ## 剧情 flag，例如 { "liar_hired": 3, "team_broke": 1 }
 @export var flags: Dictionary = {}
 
-## 已解锁手册条目 ID，例如 ["monster.ogre", "skill.sword_basic"]
+## 已解锁手册条目 ID，例如 ["monster.ogre", "job.sword"]
 @export var handbook_unlocked: Array[StringName] = []
 
 ## 当前阶段，取值对应 DayPhase，例如 "TEAM_BUILD"

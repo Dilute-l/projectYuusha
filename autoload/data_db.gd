@@ -3,7 +3,7 @@ extends Node
 ## DataDB —— 静态数据库（ARCHITECTURE.md §2）。
 ##
 ## 启动时扫描 `res://data/`，把所有 `.tres` / `.res` 按**一级子目录**归类收进字典，
-## 提供 `get_job(id)` / `get_skill(id)` / `get_monster(id)` 等查询。
+## 提供 `get_job(id)` / `get_candidate(id)` / `get_monster(id)` 等查询。
 ##
 ## 纪律：**只读静态数据，不持有任何运行时状态**。运行时状态一律走 GameState。
 ## 目录名即数据类别（data/jobs/ → jobs，data/monsters/ → monsters …），
@@ -23,16 +23,14 @@ var _loaded: bool = false
 ## 回退 id 前缀：目录名 -> 单数前缀，例如 jobs -> job（job.fighter）
 const _SINGULAR: Dictionary = {
 	&"jobs": "job",
-	&"skills": "skill",
 	&"races": "race",
 	&"traits": "trait",
+	&"candidates": "candidate",
 	&"monsters": "monster",
 	&"handbook": "handbook",
-	&"questions": "question",
 	&"narrative": "narrative",
 	&"days": "day",
 	&"events": "event",
-	&"names": "name",
 	&"endings": "ending",
 }
 
@@ -129,8 +127,8 @@ func get_job(id: StringName) -> JobDef:
 	return get_resource(&"jobs", id) as JobDef
 
 
-func get_skill(id: StringName) -> SkillDef:
-	return get_resource(&"skills", id) as SkillDef
+func get_candidate(id: StringName) -> CandidateResource:
+	return get_resource(&"candidates", id) as CandidateResource
 
 
 func get_race(id: StringName) -> RaceDef:
@@ -147,10 +145,6 @@ func get_monster(id: StringName) -> MonsterDef:
 
 func get_handbook_entry(id: StringName) -> HandbookEntry:
 	return get_resource(&"handbook", id) as HandbookEntry
-
-
-func get_question(id: StringName) -> QuestionDef:
-	return get_resource(&"questions", id) as QuestionDef
 
 
 func get_event(id: StringName) -> DailyEventDef:

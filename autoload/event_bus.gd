@@ -23,8 +23,8 @@ signal day_phase_changed(phase: int)
 ## 打开某位候选人的简历
 signal candidate_opened(candidate_id: StringName)
 
-## 玩家提出了一个追问
-signal question_asked(candidate_id: StringName, question_id: StringName)
+## 玩家追问了简历上的某一条目（entry_index 为该候选人 resume 的下标）
+signal resume_entry_asked(candidate_id: StringName, entry_index: int)
 
 ## 对某位候选人给出录用判定
 signal verdict_issued(candidate_id: StringName, passed: bool)
