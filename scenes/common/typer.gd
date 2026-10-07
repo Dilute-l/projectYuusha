@@ -13,15 +13,61 @@ extends Label
 ##
 ## 最小用法（把本脚本挂到对话框里的正文 Label 上）：
 ##     var typer = $Dialoguer/Dialogue          # 该节点已挂本脚本
-##     typer.char_duration = 0.03               # 固定间隔
 ##     typer.load_dialogue("second")            # 从 res://data/dialogue.json 取 id 为 second 的那段
+##     # 间隔由 JSON 决定；也可以在 JSON 里没写时手动指定：
+##     # typer.char_duration = typer.DEFAULT_CHAR_DURATION
 ##     typer.dialogue_finished.connect(_on_done)
 ##     typer.start_dialogue()
 ##
 ## 也可以直接实例化 scenes/common/typer.tscn（根节点即挂本脚本的 Label）。
 
-## 单个字间隔上限（秒）
-@export_range(0.001, 1.0, 0.001, "suffix:s") var char_duration: float = 0.03
+## 默认的字间隔（秒）。节点上的 `char_duration` 初值即此值；
+## JSON 里没写间隔时也回退到它。
+const DEFAULT_CHAR_DURATION: float = 0.03
+
+## 默认的逐字音效（config 里没写 sound 时用它）
+const DEFAULT_SOUND: StringName = &"normal"
+
+## 音效目录：assets/sound/text/
+const SOUND_DIR: String = "res://assets/sound/text"
+
+## 音效名 -> 文件名（不含扩展名）。显示名与文件名不一致时在这里映射。
+const SOUND_FILES: Dictionary = {
+	&"normal": "normal",
+	&"su": "susie",
+}
+
+# ---------------------------------------------------------------------------
+# 动作语法：不发声的字符（SILENT_CHAR）
+# ---------------------------------------------------------------------------
+#
+# 逐字音效不应该对每个字符都响：标点、空白、数字本身没有发音，
+# 给它们配音效会变成「哔哩哔啦」的杂音。下面三组常量就是「不发声」的字符集合。
+#
+# 未在 config 里指定时使用这三组的并集。config 里可以覆盖：
+#   "silent": "，。！？"        替换为自定义集合（那就只有这些不发声）
+#   "extra_silent": "……——"     在三组默认之外再追加
+#
+# 另外空字符串 "" 是置空标记：会把静音集合清空（等于「每个字符都发声」）。
+
+## 空白：空格、制表、换行本身都是「不出声」的
+const SILENT_WHITESPACE: String = " \t\r\n\u3000"
+
+## 标点：ASCII 标点、CJK 标点、以及常见的中文引号/书名号等
+const SILENT_PUNCTUATION: String = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~" \
+	+ "，。、！？；：「」『』（）〔〕【】《》〈〉…—～·　" \
+	+ "“”‘’" \
+	+ "！？。，、；：（）《》"
+
+## 数字：阿拉伯数字与全角数字
+const SILENT_DIGITS: String = "0123456789０１２３４５６７８９"
+
+## 默认静音集合（三组的并集）。运行时真正用的是 _silent_chars。
+const DEFAULT_SILENT_CHARS: String = SILENT_WHITESPACE + SILENT_PUNCTUATION + SILENT_DIGITS
+
+## 单个字间隔上限（秒）。节点的初始值 = DEFAULT_CHAR_DURATION；
+## 可在 Inspector 里调，也可由 JSON 按段/按行覆盖（见 load_dialogue 说明）。
+@export_range(0.001, 1.0, 0.001, "suffix:s") var char_duration: float = DEFAULT_CHAR_DURATION
 
 ## 单帧可累计的最大时间（秒）。超过此值的 delta 会被截断，见 _process 说明。
 @export_range(0.0, 2.0, 0.01, "suffix:s") var max_frame_delta: float = 0.1
@@ -32,8 +78,11 @@ extends Label
 ## 进入树后自动开始播放（便于单独 F6 运行本场景调试）
 @export var autostart: bool = false
 
-## 一行打完后自动接着打下一行；false 时需由调用方调 next_line()
-@export var auto_next: bool = true
+## 打开/关闭逐字音效
+@export var sound_enabled: bool = true
+
+## 逐字音效音量（dB，相对基准的微调）
+@export_range(-40.0, 12.0, 0.5, "suffix:dB") var sound_volume_db: float = 0.0
 
 ## 整段对话播完
 signal dialogue_finished
@@ -49,6 +98,31 @@ var lines: Array[Dictionary] = []
 
 ## 文件里所有对话：id -> 行数组
 var _conversations: Dictionary = {}
+
+## 每段对话自己的字间隔（秒）：id -> float。没写的段回退到 char_duration。
+var _segment_char_durations: Dictionary = {}
+
+## 每段对话自己的逐字音效名：id -> StringName。没写的段回退到 DEFAULT_SOUND。
+var _segment_sounds: Dictionary = {}
+
+## 每段对话自己的静音字符集合：id -> String。没写的段回退到 DEFAULT_SILENT_CHARS。
+var _segment_silents: Dictionary = {}
+
+## 当前这段对话的基准字间隔（段级或默认）。行级覆盖只临时生效，每行开始时复位到它。
+var _base_char_duration: float = DEFAULT_CHAR_DURATION
+
+## 当前这段对话用的音效名（config.sound，缺省为 DEFAULT_SOUND）
+var char_sound: StringName = DEFAULT_SOUND
+
+## 当前生效的静音字符集合（动作语法：这些字符不发声）。
+## 由 load_dialogue() 按 config 的 silent / extra_silent 决定，缺省为 DEFAULT_SILENT_CHARS。
+var _silent_chars: String = DEFAULT_SILENT_CHARS
+
+## 音效资源路径缓存：音效名 -> res:// 路径
+var _sound_paths: Dictionary = {}
+
+## 已加载的音效资源缓存：路径 -> AudioStream
+var _sound_cache: Dictionary = {}
 
 ## 当前行号；-1 表示还没开始
 var current_index: int = -1
@@ -82,9 +156,17 @@ func _process(delta: float) -> void:
 	# delta 会是正常帧的几十倍（实测约 0.13s），不截断的话此处会一次蹦出好几个字，
 	# 看起来像「没有逐字」。截断相当于把这类异常帧按最多 max_frame_delta 计。
 	_char_timer += _clamp_frame_delta(delta)
+	# 一帧内可能推进多个字（掉帧/预热），但音效每帧最多响一次：
+	# 否则同一瞬间叠好几个相同音效，听感上只会变成噪音。
+	# 另外只有「会发声」的字符才算数——标点/空白/数字等静音字符不触发音效，
+	# 这样一句话里全是标点时也不会响。
+	var voiced := false
 	while is_typing and _char_timer >= char_duration:
 		_char_timer -= char_duration
-		_reveal_next_char()
+		if _reveal_next_char():
+			voiced = true
+	if voiced:
+		_play_char_sound()
 
 
 ## 把异常大的帧间隔截断到 max_frame_delta（0 表示不截断）
@@ -116,6 +198,33 @@ func _clamp_frame_delta(delta: float) -> float:
 ##
 ## 行的字段：文本取 "text"，说话人取 "speaker_name"；"id" 决定归属。
 ## 也接受纯字符串简写行（归入 id ""）。
+##
+## 字间隔（char_duration，单位秒）可以从两个层级指定，粒度细的优先：
+##
+##   段级 —— 在段里放一个带 "config" 的对象（位置不限，建议放段首）：
+##       { "id": "second", "config": { "char_duration": 0.02 } }
+##       顶层对象写法同理： { "second": [ { "config": { "char_duration": 0.02 } }, ... ] }
+##
+##   行级 —— 直接写在某一行的对象里，只影响该行：
+##       { "id": "second", "text": "...", "char_duration": 0.08 }
+##
+## 都没写时使用节点上的 `char_duration`（初值 = DEFAULT_CHAR_DURATION）。
+## 每次 load_dialogue() 都会按所选段重新设定间隔，所以两段对话可以不同速。
+##
+## 逐字音效（sound）同样在段级 config 里指定，每打出一个字响一次：
+##
+##   { "id": "second", "config": { "char_duration": 0.02, "sound": "su" } }
+##
+## 音效名 -> 文件的映射见 SOUND_FILES： "normal" -> normal.wav（默认）、"su" -> susie.wav。
+## 没写 sound 的段用 DEFAULT_SOUND。可用 typer.sound_enabled = false 整体关掉。
+##
+## 动作语法：静音字符（SILENT_CHAR）。标点 / 空白 / 数字默认**不发声**
+## （它们本来就「没有发音」，配音效只会变成杂音），但仍然按间隔正常显示。
+## 默认集合见 DEFAULT_SILENT_CHARS，可在 config 里覆盖：
+##
+##   { "id": "x", "config": { "silent": "，。！？" } }       替换为自定义集合
+##   { "id": "x", "config": { "extra_silent": "……——" } }    在默认集合外追加
+##   { "id": "x", "config": { "silent": "" } }               明确置空（每个字符都发声）
 func load_dialogue(id: String = "") -> bool:
 	lines.clear()
 	current_index = -1
@@ -143,6 +252,15 @@ func load_dialogue(id: String = "") -> bool:
 	if lines.is_empty():
 		push_warning("[Typer] 对话「%s」里没有任何行" % chosen)
 		return false
+
+	# 应用这一段的字间隔：JSON 里写了就用它，没写则回到默认间隔。
+	var segment_duration := _as_positive_float(_segment_char_durations.get(chosen))
+	_base_char_duration = segment_duration if segment_duration > 0.0 else DEFAULT_CHAR_DURATION
+	char_duration = _base_char_duration
+	# 同理应用这一段的逐字音效：写了 sound 就用它，没写则用默认音效。
+	char_sound = _segment_sounds.get(chosen, DEFAULT_SOUND)
+	# 以及这一段的静音字符集合（动作语法 SILENT_CHAR）。
+	_silent_chars = _segment_silents.get(chosen, DEFAULT_SILENT_CHARS)
 	return true
 
 
@@ -175,7 +293,14 @@ func _load_all() -> bool:
 
 	if parsed is Array:
 		# 行数组：每行带 "id" 时按 id 归成多段；都不带 id 时整份算一段
-		_conversations = _group_by_id(parsed, true)
+		var grouped := _group_by_id(parsed, true)
+		_conversations = grouped.get("lines", {})
+		for key in grouped.get("durations", {}).keys():
+			_segment_char_durations[key] = grouped["durations"][key]
+		for key in grouped.get("sounds", {}).keys():
+			_segment_sounds[key] = grouped["sounds"][key]
+		for key in grouped.get("silents", {}).keys():
+			_segment_silents[key] = grouped["silents"][key]
 		return not _conversations.is_empty()
 
 	if parsed is Dictionary:
@@ -186,15 +311,23 @@ func _load_all() -> bool:
 			if not one.is_empty():
 				_conversations[""] = one
 			return not _conversations.is_empty()
-		# 嵌套写法：{ "second": [ 行... ], ... }
+		# 嵌套写法：{ "second": [ 配置?, 行... ], ... }
 		for key in dict.keys():
 			var value: Variant = dict[key]
 			if value is Array:
-				var conv := _normalize_lines(value)
+				var seg := _normalize_segment(value)
+				var conv: Array[Dictionary] = seg["lines"]
 				if conv.is_empty():
 					push_warning("[Typer] 对话「%s」为空或没有可用行，已跳过" % key)
 					continue
-				_conversations[String(key)] = conv
+				var name := String(key)
+				_conversations[name] = conv
+				if seg["char_duration"] > 0.0:
+					_segment_char_durations[name] = seg["char_duration"]
+				if seg["sound"] != DEFAULT_SOUND:
+					_segment_sounds[name] = seg["sound"]
+				if seg["silent"] != DEFAULT_SILENT_CHARS:
+					_segment_silents[name] = seg["silent"]
 			else:
 				push_warning("[Typer] 对话「%s」不是数组，已跳过" % key)
 		if _conversations.is_empty():
@@ -205,10 +338,32 @@ func _load_all() -> bool:
 	return false
 
 
-## 把「每行带 id」的行数组按 id 归成若干段对话
+## 把「每行带 id」的行数组按 id 归成若干段对话。
+## 返回 { "lines": { id -> Array[Dictionary] },
+##        "durations": { id -> float }, "sounds": { id -> StringName } }。
+## durations / sounds 只包含该段显式写了 config 对应项的条目。
 func _group_by_id(raw_lines: Array, use_id: bool) -> Dictionary:
 	var grouped: Dictionary = {}
+	var durations: Dictionary = {}
+	var sounds: Dictionary = {}
+	var silents: Dictionary = {}
 	for entry in raw_lines:
+		if entry is Dictionary and (entry as Dictionary).has("config"):
+			# 段级配置。id 决定它归哪一段；没写 id 则视为全局默认段（""）
+			var cfg_id := String((entry as Dictionary).get("id", ""))
+			if use_id:
+				var cfg := _read_segment_config(entry)
+				var cfg_duration := _as_positive_float(cfg.get("char_duration"))
+				if cfg_duration > 0.0:
+					durations[cfg_id] = cfg_duration
+				var cfg_sound := _read_config_sound(cfg)
+				if cfg_sound != DEFAULT_SOUND:
+					sounds[cfg_id] = cfg_sound
+				var cfg_silent := _resolve_silent_chars(cfg)
+				if cfg_silent != DEFAULT_SILENT_CHARS:
+					silents[cfg_id] = cfg_silent
+			continue
+
 		var line: Dictionary
 		var id := ""
 		if entry is Dictionary:
@@ -232,14 +387,16 @@ func _group_by_id(raw_lines: Array, use_id: bool) -> Dictionary:
 			conv = [] as Array[Dictionary]
 		conv.append(line)
 		grouped[id] = conv
-	return grouped
+	return { "lines": grouped, "durations": durations, "sounds": sounds, "silents": silents }
 
 
-## 把 JSON 里的行数组规整成 [{ speaker_name, text }, ...]
+## 把 JSON 里的行数组规整成 [{ speaker_name, text, char_duration? }, ...]
 func _normalize_lines(raw_lines: Array) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for entry in raw_lines:
 		if entry is Dictionary:
+			if (entry as Dictionary).has("config"):
+				continue  # 段级配置由 _normalize_segment / _group_by_id 处理
 			out.append(_normalize_line(entry))
 		elif entry is String:
 			# 纯字符串简写：["第一句", "第二句"]
@@ -247,6 +404,62 @@ func _normalize_lines(raw_lines: Array) -> Array[Dictionary]:
 		else:
 			push_warning("[Typer] 有一行不是对象或字符串，已跳过")
 	return out
+
+
+## 规整一段对话：
+## { "lines": Array[Dictionary], "char_duration": float,
+##   "sound": StringName, "silent": String }
+## char_duration 为 0.0 表示没有单独指定间隔；sound 缺省 DEFAULT_SOUND；
+## silent 为本段生效的静音字符集合（缺省 DEFAULT_SILENT_CHARS）。
+func _normalize_segment(raw_lines: Array) -> Dictionary:
+	var cfg := _read_segment_config_array(raw_lines)
+	return {
+		"lines": _normalize_lines(raw_lines),
+		"char_duration": _as_positive_float(cfg.get("char_duration")),
+		"sound": _read_config_sound(cfg),
+		"silent": _resolve_silent_chars(cfg),
+	}
+
+
+## 在一段的行数组里找段级配置。约定：任何带 "config" 键的对象都是配置，
+## 不当作对话行。推荐写在段首，但写在任意位置都能被识别。
+func _read_segment_config_array(raw_lines: Array) -> Dictionary:
+	for entry in raw_lines:
+		if entry is Dictionary and (entry as Dictionary).has("config"):
+			return _read_segment_config(entry)
+	return {}
+
+
+## 取出一条段的 config 对象本体（未写则返回空字典）。
+##   { "config": { "char_duration": 0.02, "sound": "su" } }
+## 也接受 { "config": 0.02 } 这种只写间隔的简写（等价于 char_duration）。
+func _read_segment_config(entry: Dictionary) -> Dictionary:
+	var cfg: Variant = entry.get("config")
+	if cfg is Dictionary:
+		return cfg as Dictionary
+	if cfg is float or cfg is int:
+		return { "char_duration": cfg }
+	return {}
+
+
+## 从 config 里取音效名；未写或非法则回退到 DEFAULT_SOUND
+func _read_config_sound(cfg: Dictionary) -> StringName:
+	var raw: Variant = cfg.get("sound")
+	if raw == null:
+		return DEFAULT_SOUND
+	var name := StringName(str(raw).strip_edges())
+	if name == &"":
+		return DEFAULT_SOUND
+	return name
+
+
+## 把 JSON 数字转成正的 float；缺失或非法一律返回 0.0（表示「未指定」）
+func _as_positive_float(value: Variant) -> float:
+	if value is float or value is int:
+		var f := float(value)
+		if f > 0.0:
+			return f
+	return 0.0
 
 # ---------------------------------------------------------------------------
 # 播放控制
@@ -278,6 +491,15 @@ func start_line(index: int) -> void:
 	if _speaker_label != null:
 		_speaker_label.text = String(line.get("speaker_name", ""))
 
+	# 每行开始先把间隔复位到本段的基准值，避免上一行的行级覆盖「漏」到下一行
+	char_duration = _base_char_duration
+	# 本行若单独写了 char_duration，则只在这一行临时覆盖
+	var line_duration: Variant = line.get("char_duration")
+	if line_duration is float or line_duration is int:
+		var ld := float(line_duration)
+		if ld > 0.0:
+			char_duration = ld
+
 	# 一次性写入完整文本，再用 visible_characters 控制露出进度
 	text = _full_text
 	visible_characters = 0
@@ -308,6 +530,21 @@ func skip_line() -> void:
 		_finish_line()
 
 
+## 当前是否正处于一段对话中（正在逐字，或已打完本行、等待推进）
+func is_active() -> bool:
+	return current_index >= 0
+
+
+## 玩家点击时的默认推进：
+##   本行还在逐字 → 立刻显示完；
+##   本行已打完   → 进入下一行（最后一行则结束整段并发 dialogue_finished）
+func advance() -> void:
+	if is_typing:
+		skip_line()
+	else:
+		next_line()
+
+
 ## 当前行的完整文本
 func get_full_text() -> String:
 	return _full_text
@@ -328,10 +565,90 @@ var _speaker_label: Label = null
 # ---------------------------------------------------------------------------
 
 
-func _reveal_next_char() -> void:
+## 露出下一个字。返回「这个字是否应该发声」（静音字符返回 false）。
+## 注意：静音字符仍然会按间隔逐个露出，只是不发声——显示速度不变。
+func _reveal_next_char() -> bool:
+	var index := visible_characters
+	var char := _char_at(index)
 	visible_characters += 1
 	if visible_characters >= _full_text.length():
 		_finish_line()
+	return is_voiced_char(char)
+
+
+## 取第 index 个字符（越界返回空串）。
+## visible_characters 的口径就是「已显示几个字符」，所以它正好是下一个要显示的字符下标。
+func _char_at(index: int) -> String:
+	if index < 0 or index >= _full_text.length():
+		return ""
+	return _full_text[index]
+
+
+## 该字符是否应该发声：默认音效开启、且不在静音集合里
+func is_voiced_char(char: String) -> bool:
+	if not sound_enabled or char.is_empty():
+		return false
+	return not is_silent_char(char)
+
+
+## 该字符是否属于静音集合（动作语法 SILENT_CHAR）
+func is_silent_char(char: String) -> bool:
+	return _silent_chars.contains(char)
+
+
+## 由 config 决定本段的静音字符集合（动作语法）。
+## 没写 silent / extra_silent 时用 DEFAULT_SILENT_CHARS。
+func _resolve_silent_chars(cfg: Dictionary) -> String:
+	var has_silent: bool = cfg.has("silent")
+	var has_extra: bool = cfg.has("extra_silent")
+	if not has_silent and not has_extra:
+		return DEFAULT_SILENT_CHARS
+	var result: String = String(cfg.get("silent", "")) if has_silent else DEFAULT_SILENT_CHARS
+	if has_extra:
+		result += String(cfg.get("extra_silent", ""))
+	return result
+
+
+## 播放一次逐字音效。走 AudioService 的 SFX 池（8 路，自动抢占），
+## 所以不需要自己管理 AudioStreamPlayer。
+func _play_char_sound() -> bool:
+	if not sound_enabled:
+		return false
+	var stream := _resolve_sound(char_sound)
+	if stream == null:
+		return false
+	return AudioService.play_sfx(stream, sound_volume_db)
+
+
+## 音效名 -> AudioStream（带缓存）。找不到对应文件时警告并返回 null。
+func _resolve_sound(sound_name: StringName) -> AudioStream:
+	var path := sound_path_for(sound_name)
+	if path.is_empty():
+		push_warning("[Typer] 未知音效名「%s」，可用：%s" % [
+			sound_name, ", ".join(SOUND_FILES.keys())])
+		return null
+	if _sound_cache.has(path):
+		return _sound_cache[path]
+	if not ResourceLoader.exists(path):
+		push_warning("[Typer] 音效文件不存在：%s" % path)
+		_sound_cache[path] = null
+		return null
+	var stream := ResourceLoader.load(path)
+	if not (stream is AudioStream):
+		push_warning("[Typer] 不是音频资源：%s" % path)
+		_sound_cache[path] = null
+		return null
+	_sound_cache[path] = stream
+	return stream
+
+
+## 音效名对应的资源路径；未知名字返回空串。
+##   normal -> res://assets/sound/text/normal.wav
+##   su     -> res://assets/sound/text/susie.wav
+func sound_path_for(sound_name: StringName) -> String:
+	if not SOUND_FILES.has(sound_name):
+		return ""
+	return "%s/%s.wav" % [SOUND_DIR, SOUND_FILES[sound_name]]
 
 
 func _finish_line() -> void:
@@ -339,15 +656,13 @@ func _finish_line() -> void:
 	is_typing = false
 	_char_timer = 0.0
 	set_process(false)
+	# 行级覆盖只在本行有效：本行结束就回到本段的基准间隔，
+	# 否则 char_duration 会一直停留在被覆盖的值上（外部读到的就不是「本段间隔」）。
+	char_duration = _base_char_duration
 	line_finished.emit(current_index)
-	# 最后一行打完 = 整段结束。这里必须发 dialogue_finished，
-	# 否则调用方（如对话框自动收起）永远等不到这个信号。
-	if current_index >= lines.size() - 1:
-		current_index = -1
-		dialogue_finished.emit()
-	elif auto_next:
-		# 顺延到下一行；start_line 会重新打开 _process
-		start_line(current_index + 1)
+	# 本行打完后**不自动进入下一行**：由调用方（dialoguer）在玩家点击时推进。
+	# 所以这里只报告「这一行打完了」，不触碰 current_index，
+	# 也不发 dialogue_finished —— 调用方据此等待输入。
 
 
 func _read_json(path: String) -> Variant:
@@ -370,7 +685,12 @@ func _read_json(path: String) -> Variant:
 
 
 func _normalize_line(entry: Dictionary) -> Dictionary:
-	return {
+	var line := {
 		"speaker_name": String(entry.get("speaker_name", entry.get("speaker", ""))),
 		"text": String(entry.get("text", entry.get("dialogue", ""))),
 	}
+	# 行级字间隔（可选）。没写就不放这个键，开始播时回退到段级/节点默认值。
+	var duration := _as_positive_float(entry.get("char_duration"))
+	if duration > 0.0:
+		line["char_duration"] = duration
+	return line
