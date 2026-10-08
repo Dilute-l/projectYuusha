@@ -30,6 +30,9 @@ var _step: int = 0
 var _frames: int = 0
 var _had_auto_save: bool = false
 
+## 十天走完没有。走十天是跨帧的（见 _walk_day_loop），所以由协程置真、_process 等它。
+var _walk_done: bool = false
+
 
 func _ready() -> void:
 	if name == RUNNER_NAME:
@@ -66,7 +69,13 @@ func _process(_delta: float) -> void:
 				_check(SceneRouter.current_scene_key() == &"day_loop", "主菜单 Start 按钮把自己带到了每日循环")
 				_check(GameState.has_run(), "Start 按钮开出了一局")
 				_check(SceneRouter.can_go_back(), "SceneRouter 记下了返回栈")
-				_run_day_loop_walk()
+				# 走十天是**跨帧**的：day_loop 有「同一帧只许推进一次」的重入锁
+				# （_advance_locked + call_deferred），一帧内连点 70 次只有第一次算数。
+				# 所以这里交给一个协程按帧点，本状态机只等它收工。
+				_walk_day_loop()
+				_step = 20
+		20:
+			if _walk_done:
 				_step = 3
 		3:
 			# 第 10 天走完会请求切到结局场景，等它落地
@@ -93,6 +102,7 @@ func _run_sync_checks() -> void:
 	_check_autoloads()
 	_check_event_bus()
 	_check_data_db()
+	_check_candidate_data()
 	_check_rng_service()
 	_check_game_state()
 	_check_save_service()
@@ -121,9 +131,79 @@ func _check_data_db() -> void:
 	_check(DataDB.count(&"jobs") == 3, "data/jobs 下有 3 份职业资源（实际 %d）" % DataDB.count(&"jobs"))
 	_check(DataDB.get_job(&"job.fighter") != null, "可按 id 查询职业：job.fighter")
 	_check(DataDB.get_job(&"job.not_exist") == null, "未知 id 返回 null 而不是报错")
-	# 还没有数据的类别必须安全返回空，M1 之后才会有内容
-	_check(DataDB.get_day_config(1) == null, "尚无 data/days 时安全返回 null")
+	# 还没有数据的类别必须安全返回空，M5 才会有内容
+	_check(DataDB.get_day_config(999) == null, "不存在的天数安全返回 null")
 	_check(DataDB.get_narrative_rules().is_empty(), "尚无 data/narrative 时返回空数组")
+
+
+## 候选人 / 每日名单的数据层（ARCHITECTURE.md §3.1 / §3.4）。
+## 这一节盯的是「面试者信息与简历内容都在 data/ 里，代码里不写死」：
+## 每个人一份 data/candidates/*.tres（含立绘配方 + 逐条简历），
+## 每天一份 data/days/day_XX.tres（只列今天出场哪几个人）。
+func _check_candidate_data() -> void:
+	print("[3.1] 候选人 / 每日名单")
+	var candidate_count := DataDB.count(&"candidates")
+	_check(candidate_count > 0, "data/candidates 下有候选人（实际 %d）" % candidate_count)
+	_check(DataDB.count(&"traits") > 0, "data/traits 下有特质（实际 %d）" % DataDB.count(&"traits"))
+
+	var first := DataDB.get_candidate(&"c_0001")
+	_check(first != null, "可按 id 查候选人：c_0001")
+	if first != null:
+		_check(not first.display_name.strip_edges().is_empty(), "候选人填了姓名")
+		_check(
+			first.job != null and not first.job.display_name.strip_edges().is_empty(),
+			"候选人引用的职业带 display_name"
+		)
+		_check(not first.resume.is_empty(), "候选人带简历条目（%d 条）" % first.resume.size())
+		_check(first.portrait_race != &"", "候选人带立绘配方（race=%s）" % first.portrait_race)
+		_check(not first.resume_header.strip_edges().is_empty(), "候选人在数据里填了抬头（resume_header）")
+
+		var entries_ok := true
+		for entry in first.resume:
+			if entry == null:
+				entries_ok = false
+				continue
+			if entry.description.strip_edges().is_empty() \
+					or entry.question.strip_edges().is_empty() \
+					or entry.answer.strip_edges().is_empty():
+				entries_ok = false
+		_check(entries_ok, "每条简历都齐了描述 / 追问 / 回答三样")
+
+	# 抬头是写死在数据里的一段字，代码不再按字段拼 —— 所以每个人都得有
+	var headers_ok := true
+	for id in DataDB.get_ids(&"candidates"):
+		var candidate := DataDB.get_candidate(id)
+		if candidate == null or candidate.resume_header.strip_edges().is_empty():
+			headers_ok = false
+	_check(headers_ok, "每位候选人都自带一段抬头文案")
+
+	# 每天都要有写死的名单，slots 不能超过当天人数，名单里的人必须都在 data/candidates/ 里
+	var days_ok := true
+	var slots_ok := true
+	var listed: Array[StringName] = []
+	for day in range(1, GameConfig.TOTAL_DAYS + 1):
+		var config := DataDB.get_day_config(day)
+		if config == null or config.candidates.is_empty():
+			days_ok = false
+			continue
+		if config.slots < 1 or config.slots > config.candidates.size():
+			slots_ok = false
+		for candidate in config.candidates:
+			if candidate == null or candidate.id == &"":
+				days_ok = false
+				continue
+			listed.append(candidate.id)
+			if DataDB.get_candidate(candidate.id) == null:
+				days_ok = false
+	_check(
+		days_ok,
+		"第 1..%d 天都有出场名单，且名单里的每个人都能在 data/candidates/ 里查到" % GameConfig.TOTAL_DAYS
+	)
+	_check(slots_ok, "每天的名额 slots 都没超过当天人数")
+	_check(
+		listed.size() == candidate_count,
+		"每日名单合起来正好覆盖全部候选人（名单 %d 人次 / 数据 %d 份）" % [listed.size(), candidate_count]
+	)
 
 
 func _check_rng_service() -> void:
@@ -168,6 +248,14 @@ func _check_game_state() -> void:
 	_check(GameState.has_run(), "开新局后 has_run 为真")
 	_check(GameState.get_day() == 1 and GameState.get_phase() == DayPhase.Phase.DAY_BRIEFING, "新局从第 1 天 DAY_BRIEFING 开始")
 
+	# 当日名单是「本日过程量」，不进存档 —— 由 GameState 在开局 / 换天时按天从 data/days/ 载入
+	var day_one := DataDB.get_day_config(1)
+	var day_last := DataDB.get_day_config(GameConfig.TOTAL_DAYS)
+	_check(
+		day_one != null and GameState.current_candidates.size() == day_one.candidates.size(),
+		"开局即载入第 1 天名单（%d 人）" % GameState.current_candidates.size()
+	)
+
 	var walked := true
 	for day in range(1, GameConfig.TOTAL_DAYS + 1):
 		if GameState.get_day() != day:
@@ -181,6 +269,10 @@ func _check_game_state() -> void:
 			walked = false  # 第 10 天不该再推进
 	_check(walked, "能连续走完 10 天，第 10 天不再推进（应进结局）")
 	_check(GameState.is_last_day(), "第 10 天 is_last_day 为真")
+	_check(
+		day_last != null and GameState.current_candidates.size() == day_last.candidates.size(),
+		"换到最后一天时名单也跟着换（%d 人）" % GameState.current_candidates.size()
+	)
 	_check(GameState.get_total_score() == 550, "累计分 = 550（实际 %d）" % GameState.get_total_score())
 	_check(GameState.get_day_score(3) == 30, "单日分数按第 n 天索引")
 
@@ -294,12 +386,17 @@ func _press_ending_back_button() -> void:
 	button.pressed.emit()
 
 
-## 在真实的 day_loop 场景上按阶段顺序点满十天 —— M0 的「能连续走完 10 天空流程」
-func _run_day_loop_walk() -> void:
+## 在真实的 day_loop 场景上按阶段顺序点满十天 —— M0 的「能连续走完 10 天空流程」。
+##
+## 这是个协程：**每次推进之间等一帧**。day_loop.advance() 有「同一帧只许推进一次」
+## 的重入锁（_advance_locked，靠 call_deferred 解锁），一帧内连点 70 次只有第一次生效 ——
+## 按帧点才等价于玩家真实的点击节奏。跑完把 _walk_done 置真，由 _process 的状态机接着走。
+func _walk_day_loop() -> void:
 	print("[9] 每日流程（真实 day_loop 场景，点的是 HUD 上的按钮）")
 	var loop_scene: Node = get_tree().current_scene
 	_check(loop_scene != null and loop_scene.has_method("advance"), "当前场景是带脚本的 day_loop")
 	if loop_scene == null:
+		_walk_done = true
 		return
 
 	# 前面的存读档检查把状态留在第 10 天，这里重开一局从头走
@@ -328,6 +425,7 @@ func _run_day_loop_walk() -> void:
 			else:
 				loop_scene.call("advance")
 			presses += 1
+			await get_tree().process_frame
 
 	_check(walk_ok, "按 DayBriefing→SpecialEvent→Screening→Interview→TeamBuild→BattleReport→DayResult 走完 10 天")
 	if not walk_ok:
@@ -337,6 +435,7 @@ func _run_day_loop_walk() -> void:
 	_check(GameState.get_day() == GameConfig.TOTAL_DAYS, "走完后停在第 %d 天" % GameConfig.TOTAL_DAYS)
 	_check(GameState.get_phase_name() == DayPhase.to_name(DayPhase.Phase.ENDING), "走完后阶段是 ENDING")
 	_check(SaveService.has_auto_save(), "每日流程里自动存档已生成")
+	_walk_done = true
 
 # ---------------------------------------------------------------------------
 # 收尾

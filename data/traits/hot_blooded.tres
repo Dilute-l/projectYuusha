@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="TraitDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="1_5t0tm"]
+
+[resource]
+script = ExtResource("1_5t0tm")
+id = &"trait.hot_blooded"
+display_name = "PLACEHOLDER TRAIT 07"
+synergy_tags = Array[StringName]([&"brave"])
+description = "PLACEHOLDER TRAIT DESC 07"

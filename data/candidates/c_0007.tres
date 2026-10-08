@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="1_w81ty"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_k2g8r"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_5vtcp"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_t7pet"]
+[ext_resource type="Resource" path="res://data/traits/calm.tres" id="5_sc2nx"]
+[ext_resource type="Resource" path="res://data/traits/collector.tres" id="6_xqqnp"]
+
+[sub_resource type="Resource" id="Resource_j1mkj"]
+script = ExtResource("2_k2g8r")
+description = "PLACEHOLDER ENTRY 07-1"
+question = "PLACEHOLDER QUESTION 07-1"
+answer = "PLACEHOLDER ANSWER 07-1"
+
+[sub_resource type="Resource" id="Resource_wfo2k"]
+script = ExtResource("2_k2g8r")
+description = "PLACEHOLDER ENTRY 07-2"
+question = "PLACEHOLDER QUESTION 07-2"
+answer = "PLACEHOLDER ANSWER 07-2"
+
+[sub_resource type="Resource" id="Resource_3sxv7"]
+script = ExtResource("2_k2g8r")
+description = "PLACEHOLDER ENTRY 07-3"
+question = "PLACEHOLDER QUESTION 07-3"
+answer = "PLACEHOLDER ANSWER 07-3"
+
+[resource]
+script = ExtResource("3_5vtcp")
+id = &"c_0007"
+display_name = "PLACEHOLDER NAME 07"
+strength = 6
+intelligence = 10
+wisdom = 13
+level = 3
+job = ExtResource("1_w81ty")
+traits = Array[ExtResource("4_t7pet")]([ExtResource("5_sc2nx"), ExtResource("6_xqqnp")])
+resume = Array[ExtResource("2_k2g8r")]([SubResource("Resource_j1mkj"), SubResource("Resource_wfo2k"), SubResource("Resource_3sxv7")])
+resume_header = "PLACEHOLDER HEADER 07"
+portrait_hair = 3
+portrait_mouth = 2

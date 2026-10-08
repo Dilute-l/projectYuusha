@@ -51,6 +51,8 @@ func start_new_run(seed_value: int = 0) -> RunState:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	# 当日出场名单来自 data/days/day_XX.tres（§6.1「候选人出场（写死）」）
+	load_day_candidates(run_state.day)
 	EventBus.run_started.emit(used_seed)
 	EventBus.day_started.emit(run_state.day)
 	# 开新局等于把阶段拨回起点：广播一次，已经在场的 day_loop 之类的订阅者才会跟着复位
@@ -65,6 +67,8 @@ func apply_run_state(state: RunState) -> void:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	# 当日名单不进存档（§7：只存运行时状态），按存档里的天数重新从 data/days/ 取
+	load_day_candidates(run_state.day)
 	EventBus.run_loaded.emit(run_state.run_seed)
 
 
@@ -119,6 +123,8 @@ func advance_day() -> bool:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	# 换天即换名单：新的一天出场哪几个人由 data/days/day_XX.tres 决定
+	load_day_candidates(run_state.day)
 	EventBus.day_started.emit(run_state.day)
 	EventBus.day_phase_changed.emit(DayPhase.Phase.DAY_BRIEFING)
 	return true

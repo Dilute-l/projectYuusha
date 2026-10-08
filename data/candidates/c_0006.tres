@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_x32fm"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_gymjy"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_e0t55"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_qw8e4"]
+[ext_resource type="Resource" path="res://data/traits/drunkard.tres" id="5_ck5xg"]
+
+[sub_resource type="Resource" id="Resource_dflko"]
+script = ExtResource("2_gymjy")
+description = "PLACEHOLDER ENTRY 06-1"
+question = "PLACEHOLDER QUESTION 06-1"
+answer = "PLACEHOLDER ANSWER 06-1"
+
+[sub_resource type="Resource" id="Resource_lo35y"]
+script = ExtResource("2_gymjy")
+description = "PLACEHOLDER ENTRY 06-2"
+question = "PLACEHOLDER QUESTION 06-2"
+answer = "PLACEHOLDER ANSWER 06-2"
+
+[sub_resource type="Resource" id="Resource_2rr6d"]
+script = ExtResource("2_gymjy")
+description = "PLACEHOLDER ENTRY 06-3"
+question = "PLACEHOLDER QUESTION 06-3"
+answer = "PLACEHOLDER ANSWER 06-3"
+
+[resource]
+script = ExtResource("3_e0t55")
+id = &"c_0006"
+display_name = "PLACEHOLDER NAME 06"
+strength = 15
+intelligence = 3
+wisdom = 5
+level = 4
+job = ExtResource("1_x32fm")
+traits = Array[ExtResource("4_qw8e4")]([ExtResource("5_ck5xg")])
+resume = Array[ExtResource("2_gymjy")]([SubResource("Resource_dflko"), SubResource("Resource_lo35y"), SubResource("Resource_2rr6d")])
+resume_header = "PLACEHOLDER HEADER 06"
+portrait_race = &"st"
+portrait_hat = 3

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="1_eet8u"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_ogmf3"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_qxar2"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_uptbw"]
+[ext_resource type="Resource" path="res://data/traits/insomnia.tres" id="5_58cwe"]
+
+[sub_resource type="Resource" id="Resource_21aq6"]
+script = ExtResource("2_ogmf3")
+description = "PLACEHOLDER ENTRY 09-1"
+question = "PLACEHOLDER QUESTION 09-1"
+answer = "PLACEHOLDER ANSWER 09-1"
+
+[sub_resource type="Resource" id="Resource_nhsh4"]
+script = ExtResource("2_ogmf3")
+description = "PLACEHOLDER ENTRY 09-2"
+question = "PLACEHOLDER QUESTION 09-2"
+answer = "PLACEHOLDER ANSWER 09-2"
+
+[sub_resource type="Resource" id="Resource_xxyj1"]
+script = ExtResource("2_ogmf3")
+description = "PLACEHOLDER ENTRY 09-3"
+question = "PLACEHOLDER QUESTION 09-3"
+answer = "PLACEHOLDER ANSWER 09-3"
+
+[resource]
+script = ExtResource("3_qxar2")
+id = &"c_0009"
+display_name = "PLACEHOLDER NAME 09"
+strength = 3
+intelligence = 12
+wisdom = 15
+level = 3
+job = ExtResource("1_eet8u")
+traits = Array[ExtResource("4_uptbw")]([ExtResource("5_58cwe")])
+resume = Array[ExtResource("2_ogmf3")]([SubResource("Resource_21aq6"), SubResource("Resource_nhsh4"), SubResource("Resource_xxyj1")])
+resume_header = "PLACEHOLDER HEADER 09"
+portrait_race = &"el"
+portrait_eye = 3

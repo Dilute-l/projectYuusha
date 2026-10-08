@@ -36,10 +36,7 @@ theme_override_constants/separation = 6
 layout_mode = 2
 theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
 theme_override_font_sizes/font_size = 15
-text = "Kaede the Vagrant
-Job: Sword      Lv.3
-STR 12      INT 04      WIS 07
-Traits: hot-blooded / light-fingered"
+text = ""
 
 [node name="Spacer" type="Control" parent="Paper/Rows" unique_id=2141977583]
 custom_minimum_size = Vector2(0, 10)
@@ -57,23 +54,23 @@ theme_override_constants/separation = 4
 
 [node name="ResumeToken1" parent="Paper/Rows/TokenList" unique_id=1212916358 instance=ExtResource("3_yu2w1")]
 layout_mode = 2
-text = "01  Slew three ogres single-handedly on the Border Watch."
+text = ""
 
 [node name="ResumeToken2" parent="Paper/Rows/TokenList" unique_id=2054330971 instance=ExtResource("3_yu2w1")]
 layout_mode = 2
-text = "02  Graduated first in class from the Royal Sword Academy."
+text = ""
 
 [node name="ResumeToken3" parent="Paper/Rows/TokenList" unique_id=1083534431 instance=ExtResource("3_yu2w1")]
 layout_mode = 2
-text = "03  Fluent in Ancient Draconic, Elvish and Dwarvish."
+text = ""
 
 [node name="ResumeToken4" parent="Paper/Rows/TokenList" unique_id=283527975 instance=ExtResource("3_yu2w1")]
 layout_mode = 2
-text = "04  Survived fourteen days alone in the Cursed Marsh."
+text = ""
 
 [node name="ResumeToken5" parent="Paper/Rows/TokenList" unique_id=793925309 instance=ExtResource("3_yu2w1")]
 layout_mode = 2
-text = "05  Never lost a duel in six years of royal service."
+text = ""
 
 [node name="TokenMenu" parent="." instance=ExtResource("4_menu")]
 visible = false

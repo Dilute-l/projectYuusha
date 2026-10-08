@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="DayConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_evyrj"]
+[ext_resource type="Resource" path="res://data/candidates/c_0023.tres" id="2_mq1rd"]
+[ext_resource type="Resource" path="res://data/candidates/c_0024.tres" id="3_ty4b5"]
+[ext_resource type="Resource" path="res://data/candidates/c_0025.tres" id="4_httf0"]
+[ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="5_qoujf"]
+
+[resource]
+script = ExtResource("5_qoujf")
+day_index = 10
+candidates = Array[ExtResource("1_evyrj")]([ExtResource("2_mq1rd"), ExtResource("3_ty4b5"), ExtResource("4_httf0")])

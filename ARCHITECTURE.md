@@ -171,7 +171,15 @@ class_name CandidateResource extends Resource
 @export var job: JobDef                         # 职业
 @export var traits: Array[TraitDef] = []        # 特质（list，可含多项，也可为空）
 @export var resume: Array[ResumeEntry] = []     # 简历（见 §3.2）
-@export var portrait: Texture2D                 # 立绘（可选，UI 用）
+@export_multiline var resume_header: String     # 简历抬头：整段字，见 §10.6
+@export var portrait: Texture2D                 # 整张立绘（可选；当前用拼装立绘，见下）
+
+# 拼装立绘的「配方」（见 §10.7）。取值直接对应 assets/art/portrait/ 的文件名。
+@export var portrait_race: StringName = &"hu"   # hu / el / st → {race}_body_phd.png
+@export var portrait_eye: int = 1               # 1..3，仅 hu / el 使用
+@export var portrait_hair: int = 1              # 1..3，仅 hu / el 使用
+@export var portrait_mouth: int = 1             # 1..3，仅 hu / el 使用
+@export var portrait_hat: int = 1               # 1..3，仅 st 使用
 ```
 
 > 字段说明：
@@ -183,6 +191,8 @@ class_name CandidateResource extends Resource
 | `job` | 职业 | `JobDef`，见 §3.3 |
 | `traits` | 特质 | `Array[TraitDef]`，可含多项；相性计算输入（§6.4） |
 | `resume` | 简历 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问问题 + 追问回答 |
+| `resume_header` | 简历抬头 | **一整段字**，原样铺在纸面上半；运行时不做任何拼接（§10.6） |
+| `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号；面试者的长相也是数据，不是代码里摇的（§10.7） |
 
 > 真假不再由隐藏字段承载：玩家看到的 `strength / intelligence / wisdom / level / job / traits`
 > 就是全部数值，判断依据来自「属性与简历描述的落差」＋「手册常识」，见 §6.2 / §6.3。
@@ -456,12 +466,21 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_m0.tscn
 ```
 
-`tools/smoke_m0.gd` 覆盖上表接口与 M0 验收：单例齐备、DataDB 扫描、同种子可复现、
-存读档一致、真实跑一遍 主菜单 Start 按钮 → 每日循环 → 十天四十步 → 结局 → 返回主菜单。
+`tools/smoke_m0.gd` 覆盖上表接口与 M0 验收：单例齐备、DataDB 扫描、**候选人 / 每日名单数据层（§11）**、
+同种子可复现、存读档一致、真实跑一遍 主菜单 Start 按钮 → 每日循环 → 十天四十步 → 结局 → 返回主菜单。
 全绿时退出码 0。
 
 > 自检脚本是 `tools/smoke_m0.tscn` 这个空场景，自检逻辑挂在 root 下的常驻 runner 上
 > ——因为自检过程本身要切场景，而切场景会释放 current_scene。
+
+> ⚠️ 走十天那一段（`_walk_day_loop`）是**协程**：每次推进之间 `await process_frame`。
+> `day_loop.advance()` 有「同一帧只许推进一次」的重入锁（`_advance_locked`，靠 `call_deferred` 解锁），
+> 早先一帧内连点 70 次只有第一次生效，后面 69 次全被吞掉、走到 SPECIAL_EVENT 就卡住了。
+> 想改这段先看这条，别再把 `await` 去掉。
+
+> ⚠️ 存读档那 7 项在**受限沙箱**里必然红：`user://`（Windows 上是 `%APPDATA%\Godot\app_userdata\Yuusha`）
+> 落在项目目录之外，写不进去会报 `无法写入 user://saves/auto.json（错误码 12）`。
+> 这是环境限制不是代码问题 —— 在正常机器上跑就是绿的。
 
 ### 10.5 场景层（M0 完成部分）
 
@@ -483,7 +502,8 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 
 ### 10.6 resume / resume_token（简历版面）
 
-M1 之前的简历版面骨架，已经能单独跑起来看：编辑器里打开 `resume.tscn` 按 F6 即可。
+简历版面。编辑器里打开 `resume.tscn` 按 F6 单独跑：看到的是一张**空**纸 ——
+版面里没有任何候选人文案，内容全靠 `set_candidate()` 灌（见 §10.7）。
 
 | 文件 | 职责 |
 | --- | --- |
@@ -493,10 +513,14 @@ M1 之前的简历版面骨架，已经能单独跑起来看：编辑器里打�
 
 版面自上而下：**抬头**（`Paper/Rows/HeaderInfo`，一个 Label）→ `RESUME ENTRIES` 小标题 → 词条列表（`Paper/Rows/TokenList`）。
 
-- **抬头是一个字符串，不是一个字段一个 Label**：姓名 / 职业 + 等级 / 三项属性 / 特质全部拼进
-  `HeaderInfo` 这**一个** Label 的 `text`（用 `\n` 分行），脚本侧就是常量 `PLACEHOLDER_INFO` 一个字符串 +
-  `set_info(text)` 一个参数。想调抬头版式（换行、字段间距、字段顺序）只改字符串，不用动场景。
-  `RESUME ENTRIES` 那行**没有**并进去 —— 它是词条区的段标题，不是候选人信息。
+- **抬头是一个字符串，不是一个字段一个 Label**：姓名 / 职业 + 等级 / 三项属性 / 特质全部写在
+  `CandidateResource.resume_header` 那**一个**多行字符串里，`resume.gd` 只做一件事 ——
+  `set_info(candidate.resume_header)`，**一个字都不拼**。
+  想调抬头版式（换行、字段间距、字段顺序、要不要写属性、加不加一句花腔）直接在
+  `data/candidates/*.tres` 里改那一段字，代码和场景都不用动。
+  换句话说：**抬头是文案，不是由数值推导出来的**。`display_name` / `level` / `strength` 那些字段
+  是给玩法（判定、相性、战报）用的数值，和抬头故意不联动 —— 抬头里写什么、写不写全，由文案说了算。
+  `RESUME ENTRIES` 那行**没有**并进去 —— 它是词条区的段标题（场景自己的装饰文案），不是候选人信息。
   代价是所有行共用一个字号（现在 15）。若想让姓名单独放大，把这一个节点换成 `RichTextLabel` 走 BBCode
   即可（`HandbookEntry.body` 已经是这个路子），仍然是一个字符串。
 
@@ -505,12 +529,16 @@ M1 之前的简历版面骨架，已经能单独跑起来看：编辑器里打�
 - **点击目前没有任何效果**：`pressed` 与 `normal` 指向**同一个** `.tres`，按下去的画法和没按一模一样；
   `focus_mode = 0` 关掉焦点框，点完不会残留高亮。`selected` 按 §4 预留并照常 emit，只是当前没有订阅者。
   → §6.2 的追问流程（先给 `question`、再展开 `answer`）留到 M2，届时由 `resume.gd` 订阅 `selected`。
-- **不落任何数据**：`resume.gd` 顶部那组 `PLACEHOLDER_*` 常量就是纸上全部内容，既不读 `DataDB`、
-  也不读 `CandidateResource` / `GameState.current_candidates`。接真实数据时只改 `_ready()` 那一个调用：
-  `_apply_placeholder()` → `set_info(...)` + `set_entries(candidate.resume.map(description))`。
-- **条目数量自适应**：`set_entries()` 会先复用场景里预摆的 5 个实例（编辑器里直接看到真实版面），
-  数据比预摆多就现场 `instantiate()`，少就把富余的 `visible = false`。所以「若干项」都不用回头改场景。
-- 占位文案同样是 ASCII —— 原因见 §10.5：中文字体没接入前，中文会变方块。
+- **纸上的字全部来自数据**：`resume.gd` 里没有一句候选人文案，也没有「默认履历」这种兜底。
+  唯一的数据入口是 `set_candidate(candidate: CandidateResource)`：
+  抬头 ← `resume_header`（原样），词条 ← `descriptions_of()`（逐条 `description`）。
+  传 `null` 表示「当前没有候选人」→ 抬头清空、词条全部收起。`get_candidate()` 能把当前这位取回来，
+  M2 做追问时就从它身上取 `resume[i].question` / `.answer`。
+- **条目数量自适应**：`set_entries()` 会先复用场景里预摆的 5 个实例（编辑器里直接看到真实版面，
+  但它们**不写死任何正文**，`text` 全是空串），数据比预摆多就现场 `instantiate()`，
+  少就把富余的 `visible = false`。所以「若干项」都不用回头改场景。
+- 纸上的文案现在是**中文**（和 `data/dialogue.json` 一致）—— 中文字体没接入前会变方块，原因见 §10.5。
+  字体接进来后这里一行都不用改。
 
 #### 挂载点
 
@@ -578,8 +606,92 @@ DayLoop (Node)
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_resume_menu.tscn
 ```
 
-32 项：面板/按钮就位、点词条开菜单并记住序号、贴边 / 翻边 / 底部夹取、
-**改画布尺寸后自动重排**、点外面与 Esc 收起、整块显隐不诈尸、「追问」抛信号但无后续。全绿退出码 0。
+43 项：面板/按钮就位、**纸面内容确实来自 `data/candidates/*.tres`**（抬头原样铺数据里那一段字、
+逐条词条正文来自 `description`）、给一份「不像字段拼出来」的抬头也照样原样显示、喂 `null` 时整页清空、
+点词条开菜单并记住序号、贴边 / 翻边 / 底部夹取、**改画布尺寸后自动重排**、点外面与 Esc 收起、
+整块显隐不诈尸、「追问」抛信号但无后续。全绿退出码 0。
 
 它把简历放进一个尺寸可控的 `SubViewport`（1152×648 = 游戏真实画布）：headless 下窗口是 1152×1152
 且 `--resolution` 不生效，直接挂在 root 上既测不到真实画布，也测不了「画布变了」这一条。
+
+「底部夹取」那几条不写死 y 坐标：词条条数现在由数据决定，位置不再是个固定值，
+所以测试先把画布压到「最后一条词条刚好放不下整块菜单」的高度，再验夹取。
+
+---
+
+## 11. 面试者数据（M1）
+
+> 这一节记的是「简历和候选人显示的东西，一句都不在代码里写死」这件事的落点。
+> 面试者的**全部信息**在 `data/candidates/*.tres`，**每天出场哪几个人**在 `data/days/*.tres`。
+
+> ### ⚠️ 当前 `data/` 里的文案**全是占位符**，不是内容
+>
+> 骨架期手搓的那批示例文案（姓名、抬头、简历条目、职业名、特质名）已经**全部清空成占位符**，
+> 免得和之后真正手填的内容混在一起分不清哪句是新的哪句是旧的。现在的样子是：
+>
+> | 字段 | 现在长什么样 |
+> | --- | --- |
+> | 候选人 `display_name` | `PLACEHOLDER NAME 01` … `PLACEHOLDER NAME 25` |
+> | 候选人 `resume_header` | `PLACEHOLDER HEADER 01` …（单行） |
+> | 简历条目 | `PLACEHOLDER ENTRY / QUESTION / ANSWER 01-1`（`编号-条目号`） |
+> | 职业 | `PLACEHOLDER JOB 01` … `03`（+ `PLACEHOLDER JOB DESC NN`） |
+> | 特质 | `PLACEHOLDER TRAIT 01` … `10`（+ `PLACEHOLDER TRAIT DESC NN`） |
+>
+> **编号规则**：按文件名排序从 01 起编 —— 候选人 `c_0001.tres` → `01`；
+> 职业按 `cleric` / `fighter` / `mage`；特质按字母序（`calm` → `01` … `lone_wolf` → `10`）。
+> 编号只用来对号入座，本身不代表任何含义。
+>
+> **这次只动文案，没动结构**，下面这些原样保留（它们是**键和数值**，不是文案）：
+> `id`（每日名单靠它引用）、`level` / `strength` / `intelligence` / `wisdom`、
+> `job` 与 `traits` 的**引用关系**、`synergy_tags`、`portrait_*` 立绘配方、`data/days/` 全部。
+>
+> 手填时直接把这串 `PLACEHOLDER …` 替换掉就行 —— 全仓 `Ctrl+F "PLACEHOLDER"` 能一次找齐。
+>
+> 顺带一个副作用：占位符是纯 ASCII，而 `assets/fonts` 还没接入中文字体（§10.5），
+> 所以现在简历页上的字是**能正常显示**的（不会变方块），正好可以拿来看版面。
+> 换成中文文案后又会变回方块，直到字体接进来。
+
+### 11.1 两类数据文件
+
+| 目录 | 粒度 | 装什么 |
+| --- | --- | --- |
+| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、等级、三项属性、职业（引用 `data/jobs/*.tres`）、特质（引用 `data/traits/*.tres`）、**简历抬头**（`resume_header`，一整段字）、**拼装立绘配方**、**逐条简历条目**（描述 / 追问 / 回答，内联 `sub_resource`，跟着本人走） |
+| `data/days/` | **一天一个文件**（`day_01.tres` … `day_10.tres`） | `day_index`、`candidates`（当天出场哪几个人，**引用** `data/candidates/*.tres`，数组顺序即出场顺序）、`slots`（当日名额）、`tutorial_step` |
+
+配套还有 `data/jobs/`（剑士 / 法师 / 牧师）与 `data/traits/`（性格 6 种 + 癖好 4 种）。
+
+> 简历条目**内联**在候选人文件里（而不是单独一个目录），因为它是「这个人」的一部分，
+> 不该被别的候选人复用；职业与特质**引用**外部文件，因为它们是多个人共用的词表。
+> 每日名单只列 id 引用，绝不内嵌副本 —— 改一次候选人，10 天里出场的那次跟着变。
+
+### 11.2 数据怎么流到画面上
+
+```
+data/days/day_XX.tres
+   └─ candidates ──► GameState.load_day_candidates()          ← 开局 / 换天 / 读档时调
+                        └─ GameState.current_candidates
+                             └─ interview.gd.current_candidate()   （下标 = finished_interviewee）
+                                  ├─ Interviewee.apply_candidate()  → 按 portrait_* 拼立绘
+                                  └─ Resume.set_candidate()         → 抬头 + 逐条词条
+```
+
+- 当日名单是**本日过程量**，不进存档（§7）：`GameState` 在 `start_new_run()` / `advance_day()` /
+  `apply_run_state()` 三处按当前天数重新从 `data/days/` 取，读档拿到的就是同一份。
+- `interview.gd` 判定一位就把 `finished_interviewee` +1 并整体重刷 —— 立绘与简历一起翻页。
+- 立绘的种族与部件编号全部读自候选人，**没有任何随机**：以前那段 `_debug_randomize_interviewee()`
+  调试代码已删除。`Interviewee` 在拿到配方前保持空白，不画「默认人」。
+
+### 11.3 改数据不用改代码
+
+- 换简历文案 / 加一条词条 / 调属性 → 编辑器里点开对应的 `data/candidates/*.tres`。
+- **改抬头** → 同一个文件里的 `resume_header`，多行文本框，写什么就显示什么。
+  想让人物的自我介绍更有性格（甚至藏一个后面能被手册戳破的谎言），改这一栏就行。
+- 换某天出场的人 / 调名额 → 点开 `data/days/day_XX.tres`，拖 `candidates` 数组。
+- 加一位新面试者 → `data/candidates/` 下新建一份，再把它拖进某天的 `candidates`。
+- 加一个新职业 / 新特质 → 在 `data/jobs/` / `data/traits/` 建资源，候选人引用它即可（`DataDB` 按目录自动归类）。
+
+### 11.4 覆盖率自检
+
+`smoke_m0` 第 `[3.1]` 节盯的就是这层数据：25 位候选人、10 天名单、每天 `slots` 不超过当天人数、
+名单里的每个人都能在 `data/candidates/` 里查到、每条简历都齐了描述 / 追问 / 回答三样、
+**每位候选人都自带一段抬头文案**，以及 `GameState` 开局 / 换天时名单确实跟着换。

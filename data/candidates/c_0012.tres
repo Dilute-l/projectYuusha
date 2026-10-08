@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_o3acm"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_hroll"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_35ssq"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_secq1"]
+[ext_resource type="Resource" path="res://data/traits/chivalry.tres" id="5_nee3j"]
+[ext_resource type="Resource" path="res://data/traits/ego.tres" id="6_fgle7"]
+
+[sub_resource type="Resource" id="Resource_miet0"]
+script = ExtResource("2_hroll")
+description = "PLACEHOLDER ENTRY 12-1"
+question = "PLACEHOLDER QUESTION 12-1"
+answer = "PLACEHOLDER ANSWER 12-1"
+
+[sub_resource type="Resource" id="Resource_ygrel"]
+script = ExtResource("2_hroll")
+description = "PLACEHOLDER ENTRY 12-2"
+question = "PLACEHOLDER QUESTION 12-2"
+answer = "PLACEHOLDER ANSWER 12-2"
+
+[sub_resource type="Resource" id="Resource_irar6"]
+script = ExtResource("2_hroll")
+description = "PLACEHOLDER ENTRY 12-3"
+question = "PLACEHOLDER QUESTION 12-3"
+answer = "PLACEHOLDER ANSWER 12-3"
+
+[resource]
+script = ExtResource("3_35ssq")
+id = &"c_0012"
+display_name = "PLACEHOLDER NAME 12"
+strength = 18
+intelligence = 9
+wisdom = 8
+level = 6
+job = ExtResource("1_o3acm")
+traits = Array[ExtResource("4_secq1")]([ExtResource("5_nee3j"), ExtResource("6_fgle7")])
+resume = Array[ExtResource("2_hroll")]([SubResource("Resource_miet0"), SubResource("Resource_ygrel"), SubResource("Resource_irar6")])
+resume_header = "PLACEHOLDER HEADER 12"
+portrait_eye = 3
+portrait_hair = 3
+portrait_mouth = 2

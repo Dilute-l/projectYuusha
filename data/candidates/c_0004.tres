@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="1_vjcuy"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_1ewjj"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_81481"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_47i8g"]
+[ext_resource type="Resource" path="res://data/traits/justice.tres" id="5_8w8vt"]
+
+[sub_resource type="Resource" id="Resource_dbyb6"]
+script = ExtResource("2_1ewjj")
+description = "PLACEHOLDER ENTRY 04-1"
+question = "PLACEHOLDER QUESTION 04-1"
+answer = "PLACEHOLDER ANSWER 04-1"
+
+[sub_resource type="Resource" id="Resource_etnk7"]
+script = ExtResource("2_1ewjj")
+description = "PLACEHOLDER ENTRY 04-2"
+question = "PLACEHOLDER QUESTION 04-2"
+answer = "PLACEHOLDER ANSWER 04-2"
+
+[sub_resource type="Resource" id="Resource_spy4g"]
+script = ExtResource("2_1ewjj")
+description = "PLACEHOLDER ENTRY 04-3"
+question = "PLACEHOLDER QUESTION 04-3"
+answer = "PLACEHOLDER ANSWER 04-3"
+
+[resource]
+script = ExtResource("3_81481")
+id = &"c_0004"
+display_name = "PLACEHOLDER NAME 04"
+strength = 5
+intelligence = 9
+wisdom = 12
+level = 2
+job = ExtResource("1_vjcuy")
+traits = Array[ExtResource("4_47i8g")]([ExtResource("5_8w8vt")])
+resume = Array[ExtResource("2_1ewjj")]([SubResource("Resource_dbyb6"), SubResource("Resource_etnk7"), SubResource("Resource_spy4g")])
+resume_header = "PLACEHOLDER HEADER 04"
+portrait_eye = 3
+portrait_hair = 2

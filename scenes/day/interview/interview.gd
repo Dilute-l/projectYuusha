@@ -12,11 +12,15 @@ extends Control
 ##
 ## 本脚本**不负责推进流程**：它只发 `phase_finished` 报告「我这个阶段做完了」，
 ## 下一步是换阶段 / 换天 / 进结局由 day_loop 问 DayDirector 决定。
+##
+## 面试者从哪来：**当天出场名单**（data/days/day_XX.tres）里的第 finished_interviewee 位，
+## 由 GameState.current_candidates 提供。本脚本一句候选人文案都不写死 ——
+## 立绘配方和简历内容分别落在 data/candidates/*.tres 的 portrait_* 字段与 resume 数组里。
 
 ## 当前阶段（DayPhase.Phase）
 var _phase: int = DayPhase.Phase.DAY_BRIEFING
 
-@onready var _resume: Control = get_node_or_null("Resume") as Control
+@onready var _resume: Resume = get_node_or_null("Resume") as Resume
 @onready var _approved: TextureButton = get_node_or_null("Approved") as TextureButton
 @onready var _nah: TextureButton = get_node_or_null("Nah") as TextureButton
 
@@ -26,31 +30,20 @@ signal phase_finished()
 ## 本日已判定的候选人数（同时用作「当前看的是第几位」的下标）
 var finished_interviewee: int = 0
 
-# ===========================================================================
-# ⚠️ 临时调试代码 —— 只为肉眼检查立绘部件组合，不参与任何玩法逻辑。
-#
-# 接入正式候选人生成器（scripts/core/generation/candidate_generator.gd）后，
-# 把 _ready() 里那一行调用和 _debug_randomize_interviewee() 整段删掉即可。
-# ===========================================================================
-
-const INTERVIEWEE_SCENE := preload("res://scenes/day/interview/interviewee.tscn")
-
-## 可用种族，对应 assets/art/portrait/ 里的文件名前缀
-const RACES: Array[StringName] = [&"hu", &"el", &"st"]
-
-## 部位编号范围，对应 *_phd1..3 三个文件
-const PART_MIN := 1
-const PART_MAX := 3
+## 当前是否真的有候选人可展示（没有名单时立绘不出场）
+var _has_interviewee: bool = false
 
 
 func _ready() -> void:
-	# 先确保 Interviewee 存在（临时调试段可能会现场生成一个），再按阶段设显示 ——
-	# 否则「场景里没有 Interviewee、由代码生成」这条路上，阶段 1/2 就不会被隐藏。
-	_debug_randomize_interviewee()
+	# 当日名单是「本日过程量」，开局 / 换天时由 GameState 从 data/days/ 载入。
+	# 单独 F6 跑本场景时没人做过这件事，这里补一次。
+	if GameState.current_candidates.is_empty():
+		GameState.load_day_candidates()
 
 	# 由 day_loop **首次实例化**本场景时走的是「新建实例」那条路，不会调 set_phase()，
 	# 所以这里自己按 GameState 里的当前阶段初始化一次。
 	# （单独 F6 运行本场景时，这一行同样让它直接落到正确的阶段。）
+	_refresh_interviewee()
 	set_phase(GameState.get_phase())
 
 
@@ -67,6 +60,7 @@ func set_phase(phase: int) -> void:
 	# 届时把复位挪到「进入整轮招人」（SCREENING），或者干脆改成「已判定集合」。
 	if phase == DayPhase.Phase.INTERVIEW:
 		finished_interviewee = 0
+		_refresh_interviewee()
 	_apply_phase_visuals()
 
 
@@ -96,10 +90,10 @@ func _apply_phase_visuals() -> void:
 	# 写成「不在这些阶段」而不是「只在招人阶段」：以后往招人流程里插新阶段时，
 	# 面试者默认仍可见，不会莫名消失。
 	#
-	# 用 get_node_or_null 现查而不是 @onready 缓存：临时调试段可能现场生成一个 Interviewee。
+	# 用 get_node_or_null 现查而不是 @onready 缓存：方便场景里换节点名。
 	var interviewee := get_node_or_null("Interviewee") as Control
 	if interviewee != null:
-		interviewee.visible = (
+		interviewee.visible = _has_interviewee and (
 			_phase != DayPhase.Phase.DAY_BRIEFING
 			and _phase != DayPhase.Phase.SPECIAL_EVENT
 		)
@@ -114,17 +108,44 @@ func _apply_phase_visuals() -> void:
 
 
 # ---------------------------------------------------------------------------
+# 当前面试者（数据全部来自 data/candidates/*.tres）
+# ---------------------------------------------------------------------------
+
+
+## 正在面试的那一位：当日名单里的第 finished_interviewee 位；名单里没有就返回 null。
+func current_candidate() -> CandidateResource:
+	var list := GameState.current_candidates
+	if finished_interviewee < 0 or finished_interviewee >= list.size():
+		return null
+	return list[finished_interviewee]
+
+
+## 把当前候选人铺到立绘和简历上。换人（判定完一位）后由 _judge() 再调一次。
+func _refresh_interviewee() -> void:
+	var candidate := current_candidate()
+	_has_interviewee = candidate != null
+
+	var interviewee := get_node_or_null("Interviewee") as Interviewee
+	if interviewee != null and candidate != null:
+		# 立绘配方（种族 + 各部件差分）写在候选人自己身上，不在代码里随机摇
+		interviewee.apply_candidate(candidate)
+
+	if _resume != null:
+		_resume.set_candidate(candidate)
+
+
+# ---------------------------------------------------------------------------
 # 录用判定
 # ---------------------------------------------------------------------------
 
 
 ## 当日候选人总数。
 ## 优先用 data/days 的 DayConfig；还没有数据时回退到实际候选人列表；
-## 两者都空则返回 1 —— 让 M0 的空流程点一下就能过，方便走通十天。
+## 两者都空则返回 1 —— 让空流程点一下就能过，方便走通十天。
 func _candidate_total() -> int:
-	var cfg = DataDB.get_day_config(GameState.get_day())
-	if cfg != null and int(cfg.candidate_count) > 0:
-		return int(cfg.candidate_count)
+	var cfg := DataDB.get_day_config(GameState.get_day())
+	if cfg != null and cfg.candidates.size() > 0:
+		return cfg.candidates.size()
 	var actual := GameState.current_candidates.size()
 	return actual if actual > 0 else 1
 
@@ -146,56 +167,22 @@ func _judge(passed: bool) -> void:
 		push_warning("[Interview] 阶段 %s 不接受录用判定，已忽略" % DayPhase.to_name(_phase))
 		return
 
-	var index := finished_interviewee
-	if index < GameState.current_candidates.size():
-		var candidate: CandidateResource = GameState.current_candidates[index]
+	var candidate := current_candidate()
+	if candidate != null:
 		GameState.issue_verdict(candidate.id, passed)
 	else:
-		# 候选人生成器还没接上 —— 这是 M0 的预期状态，用 print 而不是 warning
-		print("[Interview] 尚无候选人数据（index=%d），本次判定只计数" % index)
+		# 名单里没有这一位：可能是当天数据还没填，也可能已经判定完了一轮
+		print("[Interview] 当日名单里没有第 %d 位候选人，本次判定只计数" % finished_interviewee)
 
 	finished_interviewee += 1
 	# 用 >= 而不是 ==：多算一次也还能收口，不会永远不触发
 	if finished_interviewee >= _candidate_total():
 		finished_interviewee = 0
+		_refresh_interviewee()
 		phase_finished.emit()
-
-
-# ---------------------------------------------------------------------------
-# ⚠️ 临时调试（整段可删）
-# ---------------------------------------------------------------------------
-
-
-func _debug_randomize_interviewee() -> void:
-	# 场景里已经有 Interviewee 就直接用；没有就拉一个出来
-	var iv := get_node_or_null("Interviewee") as Interviewee
-	var spawned := false
-	if iv == null:
-		iv = INTERVIEWEE_SCENE.instantiate() as Interviewee
-		iv.name = "Interviewee"
-		spawned = true
-
-	# 随机走 RngService（项目的唯一随机源，纪律见 autoload/rng_service.gd）。
-	# 流名带 ticks 是为了「每次进场景都换一套」——纯调试目的。
-	# 这里并没有新增随机源，只是向 RngService 要了一条新流。
-	# 想改成「同种子复现同一套」就把流名换成固定的 &"debug:portrait"。
-	var s := StringName("debug:portrait:%d" % Time.get_ticks_msec())
-
-	iv.race = StringName(RngService.pick(s, RACES))
-	iv.eye = RngService.randi_in(s, PART_MIN, PART_MAX)
-	iv.hair = RngService.randi_in(s, PART_MIN, PART_MAX)
-	iv.mouth = RngService.randi_in(s, PART_MIN, PART_MAX)
-	iv.hat = RngService.randi_in(s, PART_MIN, PART_MAX)
-
-	if spawned:
-		# 先填数据再入树：_ready() 里那次 apply() 就已经是正确的一套，不会白跑
-		add_child(iv)
-	else:
-		# 场景里已有的实例，_ready() 早就跑过了，得手动重刷
-		iv.apply()
-
-	print("[Interview][debug] 随机面试者 race=%s eye=%d hair=%d mouth=%d hat=%d" % [
-		iv.race, iv.eye, iv.hair, iv.mouth, iv.hat])
+		return
+	# 换下一位：立绘与简历一起翻页
+	_refresh_interviewee()
 
 
 # ---------------------------------------------------------------------------

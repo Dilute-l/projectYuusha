@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TraitDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="1_y2hhh"]
+
+[resource]
+script = ExtResource("1_y2hhh")
+id = &"trait.drunkard"
+display_name = "PLACEHOLDER TRAIT 04"
+category = 1
+synergy_tags = Array[StringName]([&"drunk"])
+description = "PLACEHOLDER TRAIT DESC 04"

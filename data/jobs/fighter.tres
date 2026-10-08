@@ -1,7 +1,10 @@
-[gd_resource type="Resource" script_class="JobDef" format=3 uid="uid://4god4uyebf7b"]
+[gd_resource type="Resource" script_class="JobDef" format=3]
 
-[ext_resource type="Script" uid="uid://1x5dsbbnpcu3" path="res://scripts/resources/job_def.gd" id="1_430q4"]
+[ext_resource type="Script" path="res://scripts/resources/job_def.gd" id="1_430q4"]
 
 [resource]
 script = ExtResource("1_430q4")
+id = &"job.fighter"
+display_name = "PLACEHOLDER JOB 02"
+description = "PLACEHOLDER JOB DESC 02"
 metadata/_custom_type_script = "uid://1x5dsbbnpcu3"

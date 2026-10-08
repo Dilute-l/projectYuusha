@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="1_4ro6s"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_u1bps"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_xpgf1"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_twmln"]
+[ext_resource type="Resource" path="res://data/traits/ego.tres" id="5_vybnr"]
+[ext_resource type="Resource" path="res://data/traits/insomnia.tres" id="6_m3mr7"]
+
+[sub_resource type="Resource" id="Resource_4no3a"]
+script = ExtResource("2_u1bps")
+description = "PLACEHOLDER ENTRY 15-1"
+question = "PLACEHOLDER QUESTION 15-1"
+answer = "PLACEHOLDER ANSWER 15-1"
+
+[sub_resource type="Resource" id="Resource_fkdih"]
+script = ExtResource("2_u1bps")
+description = "PLACEHOLDER ENTRY 15-2"
+question = "PLACEHOLDER QUESTION 15-2"
+answer = "PLACEHOLDER ANSWER 15-2"
+
+[sub_resource type="Resource" id="Resource_mwfpc"]
+script = ExtResource("2_u1bps")
+description = "PLACEHOLDER ENTRY 15-3"
+question = "PLACEHOLDER QUESTION 15-3"
+answer = "PLACEHOLDER ANSWER 15-3"
+
+[resource]
+script = ExtResource("3_xpgf1")
+id = &"c_0015"
+display_name = "PLACEHOLDER NAME 15"
+strength = 4
+intelligence = 20
+wisdom = 12
+level = 7
+job = ExtResource("1_4ro6s")
+traits = Array[ExtResource("4_twmln")]([ExtResource("5_vybnr"), ExtResource("6_m3mr7")])
+resume = Array[ExtResource("2_u1bps")]([SubResource("Resource_4no3a"), SubResource("Resource_fkdih"), SubResource("Resource_mwfpc")])
+resume_header = "PLACEHOLDER HEADER 15"
+portrait_race = &"el"
+portrait_hair = 2

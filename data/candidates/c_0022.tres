@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_xxvtk"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_guygc"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_6r1dp"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_d0dts"]
+[ext_resource type="Resource" path="res://data/traits/lone_wolf.tres" id="5_okmby"]
+[ext_resource type="Resource" path="res://data/traits/justice.tres" id="6_q08xx"]
+
+[sub_resource type="Resource" id="Resource_igs8m"]
+script = ExtResource("2_guygc")
+description = "PLACEHOLDER ENTRY 22-1"
+question = "PLACEHOLDER QUESTION 22-1"
+answer = "PLACEHOLDER ANSWER 22-1"
+
+[sub_resource type="Resource" id="Resource_4cbgw"]
+script = ExtResource("2_guygc")
+description = "PLACEHOLDER ENTRY 22-2"
+question = "PLACEHOLDER QUESTION 22-2"
+answer = "PLACEHOLDER ANSWER 22-2"
+
+[sub_resource type="Resource" id="Resource_mel35"]
+script = ExtResource("2_guygc")
+description = "PLACEHOLDER ENTRY 22-3"
+question = "PLACEHOLDER QUESTION 22-3"
+answer = "PLACEHOLDER ANSWER 22-3"
+
+[resource]
+script = ExtResource("3_6r1dp")
+id = &"c_0022"
+display_name = "PLACEHOLDER NAME 22"
+strength = 17
+intelligence = 8
+wisdom = 10
+level = 6
+job = ExtResource("1_xxvtk")
+traits = Array[ExtResource("4_d0dts")]([ExtResource("5_okmby"), ExtResource("6_q08xx")])
+resume = Array[ExtResource("2_guygc")]([SubResource("Resource_igs8m"), SubResource("Resource_4cbgw"), SubResource("Resource_mel35")])
+resume_header = "PLACEHOLDER HEADER 22"
+portrait_race = &"el"
+portrait_eye = 3
+portrait_hair = 3
+portrait_mouth = 3

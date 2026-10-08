@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_3dhqj"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_xxx0b"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_lejus"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_pqkly"]
+[ext_resource type="Resource" path="res://data/traits/lone_wolf.tres" id="5_d3xsx"]
+
+[sub_resource type="Resource" id="Resource_o2dkh"]
+script = ExtResource("2_xxx0b")
+description = "PLACEHOLDER ENTRY 08-1"
+question = "PLACEHOLDER QUESTION 08-1"
+answer = "PLACEHOLDER ANSWER 08-1"
+
+[sub_resource type="Resource" id="Resource_0dqis"]
+script = ExtResource("2_xxx0b")
+description = "PLACEHOLDER ENTRY 08-2"
+question = "PLACEHOLDER QUESTION 08-2"
+answer = "PLACEHOLDER ANSWER 08-2"
+
+[sub_resource type="Resource" id="Resource_r7db1"]
+script = ExtResource("2_xxx0b")
+description = "PLACEHOLDER ENTRY 08-3"
+question = "PLACEHOLDER QUESTION 08-3"
+answer = "PLACEHOLDER ANSWER 08-3"
+
+[resource]
+script = ExtResource("3_lejus")
+id = &"c_0008"
+display_name = "PLACEHOLDER NAME 08"
+strength = 19
+intelligence = 7
+wisdom = 9
+level = 7
+job = ExtResource("1_3dhqj")
+traits = Array[ExtResource("4_pqkly")]([ExtResource("5_d3xsx")])
+resume = Array[ExtResource("2_xxx0b")]([SubResource("Resource_o2dkh"), SubResource("Resource_0dqis"), SubResource("Resource_r7db1")])
+resume_header = "PLACEHOLDER HEADER 08"
+portrait_eye = 2
+portrait_hair = 2

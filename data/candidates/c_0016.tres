@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_tu337"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_3hr5m"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_gt31m"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_8yv2a"]
+[ext_resource type="Resource" path="res://data/traits/greedy.tres" id="5_3dwxy"]
+
+[sub_resource type="Resource" id="Resource_y0cjq"]
+script = ExtResource("2_3hr5m")
+description = "PLACEHOLDER ENTRY 16-1"
+question = "PLACEHOLDER QUESTION 16-1"
+answer = "PLACEHOLDER ANSWER 16-1"
+
+[sub_resource type="Resource" id="Resource_2dh37"]
+script = ExtResource("2_3hr5m")
+description = "PLACEHOLDER ENTRY 16-2"
+question = "PLACEHOLDER QUESTION 16-2"
+answer = "PLACEHOLDER ANSWER 16-2"
+
+[sub_resource type="Resource" id="Resource_wkrhq"]
+script = ExtResource("2_3hr5m")
+description = "PLACEHOLDER ENTRY 16-3"
+question = "PLACEHOLDER QUESTION 16-3"
+answer = "PLACEHOLDER ANSWER 16-3"
+
+[resource]
+script = ExtResource("3_gt31m")
+id = &"c_0016"
+display_name = "PLACEHOLDER NAME 16"
+strength = 9
+intelligence = 3
+wisdom = 4
+level = 2
+job = ExtResource("1_tu337")
+traits = Array[ExtResource("4_8yv2a")]([ExtResource("5_3dwxy")])
+resume = Array[ExtResource("2_3hr5m")]([SubResource("Resource_y0cjq"), SubResource("Resource_2dh37"), SubResource("Resource_wkrhq")])
+resume_header = "PLACEHOLDER HEADER 16"
+portrait_eye = 2
+portrait_hair = 3
+portrait_mouth = 3

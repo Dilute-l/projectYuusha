@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="1_mj87m"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_rvbbn"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_xsn4e"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_468hn"]
+[ext_resource type="Resource" path="res://data/traits/calm.tres" id="5_3qo3r"]
+[ext_resource type="Resource" path="res://data/traits/justice.tres" id="6_p3mot"]
+
+[sub_resource type="Resource" id="Resource_q01oo"]
+script = ExtResource("2_rvbbn")
+description = "PLACEHOLDER ENTRY 17-1"
+question = "PLACEHOLDER QUESTION 17-1"
+answer = "PLACEHOLDER ANSWER 17-1"
+
+[sub_resource type="Resource" id="Resource_ogtpn"]
+script = ExtResource("2_rvbbn")
+description = "PLACEHOLDER ENTRY 17-2"
+question = "PLACEHOLDER QUESTION 17-2"
+answer = "PLACEHOLDER ANSWER 17-2"
+
+[sub_resource type="Resource" id="Resource_juh3c"]
+script = ExtResource("2_rvbbn")
+description = "PLACEHOLDER ENTRY 17-3"
+question = "PLACEHOLDER QUESTION 17-3"
+answer = "PLACEHOLDER ANSWER 17-3"
+
+[resource]
+script = ExtResource("3_xsn4e")
+id = &"c_0017"
+display_name = "PLACEHOLDER NAME 17"
+strength = 7
+intelligence = 13
+wisdom = 18
+level = 6
+job = ExtResource("1_mj87m")
+traits = Array[ExtResource("4_468hn")]([ExtResource("5_3qo3r"), ExtResource("6_p3mot")])
+resume = Array[ExtResource("2_rvbbn")]([SubResource("Resource_q01oo"), SubResource("Resource_ogtpn"), SubResource("Resource_juh3c")])
+resume_header = "PLACEHOLDER HEADER 17"
+portrait_race = &"el"
+portrait_eye = 3
+portrait_hair = 2
+portrait_mouth = 2

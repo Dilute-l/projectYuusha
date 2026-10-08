@@ -45,7 +45,7 @@ func _on_pressed() -> void:
 	selected.emit(entry_index)
 
 
-## 版面文案：「01  Slew three ogres single-handedly.」
+## 版面文案：「01  我在边境哨所单挑过一只食人魔。」（正文来自 data/candidates/*.tres）
 ## 序号补零是为了在简历纸上对齐成一列。
 func _format_line(index: int, description: String) -> String:
 	return "%02d  %s" % [index + 1, description]

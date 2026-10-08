@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="1_oqins"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_qtmfh"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_27ie4"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_arwpj"]
+[ext_resource type="Resource" path="res://data/traits/hot_blooded.tres" id="5_kwc2q"]
+
+[sub_resource type="Resource" id="Resource_5a06i"]
+script = ExtResource("2_qtmfh")
+description = "PLACEHOLDER ENTRY 11-1"
+question = "PLACEHOLDER QUESTION 11-1"
+answer = "PLACEHOLDER ANSWER 11-1"
+
+[sub_resource type="Resource" id="Resource_qwfju"]
+script = ExtResource("2_qtmfh")
+description = "PLACEHOLDER ENTRY 11-2"
+question = "PLACEHOLDER QUESTION 11-2"
+answer = "PLACEHOLDER ANSWER 11-2"
+
+[sub_resource type="Resource" id="Resource_gevmr"]
+script = ExtResource("2_qtmfh")
+description = "PLACEHOLDER ENTRY 11-3"
+question = "PLACEHOLDER QUESTION 11-3"
+answer = "PLACEHOLDER ANSWER 11-3"
+
+[resource]
+script = ExtResource("3_27ie4")
+id = &"c_0011"
+display_name = "PLACEHOLDER NAME 11"
+strength = 5
+intelligence = 16
+wisdom = 10
+level = 5
+job = ExtResource("1_oqins")
+traits = Array[ExtResource("4_arwpj")]([ExtResource("5_kwc2q")])
+resume = Array[ExtResource("2_qtmfh")]([SubResource("Resource_5a06i"), SubResource("Resource_qwfju"), SubResource("Resource_gevmr")])
+resume_header = "PLACEHOLDER HEADER 11"
+portrait_mouth = 3

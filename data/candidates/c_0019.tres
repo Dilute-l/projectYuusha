@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="1_pxbjo"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_qtnm7"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_72cxo"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_2pjaq"]
+[ext_resource type="Resource" path="res://data/traits/chivalry.tres" id="5_g3jhm"]
+
+[sub_resource type="Resource" id="Resource_fn70h"]
+script = ExtResource("2_qtnm7")
+description = "PLACEHOLDER ENTRY 19-1"
+question = "PLACEHOLDER QUESTION 19-1"
+answer = "PLACEHOLDER ANSWER 19-1"
+
+[sub_resource type="Resource" id="Resource_6fk6d"]
+script = ExtResource("2_qtnm7")
+description = "PLACEHOLDER ENTRY 19-2"
+question = "PLACEHOLDER QUESTION 19-2"
+answer = "PLACEHOLDER ANSWER 19-2"
+
+[sub_resource type="Resource" id="Resource_66340"]
+script = ExtResource("2_qtnm7")
+description = "PLACEHOLDER ENTRY 19-3"
+question = "PLACEHOLDER QUESTION 19-3"
+answer = "PLACEHOLDER ANSWER 19-3"
+
+[resource]
+script = ExtResource("3_72cxo")
+id = &"c_0019"
+display_name = "PLACEHOLDER NAME 19"
+strength = 8
+intelligence = 14
+wisdom = 20
+level = 8
+job = ExtResource("1_pxbjo")
+traits = Array[ExtResource("4_2pjaq")]([ExtResource("5_g3jhm")])
+resume = Array[ExtResource("2_qtnm7")]([SubResource("Resource_fn70h"), SubResource("Resource_6fk6d"), SubResource("Resource_66340")])
+resume_header = "PLACEHOLDER HEADER 19"
+portrait_eye = 2
