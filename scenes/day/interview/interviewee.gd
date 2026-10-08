@@ -10,16 +10,9 @@ extends Control
 ##   CandidateResource 的 portrait_* 字段（data/candidates/*.tres）。
 ##   本控件自己不摇随机数、也没有「默认长相」——
 ##   在 apply_candidate() 之前它什么都不画。
-
-## 立绘部位贴图目录——所有路径集中在这里，以后挪目录只改这一行
-const PORTRAIT_DIR := "res://assets/art/portrait/"
-
-## 用 tall_* 系列（眼/发/嘴）的种族；其余（st）用 st_hat_*
-const TALL_RACES: Array[StringName] = [&"hu", &"el"]
-
-## 部件编号范围，对应 *_phd1..3 三个文件
-const PART_MIN := 1
-const PART_MAX := 3
+##
+## ⚠️ 部件文件名与「哪个种族用哪几个部件」的规则**不在本文件**：
+##   统一在 scripts/util/portrait_composer.gd（组队界面的圆头像也走那一套）。
 
 # ---- 数据（由 apply_candidate() 从候选人资源灌入）----
 var race: StringName = &""
@@ -62,24 +55,16 @@ func apply() -> void:
 	if not _has_recipe:
 		return
 
-	_set_texture(_body, "%s_body_phd" % race)
+	# 部件名 → 贴图 的规则在 PortraitComposer：种族决定用眼 / 发 / 嘴还是帽子，
+	# 不适用的部件拿到空串，_set_texture() 会清掉它的贴图（不会残留上一个种族的脸）。
+	_set_texture(_body,  PortraitComposer.body_stem(race))
+	_set_texture(_eye,   PortraitComposer.eye_stem(race, eye))
+	_set_texture(_hair,  PortraitComposer.hair_stem(race, hair))
+	_set_texture(_mouth, PortraitComposer.mouth_stem(race, mouth))
+	_set_texture(_hat,   PortraitComposer.hat_stem(race, hat))
 
-	var is_tall := race in TALL_RACES
-	# 传 false 表示「这个种族不用这个部件」，会把贴图清空
-	_set_texture(_eye,   "tall_eye_phd%d" % eye,   is_tall)
-	_set_texture(_hair,  "tall_hir_phd%d" % hair,  is_tall)   # ← 是 hir，不是 hair
-	_set_texture(_mouth, "tall_mth_phd%d" % mouth, is_tall)
-	_set_texture(_hat,   "st_hat_phd%d"  % hat,    not is_tall)
 
-
-## 拼路径 → load → 赋值。找不到就报错，绝不静默
-func _set_texture(node: Sprite2D, file_stem: String, enabled: bool = true) -> void:
-	if not enabled:
-		node.texture = null
-		return
-	var path := PORTRAIT_DIR + file_stem + ".png"
-	if not ResourceLoader.exists(path):
-		push_error("[Interviewee] 找不到贴图：%s" % path)
-		node.texture = null
-		return
-	node.texture = load(path)
+## 部件名 → load → 赋值。空串 = 这个种族不用这个部件（清空贴图，不报错）；
+## 文件真的找不到时 PortraitComposer 会 push_error，绝不静默。
+func _set_texture(node: Sprite2D, file_stem: String) -> void:
+	node.texture = PortraitComposer.load_part(file_stem)

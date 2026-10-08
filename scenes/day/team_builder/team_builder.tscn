@@ -5,6 +5,8 @@
 [ext_resource type="Texture2D" uid="uid://vvalhoxhfslq" path="res://assets/art/interview/table_phd.png" id="2_cvggo"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_0x3h0"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_cvggo"]
+[ext_resource type="PackedScene" path="res://scenes/day/team_builder/team_builder_ui.tscn" id="5_tbui"]
+[ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="6_resume"]
 
 [node name="TeamBuilder" type="Control" unique_id=461966639]
 layout_mode = 3
@@ -18,6 +20,17 @@ centered = false
 [node name="TablePhd" type="Sprite2D" parent="." unique_id=864795664]
 texture = ExtResource("2_cvggo")
 centered = false
+
+[node name="TeamBuilderUI" parent="." instance=ExtResource("5_tbui")]
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Resume" parent="." instance=ExtResource("6_resume")]
+visible = false
+layout_mode = 1
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("3_0x3h0")]
 layout_mode = 0

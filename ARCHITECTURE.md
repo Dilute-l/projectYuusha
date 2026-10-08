@@ -84,6 +84,7 @@ res://
 │   └─ util/
 │       ├─ weighted_picker.gd
 │       ├─ text_formatter.gd
+│       ├─ portrait_composer.gd     立绘部件命名 + 拼装（面试立绘与组队圆头像共用，见 §12）
 │       └─ enum_utils.gd
 │
 ├─ data/                            ← 静态数据实例（.tres）
@@ -109,8 +110,8 @@ res://
 │   │   │   │   └─ resume_token.tscn    单条简历词条（复用控件）
 │   │   │   └─ handbook_overlay.tscn   随时可呼出的手册浮层，按关键词检索
 │   │   ├─ team_builder/       team_builder.tscn（组队容器）
-│   │   │   ├─ team_builder_ui.tscn     组队 UI：队伍人数、空位、羁绊、当日事件
-│   │   │   └─ candidate.tscn          当日候选人的简历
+│   │   │   ├─ team_builder_ui.tscn     组队 UI：今日候选人头像列表、已录用 / 名额（§12）
+│   │   │   └─ candidate.tscn          左侧单条候选人：圆头像 + 名字（悬停 / 左键，§12）
 │   │   └─ battle_report.tscn          战报演出容器（车夫对话、逐条事件、分数）
 │   ├─ ending/                 ending.tscn（收容结局相关子场景）
 │   └─ common/                 dialogue.tscn / interview_background.tscn / haohan.tscn
@@ -269,8 +270,8 @@ class_name DayConfig extends Resource
 | `resume_token.tscn` | 在 resume 下，单个张简历词条以及相关的信息（复用控件） | `selected` |
 | `handbook_overlay.tscn` | 在 interview 下，随时可呼出的手册浮层，按关键词检索 | `entry_bookmarked` |
 | `team_builder.tscn` | 在 day_loop 下，用于收容从通过者中挑满名额组队这一过程的相关场景 | `team_submitted` |
-| `team_builder_ui.tscn` | 在 team_builder 下，用于展示组队过程中的 UI，包括队伍人数，剩余空位，当前激活的羁绊、当日的事件等 | — |
-| `candidate.tscn` | 在 team_builder 下，用于展示当日的候选人的简历 | — |
+| `team_builder_ui.tscn` | 在 team_builder 下，用于展示组队过程中的 UI：**左半边今日面试者的头像列表**、已录用 / 名额表头（§12） | `candidate_hovered` / `candidate_toggled` |
+| `candidate.tscn` | 在 team_builder 下，左侧**单条**候选人：圆形头像（黑色纯色圆边框）+ 名字（§12） | `hovered` / `toggled` |
 | `battle_report.tscn` | 在 day_loop 下，用于收容下班马车上看战报演出，车夫对话，逐条事件播报，以及分数这一过程的场景 | `report_finished` |
 | `ending.tscn` | 用于收容所有与结局场景相关的细分场景，十天后按总分与 flag 判定结局 | `restart_requested` |
 | `dialogue.tscn` | 用于在多个场景下创建实例化的对话框 |  |
@@ -695,3 +696,123 @@ data/days/day_XX.tres
 `smoke_m0` 第 `[3.1]` 节盯的就是这层数据：25 位候选人、10 天名单、每天 `slots` 不超过当天人数、
 名单里的每个人都能在 `data/candidates/` 里查到、每条简历都齐了描述 / 追问 / 回答三样、
 **每位候选人都自带一段抬头文案**，以及 `GameState` 开局 / 换天时名单确实跟着换。
+
+---
+
+## 12. 组队界面（M3 前置：候选人头像 + 简历联动）
+
+> 这一节记的是 §4 里 `team_builder` 那三个空壳里**左半边**最先落地的内容：
+> **今日出现的面试者，一人一个圆头像；鼠标移上去，右半边铺出他的简历；左键点一下标记录用，再点一下撤销。**
+
+### 12.1 文件
+
+| 文件 | 职责 |
+| --- | --- |
+| `scenes/day/team_builder/team_builder.gd` / `.tscn` | **组队容器**。只做接线：名单 → UI、悬停 → 简历、左键 → `GameState.current_team` |
+| `scenes/day/team_builder/team_builder_ui.gd` / `.tscn` | UI 容器：`Header`（HIRED n / 名额）+ `Roster`（`GridContainer`，一格一条候选人） |
+| `scenes/day/team_builder/candidate.gd` / `.tscn` | 单条候选人：`class_name CandidateEntry`，圆头像（`_draw()` 画底衬 + 黑圆边框）+ 名字；对外 `hovered` / `toggled` |
+| `scripts/util/portrait_composer.gd` | `class_name PortraitComposer`：立绘**部件命名**的唯一出处 + 把部件拼成**圆形头像** |
+| `scenes/day/interview/resume/resume.tscn` | **原样复用**：右半边那页简历就是面试那一页（§10.6） |
+
+场景树（`team_builder.tscn`）：
+
+```
+TeamBuilder (Control) [team_builder.gd]
+├─ ItvBkgPhd / TablePhd       背景、桌子
+├─ TeamBuilderUI (1)          左半边：头像列表 + 表头
+├─ Resume (2)                 右半边：resume.tscn 实例（默认 visible=false）
+├─ Haohan (3)                 主角的手 = 光标，压在 UI 之上
+├─ ColorNight                 夜晚色调（CanvasModulate，整块画布一起变色）
+└─ Dialoguer
+```
+
+> `Haohan` 从「UI 之前」挪到了「UI 之后」：它是个跟着鼠标走的 1024×1024 手形贴图，
+> 排在 UI 前面的话，悬停头像时手会被头像盖住 —— 这一条和 `interview.tscn` 的层序对齐（手在最上）。
+
+### 12.2 数据怎么流到画面上
+
+```
+data/days/day_XX.tres
+   └─ candidates ──► GameState.current_candidates        （本日过程量，§7 不进存档）
+                        └─ team_builder.gd
+                             ├─ TeamBuilderUI.set_candidates()  → 一人一条 CandidateEntry
+                             │     └─ CandidateEntry.set_candidate()
+                             │          ├─ 头像 ← PortraitComposer.avatar_texture(candidate, 112)
+                             │          └─ 名字 ← candidate.display_name
+                             └─ TeamBuilderUI.set_hired_ids()   → 画「已录用」标记
+```
+
+- **名单就是「今日出现的面试者」**：和面试同一个来源（`GameState.current_candidates`）。
+  §4 写的「从**通过者**中挑」需要 `GameState.get_passed_ids()` 过滤，那是后面接判定流程时的事 ——
+  现在展示的是当天全部出场者，符合「左半边显示今日出现的所有面试者的头像」这条要求。
+- **右半边复用 `resume.tscn`，位置靠「同一个场景」而不是靠对齐代码**：`Resume` 是整屏 Control，
+  纸面 `Paper` 用的是绝对偏移（624,62 ～ 980,542），所以把它实例化到组队场景里，
+  位置与面试**逐像素相同**。`smoke_team_builder` 会把两边的 `Paper` 全局矩形拿来比，
+  以后谁动了偏移都会当场红。
+- 组队场景**一进来右半边是空的**（`Resume.visible = false`）：要求是「鼠标移上去才展示」。
+  悬停过之后内容就留着不撤 —— 移开鼠标只是不再换人，不然读简历读到一半手一抖就白了。
+
+### 12.3 交互与「录用」的真身
+
+| 操作 | 结果 |
+| --- | --- |
+| 鼠标移上某条头像 | `CandidateEntry.hovered` → `TeamBuilderUI.candidate_hovered` → `Resume.set_candidate(这一位)` + `visible = true` |
+| **左键**点某条头像 | `toggled` → 在 `GameState.current_team` 里**加上**这一位的 id |
+| 再点一次同一条 | 已经在队里 → 从 `current_team` 里**去掉**（撤销），标记随之消失 |
+| 右键 / 滚轮 / 中键 | 一概不响应（`_gui_input` 只认 `MOUSE_BUTTON_LEFT`） |
+| 表头 | `HIRED 已录用数 / 当日名额`，名额来自 `DayConfig.slots` |
+
+- 「已录用」的**真身是 `GameState.current_team`**（§2：本日过程量，不入存档），
+  条目上的 `hired` 只是显示状态，由 `TeamBuilderUI.set_hired_ids()` 同步下来。
+  这样没有新增任何 GameState API，也没有把状态塞进 UI。
+- **`GameState.roster`（全季已录用名单）不动**：那个由面试的判定（`issue_verdict` / `hire`）负责，
+  组队阶段挑的是「今天这一队」。提交队伍（`team_submitted` → `BattleReport`）留到接战报时再做。
+- 表头文案是英文（`HIRED`）：`assets/fonts` 还没接入中文字体，中文会变方块（§10.5），
+  和简历页的 `RESUME ENTRIES` 一致。
+
+### 12.4 圆形头像是怎么拼的
+
+立绘不是一整张图，而是「身体 + 眼睛 / 头发 / 嘴巴」或「身体 + 帽子」按同一个 300×300 的画布坐标
+叠出来的（§11.2）。头像就是把这套部件**拼成一张图再裁成圆**：
+
+1. `PortraitComposer.compose()`：按 `stems_for()` 的顺序把部件 `blend_rect` 到一张 300×300 的透明图上。
+   **部件文件名与「哪个种族用哪几个部件」只有这一处**（`interviewee.gd` 也读它，不再各写一份）。
+2. `framing_for_image()`：量出这张图的 alpha 包围盒，**自动**取一个居中、四周留 12% 余量的正方形取景框。
+   取景是自动的而不是一组写死的常量 —— 矮人三顶帽子（宽檐 / 小圆帽 / 高帽）身量差一倍，
+   以后换立绘、加种族也不用回来调数字。
+3. `_frame()`：按「取景框 ∩ 部件画布」拷贝（框可以伸到画布外，越界处留透明），再缩到 `size × size`。
+4. `_apply_circle_mask()`：圆外 alpha 清零，圆边留 1 像素渐变（不然锯齿很难看）。
+5. 结果存进 `avatar_texture()` 的静态缓存（key = 配方 + 尺寸），悬停换人时不再重拼。
+
+**黑圆边框是画出来的，不是贴图**：`CandidateEntry._draw()` 里
+`draw_circle()` 垫一层浅色底衬（立绘是白底黑描边的纸片人，得有底才在夜晚色调下站得住），
+再用 `draw_arc(..., RING_COLOR, RING_WIDTH)` 描一圈**纯黑**；「已录用」是黑圈**外面**再加一圈暖色，
+不动黑圈本身。
+
+> 实测数据（量 alpha 轮廓的临时探针，用完已删）：`hu / el` 整身占 y 17..300，
+> `st` 三顶帽子分别让整身落在 y 170..300 / 220..300 / 16..300 —— 正因为跨度差这么多，
+> 取景才做成自动的；这套数据现在由 §12.6 的「25 位候选人逐个体检」守着。
+
+### 12.5 版面与「别踩 M0 占位 HUD」
+
+- 头像列表在**左半边下半部**：`Header` 在 (24,306)，`Roster` 在 (24,344)，3 列，每条 120×148
+  （头像直径 112 + 名字一行）。今日 2〜3 位时正好一行；多了自动换到第二行（两行放 6 条）。
+- 往左下角挪的原因是 `day_loop` 的 **M0 占位 HUD 占着左上 303×297**（`layer = 10`，
+  `MOUSE_FILTER_STOP`）：压在那里的话既看不见、也点不到。占位 HUD 删掉之后，这里可以再往上摆。
+- 右半边的简历纸面在 x 624 起，两半不重叠。
+
+### 12.6 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_team_builder.tscn
+```
+
+53 项：左半边条数 = 今日名单人数、每条的候选人与名字来自数据、头像尺寸 = `AVATAR_SIZE`、
+**圆外一个像素都没有 / 圆内有内容 / 填得够满 / 包围盒中心落在圆心**（±2px）、
+悬停换人后右半边抬头与词条都跟着换、**组队页的 `Paper` 全局矩形与面试页逐像素相同**、
+左键标记与撤销、右键无反应、表头计数、空名单不炸、以及
+**`data/candidates/` 里 25 位候选人逐个拼得出「有内容且居中」的头像**。
+另外还比对了 `Interviewee` 与 `PortraitComposer` 取的是同一套部件图（防两边走偏）。
+全绿退出码 0。
+
+画布同样是塞进 1152×648 的 `SubViewport` 里测的（理由见 §10.6）。
