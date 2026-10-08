@@ -27,7 +27,7 @@ extends Label
 
 ## 默认的字间隔（秒）。节点上的 `char_duration` 初值即此值；
 ## JSON 里没写间隔时也回退到它。
-const DEFAULT_CHAR_DURATION: float = 0.03
+const DEFAULT_CHAR_DURATION: float = 0.04
 
 ## 停顿语法 `^n` 的单位：n 个 `^n` 单位 = n * PAUSE_UNIT 秒。
 ## 例：「你好^3」= 打完「好」之后停 3 * 0.2 = 0.6 秒。
@@ -86,6 +86,18 @@ const DEFAULT_SILENT_CHARS: String = SILENT_WHITESPACE + SILENT_PUNCTUATION + SI
 
 ## 进入树后自动开始播放（便于单独 F6 运行本场景调试）
 @export var autostart: bool = false
+
+## 默认字体：assets/fonts/Silver.ttf。typer 会在 _ready 时把它设为正文默认字体。
+const DEFAULT_FONT_PATH: String = "res://assets/fonts/Silver.ttf"
+
+## 默认字号。Godot 默认是 16，这里放大到 40 作为对话正文的默认大小。
+const DEFAULT_FONT_SIZE: int = 40
+
+## 默认字体路径。留空 = 不动现有字体
+@export_file("*.ttf", "*.otf") var default_font_path: String = DEFAULT_FONT_PATH
+
+## 默认字号。<= 0 表示不改动现有字号
+@export var default_font_size: int = DEFAULT_FONT_SIZE
 
 ## 打开/关闭逐字音效
 @export var sound_enabled: bool = true
@@ -166,6 +178,8 @@ var _leading_wait: float = 0.0
 
 
 func _ready() -> void:
+	# 字体要在写文本之前设好，免得先按默认字体排版一帧再跳变
+	apply_default_font()
 	# 先清空，避免编辑器里预览的静态文本在开局时露出（此时 visible_characters 还是 -1）
 	text = ""
 	visible_characters = 0
@@ -665,6 +679,23 @@ var _speaker_label: Label = null
 # ---------------------------------------------------------------------------
 # 内部
 # ---------------------------------------------------------------------------
+
+
+## 把默认字体与字号套用到本节点（theme override）。
+## 可以用 default_font_path = "" 或 default_font_size <= 0 关掉其中一项。
+## 找不到字体时只警告，保留现有字体，不影响打字机本身。
+func apply_default_font() -> void:
+	if not default_font_path.is_empty():
+		if not ResourceLoader.exists(default_font_path):
+			push_warning("[Typer] 字体不存在：%s（沿用现有字体）" % default_font_path)
+		else:
+			var font := ResourceLoader.load(default_font_path)
+			if font is Font:
+				add_theme_font_override(&"font", font)
+			else:
+				push_warning("[Typer] 不是字体资源：%s" % default_font_path)
+	if default_font_size > 0:
+		add_theme_font_size_override(&"font_size", default_font_size)
 
 
 ## 露出下一个字。返回「这个字是否应该发声」（静音字符返回 false）。

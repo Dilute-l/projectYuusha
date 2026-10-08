@@ -60,3 +60,38 @@ func _cancel_exit_confirm() -> void:
 		return
 	_exit_confirming = false
 	$Dialoguer.visible = false
+
+
+func _on_credits_pressed() -> void:
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("Sorry"):
+		return
+	dialoguer.play()
+
+##占位符按钮，按下来之后可以看到mcc花了个把小时都干了些什么
+func _on_place_holder_button_pressed() -> void:
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("WhatN1zHasDone"):
+		return
+	dialoguer.play()
+
+
+## Title 按钮的音效
+const TITLE_SFX_PATH: String = "res://assets/sound/squeak.mp3"
+
+
+func _on_title_pressed() -> void:
+	# 这是个音效按钮：按下就响一声 squeak，不做别的。
+	# 走 AudioService 的 SFX 池，找不到资源只会警告、不会崩。
+	AudioService.play_sfx(TITLE_SFX_PATH)
+	# 顺手释放按钮焦点，免得之后按空格/回车又把 squeak 触发一遍。
+	# 注意：Window 上叫 gui_release_focus()，没有 child_focus_exited() 这个方法。
+	var win := get_window()
+	if win != null:
+		win.gui_release_focus()
