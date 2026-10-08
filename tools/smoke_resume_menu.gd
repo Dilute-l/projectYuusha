@@ -1,0 +1,198 @@
+extends Node
+
+## resume / resume_token_menu 自检（不需要编辑器，也不需要打开场景）。
+##
+## 用法：
+##   & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_resume_menu.tscn
+##   全绿退出码 0；有失败项退出码 1。
+##
+## 为什么套一层 SubViewport：headless 下窗口是 1152x1152，--resolution 不生效，
+## 直接挂在 root 上就测不到真实画布。放进一个尺寸可控的 SubViewport 里，
+## 既能复现游戏真正的 1152x648，也能随手改尺寸来验「画布大小变化时的适配」，
+## 而且结果与显示器/窗口无关，跑多少次都一样。
+
+const RESUME_SCENE := preload("res://scenes/day/interview/resume/resume.tscn")
+
+## 游戏的实际画布（project.godot 的 canvas_items 拉伸基准）
+const GAME_CANVAS := Vector2i(1152, 648)
+
+## 先按真实画布跑，再放大画布验重排
+const TALL_CANVAS := Vector2i(1152, 900)
+const WIDE_CANVAS := Vector2i(1600, 900)
+
+var _failures: Array[String] = []
+var _checks: int = 0
+var _canvas := Vector2.ZERO
+
+
+func _ready() -> void:
+	# 等 root 把子节点装配完再往里加 —— _ready() 里直接 add_child 会被拒绝
+	await get_tree().process_frame
+	await _run()
+	_report()
+
+
+func _check(ok: bool, what: String) -> void:
+	_checks += 1
+	if not ok:
+		_failures.append(what)
+	print("  [%s] %s" % ["OK  " if ok else "FAIL", what])
+
+
+func _inside(r: Rect2, c: Vector2) -> bool:
+	return r.position.x >= -0.01 and r.position.y >= -0.01 \
+			and r.end.x <= c.x + 0.01 and r.end.y <= c.y + 0.01
+
+
+func _settle() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+
+func _run() -> void:
+	var vp := SubViewport.new()
+	vp.size = GAME_CANVAS
+	vp.disable_3d = true
+	get_tree().root.add_child(vp)
+
+	var resume: Control = RESUME_SCENE.instantiate()
+	vp.add_child(resume)
+	await _settle()
+
+	_canvas = resume.get_viewport_rect().size
+	print("[smoke_resume_menu] 画布 = %s" % _canvas)
+	_check(_canvas == Vector2(GAME_CANVAS), "画布是自己设定的 1152x648")
+
+	var menu: ResumeTokenMenu = resume.get_node("TokenMenu")
+	var panel: TextureRect = menu.get_node("Panel")
+	var ask: Button = menu.get_node("Options/OptionList/AskButton")
+	var list: VBoxContainer = resume.get_node("Paper/Rows/TokenList")
+	var t3: Control = list.get_child(2)
+	var t5: Control = list.get_child(4)
+
+	# ---- 结构与素材 ----
+	_check(menu != null, "TokenMenu 存在且是 ResumeTokenMenu")
+	_check(not menu.visible, "菜单默认隐藏")
+	_check(panel.texture != null, "面板纹理已加载")
+	_check(panel.texture.get_size() == ResumeTokenMenu.PANEL_SIZE,
+			"纹理实际尺寸 %s == PANEL_SIZE %s" % [panel.texture.get_size(), ResumeTokenMenu.PANEL_SIZE])
+	_check(ask.text == "追问", "按钮文案是「追问」")
+	_check(list.get_child_count() == 5, "词条仍是 5 条")
+
+	# 顺带如实报一下默认字体能不能画中文 —— assets/fonts 还没接入主字体（§10.5），
+	# 画不出来按钮就是两个方块。这条只提示，不算失败。
+	var missing := ""
+	for ch in ask.text:
+		if not ThemeDB.fallback_font.has_char(ch.unicode_at(0)):
+			missing += ch
+	if missing.is_empty():
+		print("  [note] 默认字体有「%s」的字形，按钮能正常显示" % ask.text)
+	else:
+		print("  [note] ⚠ 默认字体缺字形「%s」—— 按钮会显示成方块，等 assets/fonts 接入中文字体" % missing)
+
+	# ---- 点词条 → 开菜单 ----
+	_check(t3.selected.get_connections().size() > 0, "词条的 selected 已接到 resume.gd")
+	t3.emit_signal("pressed")
+	await _settle()
+
+	_check(menu.visible, "点词条后菜单打开")
+	_check(menu.entry_index == 2, "菜单记住词条序号 = 2")
+	var r := menu.get_global_rect()
+	var a := t3.get_global_rect()
+	_check(is_equal_approx(r.position.x, a.end.x + ResumeTokenMenu.GAP), "默认贴在词条右边")
+	_check(is_equal_approx(r.position.y, a.position.y), "与词条顶对齐")
+	_check(_inside(r, _canvas), "菜单整块落在画布内 %s" % r)
+
+	# ---- 底部夹取：最后一条词条 y=475，475+223 > 648，必须被夹到 425 ----
+	t5.emit_signal("pressed")
+	await _settle()
+	r = menu.get_global_rect()
+	var t5_top: float = t5.get_global_rect().position.y
+	_check(t5_top + ResumeTokenMenu.PANEL_SIZE.y > _canvas.y, "前提成立：最后一条词条放不下整块菜单")
+	_check(is_equal_approx(r.position.y, _canvas.y - ResumeTokenMenu.PANEL_SIZE.y),
+			"底部放不下 → 夹到画布底边（y=%s，期望 %s）" % [r.position.y, _canvas.y - ResumeTokenMenu.PANEL_SIZE.y])
+	_check(_inside(r, _canvas), "夹取后仍在画布内 %s" % r)
+
+	# ---- 画布变大：夹取应自动松开（走的是 size_changed，不是手动重排）----
+	vp.size = TALL_CANVAS
+	await _settle()
+	_canvas = resume.get_viewport_rect().size
+	r = menu.get_global_rect()
+	_check(_canvas == Vector2(TALL_CANVAS), "画布已变成 1152x900（%s）" % _canvas)
+	_check(is_equal_approx(r.position.y, t5_top),
+			"画布变高后菜单自动回到词条顶对齐（y=%s，期望 %s）" % [r.position.y, t5_top])
+	_check(_inside(r, _canvas), "变大后仍完整在画布内 %s" % r)
+
+	# ---- 画布变宽：位置跟着重算，仍然贴边不越界 ----
+	vp.size = WIDE_CANVAS
+	await _settle()
+	_canvas = resume.get_viewport_rect().size
+	r = menu.get_global_rect()
+	_check(_inside(r, _canvas), "变宽后仍完整在画布内 %s" % r)
+
+	# ---- 右侧翻边：右边塞不下时翻到词条左边 ----
+	var far := Control.new()
+	far.size = Vector2(60, 30)
+	vp.add_child(far)
+	far.global_position = Vector2(_canvas.x - 50.0, 100.0)
+	menu.open_for(far, 0)
+	await _settle()
+	r = menu.get_global_rect()
+	_check(is_equal_approx(r.end.x, far.get_global_rect().position.x - ResumeTokenMenu.GAP),
+			"右边放不下 → 翻到词条左边")
+	_check(_inside(r, _canvas), "翻边后仍在画布内 %s" % r)
+
+	# ---- 收起：点外面 / Esc ----
+	t3.emit_signal("pressed")
+	await _settle()
+	_check(menu.visible, "重新打开")
+	var outside := InputEventMouseButton.new()
+	outside.button_index = MOUSE_BUTTON_LEFT
+	outside.pressed = true
+	outside.position = Vector2(5.0, 5.0)
+	resume._input(outside)
+	_check(not menu.visible, "点菜单外面 → 收起")
+
+	t3.emit_signal("pressed")
+	await _settle()
+	var esc := InputEventAction.new()
+	esc.action = &"ui_cancel"
+	esc.pressed = true
+	resume._input(esc)
+	_check(not menu.visible, "Esc → 收起")
+
+	# ---- 「追问」按钮：抛信号，但没有后续 ----
+	t3.emit_signal("pressed")
+	await _settle()
+	_check(menu.ask_requested.get_connections().size() == 0,
+			"ask_requested 目前没有任何订阅者（点了不该有后续）")
+	var seen: Array[int] = []
+	menu.ask_requested.connect(func(i: int) -> void: seen.append(i))
+	ask.emit_signal("pressed")
+	await _settle()
+	_check(seen == [2], "「追问」抛出了 ask_requested(2)")
+	_check(menu.visible, "「追问」不会自己关菜单（暂时没有内容可展开）")
+	_check(t3.visible, "词条没有被动过")
+
+	# ---- 简历整块被显隐时（interview.gd 按阶段控制 Resume.visible）菜单不能诈尸 ----
+	t3.emit_signal("pressed")
+	await _settle()
+	_check(menu.is_open(), "再开一次做显隐测试")
+	resume.visible = false
+	await _settle()
+	_check(not menu.is_open(), "Resume 被隐藏 → 菜单自己收起")
+	resume.visible = true
+	await _settle()
+	_check(not menu.is_open(), "Resume 重新显示 → 菜单不会诈尸")
+
+
+func _report() -> void:
+	print("")
+	if _failures.is_empty():
+		print("[smoke_resume_menu] 全绿：%d 项全部通过" % _checks)
+		get_tree().quit(0)
+	else:
+		print("[smoke_resume_menu] 失败 %d / %d 项：" % [_failures.size(), _checks])
+		for f in _failures:
+			print("  - ", f)
+		get_tree().quit(1)

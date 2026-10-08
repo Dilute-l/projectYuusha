@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://7phbtsuitjkn" path="res://scenes/day/interview/resume/resume.gd" id="1_w6vme"]
 [ext_resource type="Texture2D" uid="uid://dhmx2jff8wa2f" path="res://assets/art/interview/resume_page_phd.png" id="2_vnthk"]
 [ext_resource type="PackedScene" uid="uid://c30g1ll4c2ch5" path="res://scenes/day/interview/resume/resume_token.tscn" id="3_yu2w1"]
+[ext_resource type="PackedScene" path="res://scenes/day/interview/resume/resume_token_menu.tscn" id="4_menu"]
 
 [node name="Resume" type="Control" unique_id=429165533]
 layout_mode = 3
@@ -73,3 +74,9 @@ text = "04  Survived fourteen days alone in the Cursed Marsh."
 [node name="ResumeToken5" parent="Paper/Rows/TokenList" unique_id=793925309 instance=ExtResource("3_yu2w1")]
 layout_mode = 2
 text = "05  Never lost a duel in six years of royal service."
+
+[node name="TokenMenu" parent="." instance=ExtResource("4_menu")]
+visible = false
+layout_mode = 0
+offset_right = 145.0
+offset_bottom = 223.0

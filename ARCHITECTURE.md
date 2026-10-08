@@ -514,40 +514,72 @@ M1 之前的简历版面骨架，已经能单独跑起来看：编辑器里打�
 
 #### 挂载点
 
-`resume.tscn` 已作为 **`interview.tscn` 的子节点**实例化，和 `Interviewee` 是兄弟：
+`resume.tscn` 作为 **`interview.tscn` 的子节点**实例化。`597305d` 之后 `interview` 一个场景承载
+DayBriefing / SpecialEvent / Screening / Interview 四个阶段：
 
 ```
 DayLoop (Node)
 ├─ PhaseContainer (Node)
-│   └─ Interview (Control)          ← interview.tscn，DayLoop._swap_phase_scene() 按阶段实例化
+│   └─ Interview (Control)          ← interview.tscn，DayLoop 按阶段实例化
 │       ├─ ItvBkgPhd   (0)  背景
 │       ├─ Interviewee (1)  立绘
 │       ├─ TablePhd    (2)  桌子
-│       ├─ Resume      (3)  ← 简历，压在立绘/桌子之上
-│       ├─ NoticeBoard (4)  公告板按钮，保持在最上层
-│       └─ Dialoguer   (5)
-└─ FlowHud (CanvasLayer, layer -1)  ← M0 占位 HUD，在默认画布层（0）**之下**
+│       ├─ Resume      (3)  ← 简历，压在立绘/桌子之上（TokenMenu 是它的子节点）
+│       ├─ NoticeBoard (4)  公告板
+│       ├─ Dialoguer   (5)
+│       ├─ Approved    (6)  录用
+│       ├─ Nah         (7)  拒绝
+│       └─ Haohan      (8)  主角的手
+└─ FlowHud (CanvasLayer, layer 10)  ← M0 占位 HUD
 ```
 
-所以 `DayLoop` 一进 Screening / Interview 阶段把 `interview.tscn` 挂到 `PhaseContainer` 下，
-简历和立绘就是**同时**出现的；离开阶段时跟着 `interview.tscn` 一起 `queue_free`，再回来会重新实例化
-（`_swap_phase_scene()` 里 `scene_key` 相同则不重建，Screening ⇄ Interview 之间切换不会闪）。
-简历不用自己管显隐，也就没有额外的 show/hide 代码 —— §4 把 `resume.tscn` 定在 `interview` 之下就是这个意思。
+**显隐由阶段决定，简历自己不管**：`interview.gd::_apply_phase_visuals()` 里
+`_resume.visible = DayPhase.is_recruiting(_phase)`，简历只在招人阶段出现。
+隐藏的是 Resume 整棵子树，所以菜单也跟着不画了 —— 但菜单自己的 `visible` 仍是 `true`，
+回到招人阶段会「诈尸」。`resume.gd` 因此接了 `visibility_changed`，一被藏起来就 `close()`。
 
-#### 占位 HUD 挪到了最下层（layer -1）
+> 注：这里曾一度把 `FlowHud` 改成 `layer = -1`（让阶段界面盖住占位 HUD，顺带解决它抢鼠标）。
+> `597305d` 走的是另一条路：HUD 留在 `layer = 10`，但把 `FlowHud/Hud` 的矩形缩到左上角 303×297
+> （`offset_right = -849`、`offset_bottom = -351`），不再盖住简历区。两种做法都能解决
+> 「全屏 `MOUSE_FILTER_STOP` 的占位 HUD 抢鼠标」，**以现在这版为准**。
 
-`FlowHud` 原本在 `layer = 10`，压在一切之上，两个副作用：
+#### resume_token_menu（点词条弹出的菜单）
 
-1. 它的 `Backdrop`（全屏 `Color(0.06,0.06,0.09,0.75)`）把 Interview 阶段的整幅画面压暗到约 25%；
-2. 更要命的是 `FlowHud/Hud` 是个**全屏 `MOUSE_FILTER_STOP`** 的 Control，抢在阶段子场景之前吃掉鼠标
-   —— 简历词条的悬停高亮在真实流程里**根本不触发**（实测 hover 命中的是 `FlowHud/Hud/Margin/Layout/Spacer`）。
+| 文件 | 职责 |
+| --- | --- |
+| `scenes/day/interview/resume/resume_token_menu.gd` / `.tscn` | 面板 + 选项列表，`class_name ResumeTokenMenu`，对外信号 `ask_requested(entry_index)` |
+| `assets/art/interview/resume_token_menu_phd.png` | 手绘白纸面板贴图，原生 145×223 |
 
-改成 `layer = -1` 后，占位 HUD 落到默认画布层（0）之下：有真正阶段界面的阶段（Screening / Interview）
-由 `interview.tscn` 的全屏背景整个盖住它，没有阶段场景的阶段（DayBriefing / SpecialEvent / DayResult）
-它照常露出来，流程仍然走得通。实测改完后 `gui_get_hovered_control()` 正确落在
-`Resume/Paper/Rows/TokenList/ResumeTokenN` 上，悬停高亮生效。
+节点：`ResumeTokenMenu (Control)` → `Panel (TextureRect)` + `Options (MarginContainer)` →
+`OptionList (VBoxContainer)` → `AskButton`。它作为 `resume.tscn` 里的 `TokenMenu` 子节点实例化，
+默认 `visible = false`，开关由 `resume.gd` 管。
 
-> ⚠️ 副作用：`itv_bkg_phd.png` 是**全屏 100% 不透明**，所以 Interview 阶段里 HUD 连"Continue"按钮
-> 一起被盖住、看不见了。按钮本身仍然**可点**——它在 y 561~592，而简历纸面只到 y 549，没有东西遮住它，
-> 实测点击依然能推进阶段（SCREENING → INTERVIEW）。等 M2 给面试场景做出真正的推进控件后，
-> `FlowHud` 按 §10.5 的既定计划整个删掉即可。
+- **交互**：点词条 → `resume_token` 的 `selected` → `resume.gd._on_token_selected()` →
+  `menu.open_for(token, i)`；点菜单外面或按 Esc 收起。点菜单外面时**故意不 `set_input_as_handled()`**，
+  所以点到别的词条上时那条词条照样收到 `pressed`，菜单顺势挪过去（要的就是这个手感）。
+- **「追问」按钮暂时没有后续**：`ask_requested` 按 §4 的路子预留并照常 emit，但 `resume.gd` 不订阅，
+  菜单也不会自己关 —— §6.2 的「先给 `question`、再展开 `answer`」留到 M2。
+  按钮的 normal / hover 直接复用 `ui/styles/resume_token_*.tres`，和词条同一套观感。
+
+**画布适配**（`aspect=expand` 下画布会随窗口比例变大，所以位置不能写死）：
+
+- 面板按纹理原生尺寸摆放、**不拉伸**（手绘边框拉变形很难看）；窗口缩放统一交给 `canvas_items`。
+- `open_for()` 现算词条的 `global rect` 再摆：默认贴右边、与词条顶对齐 → 右边放不下翻到左边 →
+  最后整体夹进 `get_viewport_rect()`。并且接了 `viewport.size_changed` 重算，画布一变菜单自己会跟。
+- `_ready()` 校验纹理尺寸 == `PANEL_SIZE`，对不上就 `push_warning`（换图必然要重新量内边距）。
+
+> ⚠️ 按钮文案「追问」是中文，而 `assets/fonts` 还没接入中文字体：`smoke_resume_menu` 实测
+> `ThemeDB.fallback_font.has_char('追')` 为 **false**，按钮现在会显示成**两个方块**。
+> 字体接进来后这里不用改代码。
+
+#### 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_resume_menu.tscn
+```
+
+32 项：面板/按钮就位、点词条开菜单并记住序号、贴边 / 翻边 / 底部夹取、
+**改画布尺寸后自动重排**、点外面与 Esc 收起、整块显隐不诈尸、「追问」抛信号但无后续。全绿退出码 0。
+
+它把简历放进一个尺寸可控的 `SubViewport`（1152×648 = 游戏真实画布）：headless 下窗口是 1152×1152
+且 `--resolution` 不生效，直接挂在 root 上既测不到真实画布，也测不了「画布变了」这一条。

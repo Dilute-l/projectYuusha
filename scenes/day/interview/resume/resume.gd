@@ -50,15 +50,30 @@ const PLACEHOLDER_ENTRIES: Array[String] = [
 @onready var _info_label: Label = $Paper/Rows/HeaderInfo
 @onready var _caption_label: Label = $Paper/Rows/EntriesCaption
 @onready var _token_list: VBoxContainer = $Paper/Rows/TokenList
+@onready var _token_menu: ResumeTokenMenu = $TokenMenu
 
 
 func _ready() -> void:
+	# interview.gd 会按阶段把本节点整块显隐（_apply_phase_visuals）。
+	# 父节点隐藏时子节点只是不画，菜单自己的 visible 还是 true —— 再回到招人阶段就会「诈尸」。
+	# 所以本节点一被藏起来就顺手把菜单收掉。
+	if not visibility_changed.is_connected(_on_visibility_changed):
+		visibility_changed.connect(_on_visibility_changed)
 	_apply_placeholder()
+
+
+func _on_visibility_changed() -> void:
+	if not is_visible_in_tree() and _token_menu != null:
+		_token_menu.close()
 
 
 ## 铺一整份简历。M1 接上候选人数据后由调用方拿 candidate.resume 喂进来。
 ## descriptions 里每一条 = 一条 ResumeEntry.description（§3.2）。
 func set_entries(descriptions: Array) -> void:
+	# 换一批词条时先把菜单收起来：它正锚着的那条可能马上就被隐藏/换内容了
+	if _token_menu != null:
+		_token_menu.close()
+
 	# 场景里预摆了 5 个 ResumeToken 实例：编辑器一打开就能看到真实版面。
 	# 数据条数和预摆数对不上时按数据走 —— 多的现场新建，富余的隐藏，
 	# 所以「若干项」都能撑住，不用改场景。
@@ -73,6 +88,7 @@ func set_entries(descriptions: Array) -> void:
 			token.name = "ResumeToken%d" % (i + 1)
 			_token_list.add_child(token)
 		token.set_entry(i, String(descriptions[i]))
+		_connect_token(token)
 
 	for i in range(descriptions.size(), placed.size()):
 		(placed[i] as Control).visible = false
@@ -82,6 +98,38 @@ func set_entries(descriptions: Array) -> void:
 ## 怎么分行、怎么对齐都在字符串里排，不用再去点散落的 Label。
 func set_info(text: String) -> void:
 	_info_label.text = text
+
+
+# ---- 词条菜单 ---------------------------------------------------------------
+
+
+## 每条词条都要接上 —— 新现场 instantiate() 出来的那些也要，所以放在 set_entries 里逐条接。
+func _connect_token(token: ResumeToken) -> void:
+	if not token.selected.is_connected(_on_token_selected):
+		token.selected.connect(_on_token_selected)
+
+
+## 点了某一条词条 → 在它旁边弹出菜单（§6.2 的第一步）。
+## 菜单里目前只有一个不接后续的「追问」，见 resume_token_menu.gd。
+func _on_token_selected(entry_index: int) -> void:
+	var token := _token_list.get_child(entry_index) as Control
+	if token == null or not token.visible:
+		return
+	_token_menu.open_for(token, entry_index)
+
+
+## 菜单开着的时候：点菜单外面 = 收起，Esc = 收起。
+## 这里**故意不吃掉鼠标事件** —— 点到别的词条上时那条词条还得正常收到 pressed，
+## 于是菜单会顺势挪到新词条旁边，这正是想要的手感。
+func _input(event: InputEvent) -> void:
+	if _token_menu == null or not _token_menu.is_open():
+		return
+	if event is InputEventMouseButton and event.pressed:
+		if not _token_menu.get_global_rect().has_point(event.position):
+			_token_menu.close()
+	elif event.is_action_pressed("ui_cancel"):
+		_token_menu.close()
+		get_viewport().set_input_as_handled()
 
 
 # ---- 占位数据 ---------------------------------------------------------------
