@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/day/interview/resume/resume_token_menu.gd" id="1_menu"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume_token_menu_phd.png" id="2_panel"]
+[ext_resource type="StyleBox" path="res://ui/styles/resume_token_normal.tres" id="3_norm"]
+[ext_resource type="StyleBox" path="res://ui/styles/resume_token_hover.tres" id="4_hover"]
+
+[node name="ResumeTokenMenu" type="Control"]
+custom_minimum_size = Vector2(145, 223)
+anchors_preset = 0
+offset_right = 145.0
+offset_bottom = 223.0
+script = ExtResource("1_menu")
+
+[node name="Panel" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_panel")
+
+[node name="Options" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 33
+
+[node name="OptionList" type="VBoxContainer" parent="Options"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="AskButton" type="Button" parent="Options/OptionList"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_colors/font_pressed_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_colors/font_hover_color = Color(0.05, 0.04, 0.03, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = ExtResource("3_norm")
+theme_override_styles/pressed = ExtResource("3_norm")
+theme_override_styles/hover = ExtResource("4_hover")
+text = "追问"
