@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://dknvg2u31014o"]
 
 [ext_resource type="Texture2D" uid="uid://bxwueyowabxw1" path="res://assets/art/battle_report/driver_phd.png" id="1_m5q85"]
+[ext_resource type="Script" uid="uid://d1flxfdqte65y" path="res://scenes/day/battle_report.gd" id="1_x4kxj"]
 [ext_resource type="Texture2D" uid="uid://byc2u8r2w06dk" path="res://assets/art/battle_report/car_bkg_phd.png" id="2_exidj"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_x4kxj"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_exidj"]
@@ -8,6 +9,7 @@
 [node name="BattleReport" type="Control" unique_id=81862534]
 layout_mode = 3
 anchors_preset = 0
+script = ExtResource("1_x4kxj")
 
 [node name="DriverPhd" type="Sprite2D" parent="." unique_id=1249870580]
 texture = ExtResource("1_m5q85")

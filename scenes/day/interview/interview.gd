@@ -23,6 +23,7 @@ var _phase: int = DayPhase.Phase.DAY_BRIEFING
 @onready var _resume: Resume = get_node_or_null("Resume") as Resume
 @onready var _approved: TextureButton = get_node_or_null("Approved") as TextureButton
 @onready var _nah: TextureButton = get_node_or_null("Nah") as TextureButton
+@onready var _dialoguer: Dialoguer = get_node_or_null("Dialoguer") as Dialoguer
 
 ## 本阶段做完了。day_loop 挂载本场景时会把它接到 advance() 上。
 signal phase_finished()
@@ -33,12 +34,24 @@ var finished_interviewee: int = 0
 ## 当前是否真的有候选人可展示（没有名单时立绘不出场）
 var _has_interviewee: bool = false
 
+## 上一次真正「进入」的阶段。-1 = 本实例还没进入过任何阶段。
+##
+## 为什么需要它：set_phase() 在挂载那一次会被调用两遍 —— _ready() 里的自初始化一次、
+## day_loop 通过 EventBus.day_phase_entered 再一次；同一个实例切阶段时也会被通知两遍
+## （day_loop 的直接调用 + 信号）。所以**一次性的进入动作**（播对话、重置计数）
+## 必须挂在「阶段真的变了」上，否则对话会重播、计数会翻倍，而且一声不响。
+var _last_entered_phase: int = -1
+
 
 func _ready() -> void:
 	# 当日名单是「本日过程量」，开局 / 换天时由 GameState 从 data/days/ 载入。
 	# 单独 F6 跑本场景时没人做过这件事，这里补一次。
 	if GameState.current_candidates.is_empty():
 		GameState.load_day_candidates()
+
+	# 接上「进入阶段」通知。is_connected 守卫是防重复连接（同一个 信号+回调 连两次会报错）。
+	if not EventBus.day_phase_entered.is_connected(set_phase):
+		EventBus.day_phase_entered.connect(set_phase)
 
 	# 由 day_loop **首次实例化**本场景时走的是「新建实例」那条路，不会调 set_phase()，
 	# 所以这里自己按 GameState 里的当前阶段初始化一次。
@@ -52,15 +65,34 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 
-## 由 day_loop 在共用本场景的几个阶段之间切换时调用
+## 进入某个阶段时被调用（day_loop 的直接调用与 EventBus.day_phase_entered 都会到这儿）。
+##
+## 分两段：**一次性动作**只在新阶段进入时做一遍；**显示刷新**每次都做（幂等）。
 func set_phase(phase: int) -> void:
+	var entered := phase != _last_entered_phase
+	_last_entered_phase = phase
 	_phase = phase
-	# 进入追问环节 = 新一轮判定，计数归零。
-	# 注意：等实现 §4 的「Screening ⇄ Interview 来回切换」后，这里会把已判定的进度丢掉；
-	# 届时把复位挪到「进入整轮招人」（SCREENING），或者干脆改成「已判定集合」。
-	if phase == DayPhase.Phase.INTERVIEW:
-		finished_interviewee = 0
-		_refresh_interviewee()
+
+	if entered:
+		match phase:
+			DayPhase.Phase.DAY_BRIEFING:
+				# 对话 id 的命名约定见 data/dialogue.json：day1_briefing（**不补零**）
+				_play_phase_dialogue([
+					"day%d_briefing" % GameState.get_day(),
+					"day-1_briefing",
+				])
+			DayPhase.Phase.SPECIAL_EVENT:
+				_play_phase_dialogue([
+					"day%d_spevent" % GameState.get_day(),
+					"day-1_spevent",
+				])
+			DayPhase.Phase.INTERVIEW:
+				# 进入追问 = 新一轮判定，计数归零。
+				# 注意：等实现 §4 的「Screening ⇄ Interview 来回切换」后，这里会把已判定的进度丢掉；
+				# 届时把复位挪到「进入整轮招人」（SCREENING），或者改成「已判定集合」。
+				finished_interviewee = 0
+				_refresh_interviewee()
+
 	_apply_phase_visuals()
 
 
@@ -105,6 +137,60 @@ func _apply_phase_visuals() -> void:
 		_approved.visible = judging
 	if _nah != null:
 		_nah.visible = judging
+
+
+# ---------------------------------------------------------------------------
+# 阶段对话
+# ---------------------------------------------------------------------------
+
+
+## 播一段阶段对话，**等玩家看完再推进**。
+##
+## 为什么推进挂在 dialogue_ended 上，而不是 play() 之后立刻 emit：
+##   1. play() 只是开始播，"立刻 emit"等于马上换阶段，对话根本看不到；
+##   2. 挂载那一刻 day_loop 还没把 phase_finished 连上（它在 add_child 之后才连），
+##      同步 emit 会被**静默丢掉** —— 这正是「第 1 天卡住不动」的成因。
+## 对话结束是一次独立的点击事件，早已跳出 advance() 的调用链，这两个问题都不存在。
+##
+## ids 按优先级排，第一个能加载的胜出。全都加载不到就跳过播放、直接推进 ——
+## 播放失败不该把整个流程锁死。
+func _play_phase_dialogue(ids: Array[String]) -> void:
+	if _dialoguer == null:
+		push_error("[Interview] 找不到 Dialoguer，跳过对话直接推进")
+		_defer_phase_finished()
+		return
+
+	var loaded := false
+	for id in ids:
+		if _dialoguer.typer.load_dialogue(id):
+			loaded = true
+			break
+	if not loaded:
+		# load_dialogue() 失败时自己已经 push_error 并列出现有 id 了，这里只补一句「所以跳过了」
+		push_warning("[Interview] 这几段对话都不存在，跳过播放直接推进：%s" % str(ids))
+		_defer_phase_finished()
+		return
+
+	if not _dialoguer.dialogue_ended.is_connected(_on_phase_dialogue_ended):
+		_dialoguer.dialogue_ended.connect(_on_phase_dialogue_ended)
+	_dialoguer.play()
+
+
+func _on_phase_dialogue_ended() -> void:
+	_defer_phase_finished()
+
+
+## 延后一帧再发 phase_finished。
+##
+## 挂载那一刻（add_child → _ready() → set_phase()）day_loop 还没来得及 connect，
+## 同步 emit 会静默丢掉；延后到帧末，连接就已经就绪了。
+## 对话正常结束那条路虽然不依赖它，但统一走这里可以少一条容易踩的时序坑。
+func _defer_phase_finished() -> void:
+	_emit_phase_finished.call_deferred()
+
+
+func _emit_phase_finished() -> void:
+	phase_finished.emit()
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +265,7 @@ func _judge(passed: bool) -> void:
 	if finished_interviewee >= _candidate_total():
 		finished_interviewee = 0
 		_refresh_interviewee()
-		phase_finished.emit()
+		_defer_phase_finished()
 		return
 	# 换下一位：立绘与简历一起翻页
 	_refresh_interviewee()
@@ -191,10 +277,9 @@ func _judge(passed: bool) -> void:
 
 
 func _on_notice_board_pressed() -> void:
-	var dialoguer = get_node_or_null("Dialoguer")
-	if dialoguer == null:
+	if _dialoguer == null:
 		push_error("[Interview] 找不到 Dialoguer")
 		return
-	if not dialoguer.typer.load_dialogue("Boardery"):
+	if not _dialoguer.typer.load_dialogue("Boardery"):
 		return
-	dialoguer.play()
+	_dialoguer.play()

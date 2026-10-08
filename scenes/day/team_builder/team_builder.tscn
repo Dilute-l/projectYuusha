@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://c3jgjfib6nxve"]
 
+[ext_resource type="Script" uid="uid://bge3j811urjem" path="res://scenes/day/team_builder/team_builder.gd" id="1_0x3h0"]
 [ext_resource type="Texture2D" uid="uid://bugfrjmjd4qa0" path="res://assets/art/interview/itv_bkg_phd.png" id="1_i8vpa"]
 [ext_resource type="Texture2D" uid="uid://vvalhoxhfslq" path="res://assets/art/interview/table_phd.png" id="2_cvggo"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_0x3h0"]
@@ -8,6 +9,7 @@
 [node name="TeamBuilder" type="Control" unique_id=461966639]
 layout_mode = 3
 anchors_preset = 0
+script = ExtResource("1_0x3h0")
 
 [node name="ItvBkgPhd" type="Sprite2D" parent="." unique_id=1008765384]
 texture = ExtResource("1_i8vpa")

@@ -20,6 +20,9 @@ signal day_started(day_index: int)
 ## 每日流程阶段切换，取值对应 DayPhase.Phase
 signal day_phase_changed(phase: int)
 
+## 每日流程**进入**某个阶段。
+signal day_phase_entered(phase: int)
+
 ## 打开某位候选人的简历
 signal candidate_opened(candidate_id: StringName)
 

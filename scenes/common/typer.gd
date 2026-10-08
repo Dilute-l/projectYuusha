@@ -1,3 +1,4 @@
+class_name Typer
 extends Label
 
 ## Typer —— 打字机：按 id 从 JSON 读取对话，以**固定间隔逐字**显示在 Label 上。

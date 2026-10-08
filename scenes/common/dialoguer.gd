@@ -1,3 +1,4 @@
+class_name Dialoguer
 extends Control
 
 ## Dialoguer —— 对话框容器，负责把场景内部的零件接起来，并处理「点击推进」。
@@ -23,18 +24,17 @@ extends Control
 signal dialogue_ended
 
 ## 正文 Label（挂 typer.gd）
-@onready var typer: Label = get_node_or_null("Dialogue") as Label
+@onready var typer: Typer = get_node_or_null("Dialogue") as Typer
 
 ## 说话人 Label
 @onready var name_label: Label = get_node_or_null("Name") as Label
 
 
 func _ready() -> void:
+	# typer 的类型是 Typer —— 节点没挂 typer.gd 时这个 as 转换就会失败变成 null，
+	# 所以「脚本挂错了」运行期也能被这一句拦下（编译期则由类型本身保证）。
 	if typer == null:
-		push_error("[Dialoguer] 找不到 Dialogue 节点（正文 Label）")
-		return
-	if typer.get_script() == null or not typer.has_method("set_speaker_label"):
-		push_error("[Dialoguer] Dialogue 节点没有挂 typer.gd，逐字显示不可用")
+		push_error("[Dialoguer] 找不到 Dialogue 节点，或它没有挂 typer.gd（正文 Label）")
 		return
 	# 把说话人 Label 交给 typer：每行开始时它会按 speaker_name 自动刷新
 	typer.set_speaker_label(name_label)

@@ -124,11 +124,13 @@ func _swap_phase_scene(phase: int) -> void:
 	if scene_key == _phase_scene_key:
 		if _phase_instance != null and _phase_instance.has_method("set_phase"):
 			_phase_instance.call("set_phase", phase)
+		EventBus.day_phase_entered.emit(phase)
 		return
 
 	_clear_phase_instance()
 	_phase_scene_key = scene_key
 	if scene_key == &"":
+		EventBus.day_phase_entered.emit(phase)
 		return
 
 	var scene_path := SceneRouter.scene_path_for(scene_key)
@@ -138,6 +140,7 @@ func _swap_phase_scene(phase: int) -> void:
 	var packed: PackedScene = load(scene_path)
 	_phase_instance = packed.instantiate()
 	_phase_container.add_child(_phase_instance)
+	EventBus.day_phase_entered.emit(phase)  
 
 	# 阶段场景自己决定何时结束：它发 phase_finished，这里接上推进。
 	# 用字符串形式连接，避免把 _phase_instance 收窄成某个具体脚本类型。

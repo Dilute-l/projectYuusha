@@ -47,10 +47,6 @@ offset_bottom = 40.0
 texture_normal = ExtResource("4_8dvi3")
 texture_click_mask = ExtResource("5_ytunt")
 
-[node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("7_8dvi3")]
-visible = false
-layout_mode = 0
-
 [node name="Approved" type="TextureButton" parent="." unique_id=1053593264]
 layout_mode = 0
 offset_right = 40.0
@@ -67,6 +63,10 @@ texture_normal = ExtResource("12_y6gwq")
 texture_click_mask = ExtResource("13_h3fcf")
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("9_asawf")]
+layout_mode = 0
+
+[node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("7_8dvi3")]
+visible = false
 layout_mode = 0
 
 [connection signal="pressed" from="NoticeBoard" to="." method="_on_notice_board_pressed"]
