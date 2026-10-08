@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://bxwueyowabxw1" path="res://assets/art/battle_report/driver_phd.png" id="1_m5q85"]
 [ext_resource type="Texture2D" uid="uid://byc2u8r2w06dk" path="res://assets/art/battle_report/car_bkg_phd.png" id="2_exidj"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_x4kxj"]
+[ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_exidj"]
 
 [node name="BattleReport" type="Control" unique_id=81862534]
 layout_mode = 3
@@ -21,3 +22,7 @@ layout_mode = 0
 
 [node name="ColorNight" type="CanvasModulate" parent="." unique_id=2032092794]
 color = Color(0.6623526, 0.7189713, 0.98323464, 1)
+
+[node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("4_exidj")]
+visible = false
+layout_mode = 0

@@ -80,15 +80,6 @@ scale = Vector2(3.6, 3.6)
 texture_normal = ExtResource("3_hj162")
 texture_click_mask = ExtResource("4_xn6kt")
 
-[node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("5_hj162")]
-layout_mode = 0
-
-[node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("6_xn6kt")]
-visible = false
-layout_mode = 0
-offset_left = -8.0
-offset_right = -8.0
-
 [node name="StartgameText" type="Button" parent="." unique_id=943792285]
 layout_mode = 0
 offset_left = 724.0
@@ -163,6 +154,15 @@ theme_override_styles/normal = SubResource("StyleBoxEmpty_gdhp0")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_pstia")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_41tvm")
 text = "点我查看nz都更新了些什么的按键"
+
+[node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("5_hj162")]
+layout_mode = 0
+
+[node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("6_xn6kt")]
+visible = false
+layout_mode = 0
+offset_left = -8.0
+offset_right = -8.0
 
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]
 [connection signal="mouse_exited" from="Exitgame" to="." method="_on_exitgame_mouse_exited"]

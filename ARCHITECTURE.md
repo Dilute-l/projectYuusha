@@ -669,10 +669,10 @@ DayLoop (Node)
 ```
 data/days/day_XX.tres
    └─ candidates ──► GameState.load_day_candidates()          ← 开局 / 换天 / 读档时调
-                        └─ GameState.current_candidates
-                             └─ interview.gd.current_candidate()   （下标 = finished_interviewee）
-                                  ├─ Interviewee.apply_candidate()  → 按 portrait_* 拼立绘
-                                  └─ Resume.set_candidate()         → 抬头 + 逐条词条
+						└─ GameState.current_candidates
+							 └─ interview.gd.current_candidate()   （下标 = finished_interviewee）
+								  ├─ Interviewee.apply_candidate()  → 按 portrait_* 拼立绘
+								  └─ Resume.set_candidate()         → 抬头 + 逐条词条
 ```
 
 - 当日名单是**本日过程量**，不进存档（§7）：`GameState` 在 `start_new_run()` / `advance_day()` /
