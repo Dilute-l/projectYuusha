@@ -604,11 +604,14 @@ DayLoop (Node)
   所以台词交给 `interview.gd` 按 `ask_path` 播（`_on_resume_entry_asked`，见 §10.7）。
   按钮的 normal / hover 直接复用 `ui/styles/resume_token_*.tres`，和词条同一套观感。
 
-**画布适配**（`aspect=expand` 下画布会随窗口比例变大，所以位置不能写死）：
+**画布适配**（主画布在 `aspect=keep` 下恒为 1152×648、**不随窗口变**；位置仍不写死，
+因为 `SubViewport` 自检会自己造别的尺寸）：
 
 - 面板按纹理原生尺寸摆放、**不拉伸**（手绘边框拉变形很难看）；窗口缩放统一交给 `canvas_items`。
 - `open_for()` 现算词条的 `global rect` 再摆：默认贴右边、与词条顶对齐 → 右边放不下翻到左边 →
-  最后整体夹进 `get_viewport_rect()`。并且接了 `viewport.size_changed` 重算，画布一变菜单自己会跟。
+  最后整体夹进 `get_viewport_rect()`。并且接了 `viewport.size_changed` 重算 ——
+  主画布下它不会触发，但 `tools/smoke_resume_menu.gd` 用 `SubViewport` 造不同尺寸的画布，
+  靠的就是这条路径，**别删**。
 - `_ready()` 校验纹理尺寸 == `PANEL_SIZE`，对不上就 `push_warning`（换图必然要重新量内边距）。
 
 > ⚠️ 按钮文案「追问」是中文，而 `assets/fonts` 还没接入中文字体：`smoke_resume_menu` 实测
@@ -643,15 +646,15 @@ DayLoop (Node)
 ```
 点词条 ─ selected ─→ resume.gd._on_token_selected() ─ open_for() ─→ 菜单
 菜单「追问」─ ask_requested ─→ resume.gd._on_ask_requested()
-                                    │  收菜单；越界 / 空纸就地拦下
-                                    ↓
-                     EventBus.resume_entry_asked(candidate_id, entry_index)
-                                    ↓
-              interview.gd._on_resume_entry_asked()
-                                    │  过守卫（阶段 / 不打断阶段对话 / 是不是这一位）
-                                    │  取 entry.ask_path，确认文件在
-                                    ↓
-                    typer.load_dialogue_from(ask_path) ─→ dialoguer.play()
+									│  收菜单；越界 / 空纸就地拦下
+									↓
+					 EventBus.resume_entry_asked(candidate_id, entry_index)
+									↓
+			  interview.gd._on_resume_entry_asked()
+									│  过守卫（阶段 / 不打断阶段对话 / 是不是这一位）
+									│  取 entry.ask_path，确认文件在
+									↓
+					typer.load_dialogue_from(ask_path) ─→ dialoguer.play()
 ```
 
 | 落点 | 职责 |
@@ -667,12 +670,12 @@ DayLoop (Node)
 ```gdscript
 # main_menu.gd —— 台词来自默认的 data/dialogue.json，按 id 选段
 if not dialoguer.typer.load_dialogue("second"):
-    return
+	return
 dialoguer.play()
 
 # interview.gd —— 台词来自这一条追问自己的 json
 if not _dialoguer.typer.load_dialogue_from(entry.ask_path):
-    return
+	return
 _dialoguer.play()
 ```
 

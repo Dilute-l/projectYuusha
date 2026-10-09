@@ -160,6 +160,16 @@ func _swap_phase_scene(phase: int) -> void:
 
 func _clear_phase_instance() -> void:
 	if _phase_instance != null:
+		# 先断开「进入阶段」的全局广播，再释放。
+		#
+		# queue_free() 是**延迟**释放的：本帧它还在树上，day_phase_entered 一发它照样收到 ——
+		# 而那时它读到的状态已经是「下一天 / 下一个阶段」的了。
+		# 表现之一是每天换天时那条「当天的战报还没生成」警告；更值得担心的是
+		# 退场中的场景会把 set_phase() 里的一次性动作照做一遍（播对话、重置计数，
+		# 甚至 _defer_phase_finished），理论上能多推一个阶段。
+		var cb := Callable(_phase_instance, "set_phase")
+		if EventBus.day_phase_entered.is_connected(cb):
+			EventBus.day_phase_entered.disconnect(cb)
 		_phase_instance.queue_free()
 		_phase_instance = null
 	_phase_scene_key = &""

@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="DayConfig" format=3]
+[gd_resource type="Resource" script_class="DayConfig" format=3 uid="uid://crs8vnn57p4gy"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_bn2or"]
-[ext_resource type="Resource" path="res://data/candidates/c_0001.tres" id="2_2bme4"]
-[ext_resource type="Resource" path="res://data/candidates/c_0002.tres" id="3_qx7fi"]
-[ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="4_85kq1"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_bn2or"]
+[ext_resource type="Resource" uid="uid://bxefm6k8tg5mj" path="res://data/candidates/c_0001.tres" id="2_2bme4"]
+[ext_resource type="Resource" uid="uid://bcgnfso0nibhj" path="res://data/candidates/c_0002.tres" id="3_qx7fi"]
+[ext_resource type="Script" uid="uid://cdc3hqvgn7pk2" path="res://scripts/resources/day_config.gd" id="4_85kq1"]
 
 [resource]
 script = ExtResource("4_85kq1")

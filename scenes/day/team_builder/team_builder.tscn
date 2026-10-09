@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_0x3h0"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_cvggo"]
 [ext_resource type="PackedScene" path="res://scenes/day/team_builder/team_builder_ui.tscn" id="5_tbui"]
+[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="6_cljne"]
 [ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="6_resume"]
 
 [node name="TeamBuilder" type="Control" unique_id=461966639]
@@ -21,16 +22,24 @@ centered = false
 texture = ExtResource("2_cvggo")
 centered = false
 
-[node name="TeamBuilderUI" parent="." instance=ExtResource("5_tbui")]
+[node name="TeamBuilderUI" parent="." unique_id=1282000125 instance=ExtResource("5_tbui")]
 layout_mode = 1
-grow_horizontal = 2
-grow_vertical = 2
 
-[node name="Resume" parent="." instance=ExtResource("6_resume")]
+[node name="Resume" parent="." unique_id=215054407 instance=ExtResource("6_resume")]
 visible = false
 layout_mode = 1
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Confirm" type="Button" parent="." unique_id=1282773667]
+layout_mode = 0
+offset_left = 154.0
+offset_top = 572.0
+offset_right = 354.0
+offset_bottom = 634.0
+theme_override_fonts/font = ExtResource("6_cljne")
+theme_override_font_sizes/font_size = 48
+text = "组队完成"
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("3_0x3h0")]
 layout_mode = 0
@@ -41,3 +50,5 @@ color = Color(0.6623526, 0.7189713, 0.98323464, 1)
 [node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("4_cvggo")]
 visible = false
 layout_mode = 0
+
+[connection signal="pressed" from="Confirm" to="." method="_on_confirm_pressed"]

@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://bxefm6k8tg5mj"]
 
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_t5hr5"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_03i2x"]
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_uhahd"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_c5buv"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="1_t5hr5"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_03i2x"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_uhahd"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_c5buv"]
 [ext_resource type="Resource" path="res://data/traits/hot_blooded.tres" id="5_jqw4j"]
 [ext_resource type="Resource" path="res://data/traits/greedy.tres" id="6_6pftd"]
 

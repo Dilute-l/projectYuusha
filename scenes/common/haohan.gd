@@ -12,14 +12,33 @@ extends Control
 
 @onready var _hand: Sprite2D = get_node_or_null("Hand")
 
+## 当前在树上的 haohan 数量。
+##
+## 为什么要计数：切换阶段场景走的是 `queue_free()` + `add_child()`，而 queue_free 是
+## **延迟**释放的 —— 本帧旧场景还挂在树上。于是时序变成：
+##
+##     新场景 _ready()   → 藏起系统光标（CONFINED_HIDDEN）
+##     —— 帧末 ——
+##     旧场景真正退场     → _exit_tree() → 又恢复成 VISIBLE
+##
+## 结果就是「一跳阶段，鼠标从隐藏+限制变回显示+不限制」。
+## 有了计数：只要有任何一个 haohan 还活着就不恢复光标，**最后一个走了才恢复** ——
+## 回菜单 / 结局那种需要真光标的场合（ending.tscn 里没有手）本来就该恢复。
+static var _live_count: int = 0
+
 
 func _ready() -> void:
+	_live_count += 1
 	# 隐藏系统光标，并限制在窗口内，避免手跑出窗口卡住
 	Input.set_mouse_mode(Input.MOUSE_MODE_CONFINED_HIDDEN)
 
 
 func _exit_tree() -> void:
-	# 手被移除时恢复光标，否则回到菜单会没有光标点不了按钮
+	_live_count = maxi(_live_count - 1, 0)
+	if _live_count > 0:
+		# 还有别的手在（通常就是刚挂上来的那个新场景）：别把系统光标放出来
+		return
+	# 手全没了：恢复光标，否则回到菜单会没有光标点不了按钮
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 

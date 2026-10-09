@@ -28,6 +28,10 @@ const ENTRY_SCENE := preload("res://scenes/day/team_builder/candidate.tscn")
 ## 当日名额（来自 DayConfig.slots）；<= 0 表示数据还没填，表头只报已录用人数
 var _slots: int = 0
 
+## 名额是否已满。**由上层用 TeamValidator 判定后传进来** ——
+## 「算不算满」是规则，不在本控件里再算一遍（§0）。
+var _team_full: bool = false
+
 
 func _ready() -> void:
 	_refresh_header()
@@ -72,12 +76,28 @@ func set_hired_ids(ids: Array[StringName]) -> void:
 			continue
 		entry.set_hired(entry.candidate != null and ids.has(entry.candidate.id))
 	_refresh_header()
+	_apply_lock()
 
 
 ## 当日名额（data/days/day_XX.tres 的 slots）
 func set_slots(slots: int) -> void:
 	_slots = slots
 	_refresh_header()
+	_apply_lock()
+
+
+## 名额满了没有 —— 由上层用 TeamValidator 判定后传进来（§0：规则不在这儿重算一遍）。
+## 满了就把**还没选中**的条目锁住（变灰 + 点击无效）；已选中的不锁，玩家要能点它们撤销。
+func set_team_full(full: bool) -> void:
+	if _team_full == full:
+		return
+	_team_full = full
+	_apply_lock()
+
+
+func _apply_lock() -> void:
+	for entry in entries():
+		entry.set_locked(_team_full and not entry.is_hired())
 
 
 # ---------------------------------------------------------------------------

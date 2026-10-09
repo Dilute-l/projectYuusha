@@ -29,6 +29,13 @@ const TOKEN_SCENE := preload("res://scenes/day/interview/resume/resume_token.tsc
 ## 当前铺在纸上的那位候选人；null = 纸是空的
 var _candidate: CandidateResource = null
 
+## 点词条时是否弹出「追问」菜单。
+##
+## interview 里要弹（追问是面试的核心玩法）；team_builder 复用同一张简历，
+## 那边只是「翻一下看看」，不该冒出追问入口 —— 由调用方关掉（见 team_builder.gd）。
+## 默认 true = 保持 interview 现有的行为，谁要关谁自己关。
+@export var token_menu_enabled: bool = true
+
 
 func _ready() -> void:
 	# interview.gd 会按阶段把本节点整块显隐（_apply_phase_visuals）。
@@ -132,6 +139,10 @@ func _connect_token(token: ResumeToken) -> void:
 ## 点了某一条词条 → 在它旁边弹出菜单（§6.2 的第一步）。
 ## 菜单里那个「追问」的后续见 _on_ask_requested。
 func _on_token_selected(entry_index: int) -> void:
+	# 关掉追问入口的场合（team_builder）：点词条什么也不发生。
+	# 词条本身仍然可点、悬停高亮照旧，只是不弹菜单。
+	if not token_menu_enabled:
+		return
 	var token := _token_list.get_child(entry_index) as Control
 	if token == null or not token.visible:
 		return
@@ -144,6 +155,9 @@ func _on_token_selected(entry_index: int) -> void:
 ## 这不是洁癖 —— `resume.tscn` 在 `team_builder.tscn` 里也被复用（组队时要翻简历），
 ## 那边根本没有 Dialoguer，所以这里不能去 `get_node("../Dialoguer")`。
 func _on_ask_requested(entry_index: int) -> void:
+	# 入口关掉时这里也不该有动作：菜单虽然弹不出来，但别留后门
+	if not token_menu_enabled:
+		return
 	# 先收菜单：菜单只有巴掌大，留着会和对话框叠在一起
 	_token_menu.close()
 

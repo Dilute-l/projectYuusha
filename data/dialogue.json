@@ -64,5 +64,8 @@
   ],
 	"day-1_driver":[
 	{ "speaker_name": "车夫", "text": "恰拉拉，我还不会说话。\nif you see this means something goes wrong" }
+  ],
+	"team_not_full":[
+	{ "speaker_name": "面试官", "text": "队伍还没有组满……\n如果一定要就这样出发的话，就再点一次按钮吧。" }
   ]
 }

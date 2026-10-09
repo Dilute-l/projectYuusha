@@ -42,11 +42,19 @@ const BACKDROP_HOVER_COLOR := Color(1.0, 0.99, 0.94, 1.0)
 const NAME_COLOR := Color(0.12, 0.1, 0.09, 1)
 const NAME_HIRED_COLOR := Color(0.99, 0.85, 0.5, 1)
 
+## 锁住时的整体压暗（modulate 是**乘**上去的，所以看起来是"褪色 + 变暗"）。
+## 用 modulate 而不是逐处改颜色：一处生效、头像和名字一起变暗，也不用动 _draw()。
+const LOCKED_MODULATE := Color(0.52, 0.52, 0.58, 0.8)
+
 ## 本条目对应的候选人（null = 空条目，什么也不画）
 var candidate: CandidateResource = null
 
 ## 是否已被标记为录用（标记的**真身**在 GameState.current_team，这里只是显示状态）
 var hired: bool = false
+
+## 是否「现在点不了」（名额已满、且本条又还没被选中）。
+## 判定不是这里做的：上层用 TeamValidator 算完传进来（§0：表现层不写规则）。
+var locked: bool = false
 
 ## 鼠标是否停在本条目上
 var _hovered: bool = false
@@ -85,6 +93,21 @@ func set_hired(value: bool) -> void:
 
 func is_hired() -> bool:
 	return hired
+
+
+## 显示层标记「现在点不了」。**不写 GameState**，也不改变 hired。
+##
+## 锁住时：整块压暗 + 左键不再发 toggled。悬停**照旧有效** ——
+## 玩家还得能把这一位的简历翻出来看，才谈得上决定换谁。
+func set_locked(value: bool) -> void:
+	if locked == value:
+		return
+	locked = value
+	modulate = LOCKED_MODULATE if locked else Color(1, 1, 1, 1)
+
+
+func is_locked() -> bool:
+	return locked
 
 
 ## 当前头像贴图（没有候选人时为 null）。测试与调试用。
@@ -126,7 +149,12 @@ func _refresh_name() -> void:
 
 ## 左键点一下 = 标记录用 / 再点一下撤销。
 ## 只认左键：右键、滚轮一概不响应（否则误触会把人选上又撤掉）。
+##
+## 锁住时直接不给出去：规则层（TeamValidator）也会拦住同一次点击，
+## 但"点不动"应该在这儿就表达出来，而不是让玩家点了没反应。
 func _gui_input(event: InputEvent) -> void:
+	if locked:
+		return
 	if event is InputEventMouseButton:
 		var button := event as InputEventMouseButton
 		if button.pressed and button.button_index == MOUSE_BUTTON_LEFT:

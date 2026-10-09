@@ -5,8 +5,11 @@
 [node name="DayLoop" type="Node" unique_id=539264072]
 script = ExtResource("1_yek01")
 
+[node name="PhaseContainer" type="Node" parent="." unique_id=1689580800]
+
 [node name="FlowHud" type="CanvasLayer" parent="." unique_id=942022579]
 layer = 10
+visible = false
 
 [node name="Hud" type="Control" parent="FlowHud" unique_id=616640023]
 layout_mode = 3
@@ -23,6 +26,8 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 color = Color(0.06, 0.06, 0.09, 0.75)
 
@@ -70,5 +75,3 @@ press Continue to walk the 10-day loop"
 [node name="NextButton" type="Button" parent="FlowHud/Hud/Margin/Layout" unique_id=1311675672]
 layout_mode = 2
 text = "Continue  >"
-
-[node name="PhaseContainer" type="Node" parent="." unique_id=1689580800]

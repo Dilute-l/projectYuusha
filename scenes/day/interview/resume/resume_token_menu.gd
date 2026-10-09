@@ -11,8 +11,11 @@ extends Control
 ## 1) 面板**按纹理原生尺寸摆，不拉伸**。手绘边框拉变形会很难看；窗口缩放这件事
 ##    由 project.godot 的 stretch/mode=canvas_items 统一负责，不需要在这里再缩一遍。
 ## 2) 位置不是写死的：open_for() 现算词条的 global rect 再摆；
-##    aspect=expand 下画布会随窗口比例变大变小，所以还监听 viewport 的 size_changed
-##    重算一次 —— 先贴右边，右边放不下翻到左边，最后整体夹进画布，任何尺寸都不被切掉。
+##    还监听 viewport 的 size_changed 重算一次 —— 先贴右边，右边放不下翻到左边，
+##    最后整体夹进画布，任何尺寸都不被切掉。
+##    注意：主画布在 project.godot 的 aspect=keep 下恒为 1152×648、不随窗口变，
+##    所以这条路径平时不会触发；但 tools/smoke_resume_menu.gd 用 SubViewport
+##    自己造不同尺寸的画布，靠的就是它 —— 别删。
 
 ## 「追问」被点击，由 resume.gd 订阅后广播 resume_entry_asked（§10.7）。
 signal ask_requested(entry_index: int)
@@ -47,7 +50,9 @@ func _ready() -> void:
 	visible = false
 	if not _ask_button.pressed.is_connected(_on_ask_pressed):
 		_ask_button.pressed.connect(_on_ask_pressed)
-	# 画布尺寸变化（aspect=expand 下窗口比例一变画布就会变大）后重新摆一次
+	# 画布尺寸变化后重新摆一次。
+	# 主画布在 aspect=keep 下恒为 1152×648、不随窗口变，所以平时不会触发；
+	# tools/smoke_resume_menu.gd 用 SubViewport 造不同尺寸的画布，走的就是这条。
 	var vp := get_viewport()
 	if vp != null and not vp.size_changed.is_connected(_reposition):
 		vp.size_changed.connect(_reposition)
