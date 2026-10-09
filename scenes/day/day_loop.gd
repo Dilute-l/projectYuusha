@@ -75,7 +75,15 @@ func advance() -> void:
 	var step := DayDirector.advance(GameState.get_phase(), GameState.get_day())
 	match int(step["step"]):
 		DayDirector.Step.PHASE:
-			GameState.set_phase(int(step["phase"]))
+			var next_phase := int(step["phase"])
+			# 进战报之前先把当天的战报算出来。规则在 core（CombatResolver 是纯静态的），
+			# day_loop 只负责「什么时候调它」—— 和它调 DayDirector 是同一件事。
+			if next_phase == DayPhase.Phase.BATTLE_REPORT:
+				GameState.set_battle_report(CombatResolver.resolve(
+					GameState.get_day(),
+					GameState.get_current_team(),
+				))
+			GameState.set_phase(next_phase)
 		DayDirector.Step.DAY_END:
 			GameState.advance_day()
 		DayDirector.Step.RUN_END:

@@ -5,11 +5,18 @@
 [ext_resource type="Texture2D" uid="uid://byc2u8r2w06dk" path="res://assets/art/battle_report/car_bkg_phd.png" id="2_exidj"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_x4kxj"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_exidj"]
+[ext_resource type="Texture2D" uid="uid://cgl2nkfs5ip6c" path="res://assets/art/interview/resume_token_menu_phd.png" id="4_mf86t"]
+[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="5_c8nql"]
 
 [node name="BattleReport" type="Control" unique_id=81862534]
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_x4kxj")
+
+[node name="DriverDialogeActive" type="Timer" parent="." unique_id=1581782884]
+wait_time = 60.0
+one_shot = true
+autostart = true
 
 [node name="DriverPhd" type="Sprite2D" parent="." unique_id=1249870580]
 texture = ExtResource("1_m5q85")
@@ -18,6 +25,30 @@ centered = false
 [node name="CarBkgPhd" type="Sprite2D" parent="." unique_id=1426394412]
 texture = ExtResource("2_exidj")
 centered = false
+
+[node name="BattleReportPhd" type="Sprite2D" parent="." unique_id=489911544]
+position = Vector2(853.12506, 311)
+scale = Vector2(3.063794, 2.5941706)
+texture = ExtResource("4_mf86t")
+
+[node name="Confirm" type="Button" parent="BattleReportPhd" unique_id=1501765293]
+offset_left = -11.790947
+offset_top = 54.738106
+offset_right = 19.209053
+offset_bottom = 83.738106
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_c8nql")
+theme_override_font_sizes/font_size = 18
+text = "确认"
+
+[node name="ReportContent" type="RichTextLabel" parent="BattleReportPhd" unique_id=529514880]
+offset_left = -38.55516
+offset_top = -70.1573
+offset_right = 123.98845
+offset_bottom = 164.21436
+scale = Vector2(0.5, 0.5)
+theme_override_colors/default_color = Color(0, 0, 0, 1)
+theme_override_fonts/normal_font = ExtResource("5_c8nql")
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("3_x4kxj")]
 layout_mode = 0
@@ -28,3 +59,6 @@ color = Color(0.6623526, 0.7189713, 0.98323464, 1)
 [node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("4_exidj")]
 visible = false
 layout_mode = 0
+
+[connection signal="timeout" from="DriverDialogeActive" to="." method="_on_driver_dialoge_active_timeout"]
+[connection signal="pressed" from="BattleReportPhd/Confirm" to="." method="_on_confirm_pressed"]

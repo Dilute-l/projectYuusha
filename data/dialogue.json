@@ -56,4 +56,10 @@
 	"day-1_spevent":[
 	{ "speaker_name": "柳絮", "text": "no special event yet\nif you see this means something goes wrong" }
   ],
+	"day1_driver":[
+	{ "speaker_name": "车夫", "text": "恰拉拉，我还不会说话。" }
+  ],
+	"day-1_driver":[
+	{ "speaker_name": "车夫", "text": "恰拉拉，我还不会说话。\nif you see this means something goes wrong" }
+  ]
 }
