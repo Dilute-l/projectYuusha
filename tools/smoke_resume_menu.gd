@@ -201,17 +201,22 @@ func _run() -> void:
 	resume._input(esc)
 	_check(not menu.visible, "Esc → 收起")
 
-	# ---- 「追问」按钮：抛信号，但没有后续 ----
+	# ---- 「追问」按钮：广播 resume_entry_asked，并收起菜单 ----
+	# 台词不归简历这一层管 —— 档案上只有一个 json 路径，正文由 interview.gd 播。
+	# 所以这里只验「广播对了吗」；端到端那一半见 tools/smoke_interview_ask.gd。
 	third.emit_signal("pressed")
 	await _settle()
-	_check(menu.ask_requested.get_connections().size() == 0,
-			"ask_requested 目前没有任何订阅者（点了不该有后续）")
-	var seen: Array[int] = []
-	menu.ask_requested.connect(func(i: int) -> void: seen.append(i))
+	_check(menu.ask_requested.get_connections().size() > 0,
+			"ask_requested 已接到 resume.gd")
+	var seen: Array = []
+	var spy := func(cid: StringName, i: int) -> void: seen.append([cid, i])
+	EventBus.resume_entry_asked.connect(spy)
 	ask.emit_signal("pressed")
 	await _settle()
-	_check(seen == [2], "「追问」抛出了 ask_requested(2)")
-	_check(menu.visible, "「追问」不会自己关菜单（暂时没有内容可展开）")
+	EventBus.resume_entry_asked.disconnect(spy)
+	_check(seen == [[candidate.id, 2]],
+			"「追问」广播了 resume_entry_asked(%s, 2)（实际 %s）" % [candidate.id, seen])
+	_check(not menu.visible, "「追问」后菜单收起")
 	_check(third.visible, "词条没有被动过")
 
 	# ---- 简历整块被显隐时（interview.gd 按阶段控制 Resume.visible）菜单不能诈尸 ----

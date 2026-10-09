@@ -164,10 +164,21 @@ func _check_candidate_data() -> void:
 				entries_ok = false
 				continue
 			if entry.description.strip_edges().is_empty() \
-					or entry.question.strip_edges().is_empty() \
-					or entry.answer.strip_edges().is_empty():
+					or entry.ask_path.strip_edges().is_empty():
 				entries_ok = false
-		_check(entries_ok, "每条简历都齐了描述 / 追问 / 回答三样")
+		_check(entries_ok, "每条简历都齐了描述 + 追问 json 路径两样")
+
+		# 追问的台词自 §11 起单独成文件（一条追问一份 json）。75 份 json 里最容易错的
+		# 就是「路径写错 / 文件忘了提交 / json 写坏」这三样，所以这里把全部候选人一次过完。
+		var asks_ok := true
+		for candidate_id in DataDB.get_ids(&"candidates"):
+			var candidate := DataDB.get_candidate(candidate_id)
+			if candidate == null:
+				continue
+			for entry in candidate.resume:
+				if entry == null or not _ask_json_ok(entry.ask_path):
+					asks_ok = false
+		_check(asks_ok, "每位候选人的每条追问都指到一份存在的、能读的 json")
 
 	# 抬头是写死在数据里的一段字，代码不再按字段拼 —— 所以每个人都得有
 	var headers_ok := true
@@ -440,6 +451,19 @@ func _walk_day_loop() -> void:
 # ---------------------------------------------------------------------------
 # 收尾
 # ---------------------------------------------------------------------------
+
+
+## 追问 json 是否可用：路径没空 + 文件在 + 是个能解析的**非空数组**。
+## 只认行数组这一种写法 —— 这是 data/asks/ 的约定（见 resume_entry.gd 的 ask_path）。
+func _ask_json_ok(path: String) -> bool:
+	if path.strip_edges().is_empty() or not FileAccess.file_exists(path):
+		return false
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return false
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return parsed is Array and not (parsed as Array).is_empty()
 
 
 func _check(condition: bool, label: String) -> void:

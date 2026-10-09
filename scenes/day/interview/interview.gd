@@ -52,6 +52,10 @@ func _ready() -> void:
 	if not EventBus.day_phase_entered.is_connected(set_phase):
 		EventBus.day_phase_entered.connect(set_phase)
 
+	# 接上「玩家追问了简历某一条」（resume.gd 广播，见 _on_resume_entry_asked）。
+	if not EventBus.resume_entry_asked.is_connected(_on_resume_entry_asked):
+		EventBus.resume_entry_asked.connect(_on_resume_entry_asked)
+
 	# 由 day_loop **首次实例化**本场景时走的是「新建实例」那条路，不会调 set_phase()，
 	# 所以这里自己按 GameState 里的当前阶段初始化一次。
 	# （单独 F6 运行本场景时，这一行同样让它直接落到正确的阶段。）
@@ -139,6 +143,75 @@ func _apply_phase_visuals() -> void:
 		_approved.visible = judging
 	if _nah != null:
 		_nah.visible = judging
+
+
+# ---------------------------------------------------------------------------
+# 追问（简历条目 → 对话框）
+# ---------------------------------------------------------------------------
+
+
+## 玩家在简历上点了某一条的「追问」（§6.2 第 2 步）。
+##
+## 追问的台词**不在本脚本里，也不在候选人档案里** —— 档案上只留了一个路径
+## （`ResumeEntry.ask_path`），正文写在那份**独立 json** 里，格式就是
+## data/dialogue.json 里的一段对话：
+##
+##     [ { "speaker_name": "面试官", "text": "..." },
+##       { "speaker_name": "棍木",   "text": "..." } ]
+##
+## 所以这里的调用方式与 main_menu.gd 播 JSON 对话**完全一致**，只是文件换成了
+## 这一条自己的那份（`load_dialogue_from()`）：
+##
+##     typer.load_dialogue_from(path)  →  typer.load_dialogue(id)
+##     dialoguer.play()                →  dialoguer.play()
+##
+## 之后的逐字显示、点一下推进、最后一句点一下收起，仍然全部由 Dialoguer / Typer 负责，
+## 本脚本一行输入处理都不写。
+func _on_resume_entry_asked(candidate_id: StringName, entry_index: int) -> void:
+	# 第 1 层守卫（逻辑层）：只有追问环节能追问。简历在别的阶段本就是隐藏的，
+	# 走到这里说明有别的代码在乱发信号 —— 要响，不要吞。
+	if not _is_judging_allowed():
+		push_warning("[Interview] 阶段 %s 不接受追问，已忽略" % DayPhase.to_name(_phase))
+		return
+
+	# 第 2 层守卫：阶段对话还没播完时**不要打断它**（同 _on_notice_board_pressed）。
+	# 打断等于把阶段对话换掉，而它不会再播第二次 —— 那个阶段就失去了「看完自动推进」这条路径。
+	if _advance_when_dialogue_ends:
+		return
+
+	if _dialoguer == null:
+		push_error("[Interview] 找不到 Dialoguer，无法播出追问")
+		return
+
+	# 只受理「正在面试的这一位」的追问：本信号是全局广播，台下可能站着别人
+	var candidate := current_candidate()
+	if candidate == null or candidate.id != candidate_id:
+		push_warning("[Interview] 追问的候选人 %s 不是当前在面试的那位，已忽略" % candidate_id)
+		return
+	if entry_index < 0 or entry_index >= candidate.resume.size():
+		push_warning("[Interview] 追问的条目下标越界：%d（共 %d 条）" % [
+			entry_index, candidate.resume.size()])
+		return
+	var entry: ResumeEntry = candidate.resume[entry_index]
+	if entry == null:
+		push_warning("[Interview] 第 %d 条简历是空的，无法追问" % entry_index)
+		return
+
+	var ask_path: String = entry.ask_path.strip_edges()
+	if ask_path.is_empty():
+		push_warning("[Interview] 第 %d 条简历没写 ask_path，没有台词可播" % entry_index)
+		return
+	# 先自己确认文件在，再去 load：Typer 那层的报错是「JSON 读不出来」，
+	# 而这里最常见的错因其实是路径写错 / 文件忘了提交，分开报更好排查。
+	if not FileAccess.file_exists(ask_path):
+		push_error("[Interview] 追问 json 不存在：%s（第 %d 条简历 ask_path 指错了？）" % [
+			ask_path, entry_index])
+		return
+
+	# 一份 json = 一条追问的一段对话，所以 id 留空（取文件里的第一段）
+	if not _dialoguer.typer.load_dialogue_from(ask_path):
+		return
+	_dialoguer.play()
 
 
 # ---------------------------------------------------------------------------

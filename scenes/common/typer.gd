@@ -118,6 +118,10 @@ signal line_finished(index: int)
 ## 已解析的对话行：[{ "speaker_name": String, "text": String }, ...]
 var lines: Array[Dictionary] = []
 
+## 当前 `_conversations` 是从哪个文件读来的。
+## 换文件必须重读，否则会拿着上一个文件的内容去查 id —— 见 load_dialogue_from()。
+var _loaded_path: String = ""
+
 ## 文件里所有对话：id -> 行数组
 var _conversations: Dictionary = {}
 
@@ -330,13 +334,42 @@ func _clamp_frame_delta(delta: float) -> float:
 ## 写在行首则先停顿再出第一个字；写在行尾则整行打完后还要停一下才算结束。
 ## 单独的 `^`（后面不是数字）按普通字符原样显示。
 func load_dialogue(id: String = "") -> bool:
+	return _load_dialogue_from(dialogue_path, id)
+
+
+## 从**另一个** json 文件装入一段对话；`dialogue_path` 不动（成功返回 true）。
+##
+## 给「一段对话一个文件」的用法：面试追问就是一条简历一个 json
+## （路径写在 `data/candidates/*.tres` 的 `ResumeEntry.ask_path` 上）。
+## 文件格式与 dialogue.json 里的一段完全一致 —— 行数组，或 `{ "段名": [ ... ] }`：
+##
+##     [
+##         { "speaker_name": "面试官", "text": "你是怎么打败它们的？" },
+##         { "speaker_name": "棍木",   "text": "趁它们分食时逐个击破的。" }
+##     ]
+##
+## id 留空 = 取文件里的第一段（单段文件就写 `load_dialogue_from(path)` 即可）。
+##
+## 注意本方法**按 path 判断要不要重读文件**：换了文件就重读，所以连着播好几个
+## json 不会串味；同一个文件连着播两段也不会白读一遍盘。
+func load_dialogue_from(path: String, id: String = "") -> bool:
+	if path.strip_edges().is_empty():
+		push_warning("[Typer] load_dialogue_from() 没给文件路径，回退到 dialogue_path")
+		return load_dialogue(id)
+	return _load_dialogue_from(path, id)
+
+
+## load_dialogue() / load_dialogue_from() 的共同实现
+func _load_dialogue_from(path: String, id: String) -> bool:
 	lines.clear()
 	current_index = -1
 	is_typing = false
 	set_process(false)
 
-	if _conversations.is_empty() and not _load_all():
-		return false
+	# 缓存里的内容不属于这个文件 → 重读。同一个文件重复装入则直接命中缓存。
+	if _conversations.is_empty() or _loaded_path != path:
+		if not _load_all(path):
+			return false
 
 	var chosen := id
 	if chosen.is_empty():
@@ -345,7 +378,7 @@ func load_dialogue(id: String = "") -> bool:
 
 	if not _conversations.has(chosen):
 		push_error("[Typer] %s 里没有 id 为「%s」的对话。现有 id：%s" % [
-			dialogue_path, chosen, ", ".join(list_dialogue_ids())])
+			path, chosen, ", ".join(list_dialogue_ids())])
 		return false
 
 	# 必须复制：Dictionary 取出来的数组是**同一个对象**，
@@ -389,12 +422,24 @@ func list_dialogue_ids() -> Array[String]:
 	return ids
 
 
-## 读取并解析整个对话文件，填进 _conversations；成功返回 true
-func _load_all() -> bool:
+## 读取并解析整个对话文件，填进 _conversations；成功返回 true。
+## path 留空 = 读 dialogue_path（默认文件）。
+func _load_all(path: String = "") -> bool:
+	var target := path if not path.is_empty() else dialogue_path
+
+	# 三张段级表也要一起清：它们按 id 索引，换了文件之后同名 id 的设置会串味。
 	_conversations.clear()
-	var parsed: Variant = _read_json(dialogue_path)
+	_segment_char_durations.clear()
+	_segment_sounds.clear()
+	_segment_silents.clear()
+	_loaded_path = ""
+
+	var parsed: Variant = _read_json(target)
 	if parsed == null:
 		return false
+	# 读到内容才算「这个文件已经读过了」；读失败留空，下次调用还有机会重试
+	# （文件是后来才补上的场合）。
+	_loaded_path = target
 
 	if parsed is Array:
 		# 行数组：每行带 "id" 时按 id 归成多段；都不带 id 时整份算一段
@@ -436,10 +481,10 @@ func _load_all() -> bool:
 			else:
 				push_warning("[Typer] 对话「%s」不是数组，已跳过" % key)
 		if _conversations.is_empty():
-			push_error("[Typer] %s 里没有任何可用对话" % dialogue_path)
+			push_error("[Typer] %s 里没有任何可用对话" % target)
 		return not _conversations.is_empty()
 
-	push_error("[Typer] %s 顶层必须是对象或数组" % dialogue_path)
+	push_error("[Typer] %s 顶层必须是对象或数组" % target)
 	return false
 
 

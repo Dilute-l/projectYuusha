@@ -191,7 +191,7 @@ class_name CandidateResource extends Resource
 | `level` | 等级 | 与职业共同构成「常理上限」，是手册常识的锚点 |
 | `job` | 职业 | `JobDef`，见 §3.3 |
 | `traits` | 特质 | `Array[TraitDef]`，可含多项；相性计算输入（§6.4） |
-| `resume` | 简历 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问问题 + 追问回答 |
+| `resume` | 简历 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
 | `resume_header` | 简历抬头 | **一整段字**，原样铺在纸面上半；运行时不做任何拼接（§10.6） |
 | `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号；面试者的长相也是数据，不是代码里摇的（§10.7） |
 
@@ -206,16 +206,25 @@ class_name ResumeEntry extends Resource
 ## 简历上写的那句话，例如「我曾单独讨伐过三只食人魔。」
 @export_multiline var description: String = ""
 
-
-## 针对本条的追问，例如「你是怎么打败它们的？」
-@export_multiline var question: String = ""
-
-## 针对本条追问之后得到的回答，例如「那次是趁它们分食时逐个击破的。」
-@export_multiline var answer: String = ""
+## 针对本条的追问对话：一段独立 json 的路径（一条追问一个文件）
+@export_file("*.json") var ask_path: String = ""
 ```
 
-简历由若干条目组成，**每条只有三样东西**：简历上写的那句话、追问问题、追问后得到的回答。
-面试交互见 §6.2：玩家点击某一条 → 先给出该条的 `question`，再展开对应的 `answer`；是否可信，由玩家结合
+简历由若干条目组成，**每条只有两样东西**：简历上写的那句话，以及这条的追问对话存在哪个
+json 里。台词**不住在档案里** —— 档案只留路径，正文全部写在 `data/asks/<候选人>_<序号>.json`：
+
+```
+data/asks/c_0001_1.json
+[
+	{ "speaker_name": "面试官", "text": "你是怎么打败它们的？" },
+	{ "speaker_name": "棍木",   "text": "趁它们分食时逐个击破的。" }
+]
+```
+
+文件格式就是 `data/dialogue.json` 里**一段对话**的格式，所以 Typer 那套逐字显示 / 点击推进 /
+段级 `config` 全部照用，不需要任何额外机制。
+
+面试交互见 §6.2：玩家点击某一条 → 播出该条的 json（先问、后答）；是否可信，由玩家结合
 `strength / intelligence / wisdom / level / job / traits` 与手册常识自行判断。
 
 
@@ -235,7 +244,7 @@ class_name ResumeEntry extends Resource
 | `RunState` | 见第 7 节 | 存档根结构 |
 
 > 随旧机制一并移除：`HiddenProfile`、`ClaimResource`、`QuestionDef`（追问题库）、`SkillDef`
-> （技能定义）。追问不再查题库：问句与答句都直接读简历条目自带的 `question` / `answer`。
+> （技能定义）。追问也不查题库：问句与答句都写在**这条自己的 json** 里，档案上只留一个路径。
 
 ### 3.4 每日配置（DayConfig）
 
@@ -330,9 +339,14 @@ signal run_finished(ending_id: StringName)
 `interview_session.gd` 管理单个候选人的问答循环：
 
 1. 展示简历（逐条 `ResumeEntry.description`）；
-2. 玩家点击某一条追问，先显示该条的 `ResumeEntry.question`，再展开对应的 `ResumeEntry.answer`；
+2. 玩家点击某一条追问，播出该条的 `ResumeEntry.ask_path` 指的那份 json；
 3. 玩家对照候选人的 `strength / intelligence / wisdom / level / job / traits` 与手册常识，
    自行判断这条描述与回答是否可信。
+
+> **② 已实现**（`Interview` 阶段内）：点词条 → 菜单「追问」→ `resume.gd` 广播
+> `EventBus.resume_entry_asked(candidate_id, entry_index)` → `interview.gd` 拿到
+> `ask_path`，用 `typer.load_dialogue_from(path)` 装入那份 json，再 `dialoguer.play()`。
+> 追问是临时对话，播完只收起对话框、**不推进阶段**。详见 §10.7。
 
 ### 6.3 手册（玩家能力锚点）
 `handbook_overlay` 是全局浮层，任何阶段都能呼出。`data/handbook/` 的条目承担两件事：
@@ -525,14 +539,14 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 
 - **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（半透明琥珀底 + 描边），normal 是一条细下划线。
   脚本里没有任何 `_on_mouse_entered`：hover 由 Button 自己驱动，改配色只动 `.tres`。
-- **点击目前没有任何效果**：`pressed` 与 `normal` 指向**同一个** `.tres`，按下去的画法和没按一模一样；
-  `focus_mode = 0` 关掉焦点框，点完不会残留高亮。`selected` 按 §4 预留并照常 emit，只是当前没有订阅者。
-  → §6.2 的追问流程（先给 `question`、再展开 `answer`）留到 M2，届时由 `resume.gd` 订阅 `selected`。
+- **点击效果 = 在旁边弹出词条菜单**（见下面「词条菜单」与 §10.7）：`pressed` 与 `normal`
+  指向**同一个** `.tres`，按下去的画法和没按一模一样；`focus_mode = 0` 关掉焦点框，点完不会残留高亮。
+  视觉上的「选中」由 `resume.gd` 订阅 `selected` 后弹菜单来表达，不是按钮自己画的。
 - **纸上的字全部来自数据**：`resume.gd` 里没有一句候选人文案，也没有「默认履历」这种兜底。
   唯一的数据入口是 `set_candidate(candidate: CandidateResource)`：
   抬头 ← `resume_header`（原样），词条 ← `descriptions_of()`（逐条 `description`）。
   传 `null` 表示「当前没有候选人」→ 抬头清空、词条全部收起。`get_candidate()` 能把当前这位取回来，
-  M2 做追问时就从它身上取 `resume[i].question` / `.answer`。
+  追问时就从它身上取 `resume[i].ask_path`（§6.2）。
 - **条目数量自适应**：`set_entries()` 会先复用场景里预摆的 5 个实例（编辑器里直接看到真实版面，
   但它们**不写死任何正文**，`text` 全是空串），数据比预摆多就现场 `instantiate()`，
   少就把富余的 `visible = false`。所以「若干项」都不用回头改场景。
@@ -584,8 +598,10 @@ DayLoop (Node)
 - **交互**：点词条 → `resume_token` 的 `selected` → `resume.gd._on_token_selected()` →
   `menu.open_for(token, i)`；点菜单外面或按 Esc 收起。点菜单外面时**故意不 `set_input_as_handled()`**，
   所以点到别的词条上时那条词条照样收到 `pressed`，菜单顺势挪过去（要的就是这个手感）。
-- **「追问」按钮暂时没有后续**：`ask_requested` 按 §4 的路子预留并照常 emit，但 `resume.gd` 不订阅，
-  菜单也不会自己关 —— §6.2 的「先给 `question`、再展开 `answer`」留到 M2。
+- **「追问」按钮 → 广播 `resume_entry_asked`**：`resume.gd._on_ask_requested()` 先收菜单，
+  再把 `EventBus.resume_entry_asked(candidate_id, entry_index)` 发出去（§5 的信号名）。
+  **`resume.gd` 不播对话** —— `resume.tscn` 在 `team_builder.tscn` 里也被复用，那边没有 `Dialoguer`，
+  所以台词交给 `interview.gd` 按 `ask_path` 播（`_on_resume_entry_asked`，见 §10.7）。
   按钮的 normal / hover 直接复用 `ui/styles/resume_token_*.tres`，和词条同一套观感。
 
 **画布适配**（`aspect=expand` 下画布会随窗口比例变大，所以位置不能写死）：
@@ -608,13 +624,86 @@ DayLoop (Node)
 43 项：面板/按钮就位、**纸面内容确实来自 `data/candidates/*.tres`**（抬头原样铺数据里那一段字、
 逐条词条正文来自 `description`）、给一份「不像字段拼出来」的抬头也照样原样显示、喂 `null` 时整页清空、
 点词条开菜单并记住序号、贴边 / 翻边 / 底部夹取、**改画布尺寸后自动重排**、点外面与 Esc 收起、
-整块显隐不诈尸、「追问」抛信号但无后续。全绿退出码 0。
+整块显隐不诈尸、「追问」广播 `resume_entry_asked` 并收起菜单。全绿退出码 0。
 
 它把简历放进一个尺寸可控的 `SubViewport`（1152×648 = 游戏真实画布）：headless 下窗口是 1152×1152
 且 `--resolution` 不生效，直接挂在 root 上既测不到真实画布，也测不了「画布变了」这一条。
 
 「底部夹取」那几条不写死 y 坐标：词条条数现在由数据决定，位置不再是个固定值，
 所以测试先把画布压到「最后一条词条刚好放不下整块菜单」的高度，再验夹取。
+
+---
+
+### 10.7 追问（简历条目 → 对话框）
+
+§6.2 第 ② 步的实现。**台词一句都不在代码里，也不在候选人档案里** ——
+档案上只留一个路径（`ResumeEntry.ask_path`），正文写在那份独立 json 中，
+`data/asks/<候选人 id>_<条目序号>.json`（序号从 1 开始），一条追问一个文件。
+
+```
+点词条 ─ selected ─→ resume.gd._on_token_selected() ─ open_for() ─→ 菜单
+菜单「追问」─ ask_requested ─→ resume.gd._on_ask_requested()
+                                    │  收菜单；越界 / 空纸就地拦下
+                                    ↓
+                     EventBus.resume_entry_asked(candidate_id, entry_index)
+                                    ↓
+              interview.gd._on_resume_entry_asked()
+                                    │  过守卫（阶段 / 不打断阶段对话 / 是不是这一位）
+                                    │  取 entry.ask_path，确认文件在
+                                    ↓
+                    typer.load_dialogue_from(ask_path) ─→ dialoguer.play()
+```
+
+| 落点 | 职责 |
+| --- | --- |
+| `resume.gd._on_ask_requested()` | 收菜单 + 广播 `resume_entry_asked`。**不播对话** |
+| `interview.gd._on_resume_entry_asked()` | 守卫 + 取 `ask_path` + 交给自己的 `Dialoguer` |
+| `resume_token_menu.gd.ask_requested` | 菜单里那个按钮的信号（`entry_index` 跟着抛出来） |
+| `typer.gd.load_dialogue_from()` | 从指定 json 装入一段；`load_dialogue()` 的姐妹方法，见下 |
+
+**为什么要有 `typer.load_dialogue_from()`**：`load_dialogue(id)` 只读 `dialogue_path` 这一个文件，
+而追问是一条一个文件。新方法就是「把文件也当参数传进来」：
+
+```gdscript
+# main_menu.gd —— 台词来自默认的 data/dialogue.json，按 id 选段
+if not dialoguer.typer.load_dialogue("second"):
+    return
+dialoguer.play()
+
+# interview.gd —— 台词来自这一条追问自己的 json
+if not _dialoguer.typer.load_dialogue_from(entry.ask_path):
+    return
+_dialoguer.play()
+```
+
+装入之后那条链（逐字显示 → 点一下推进 → 最后一句点一下收起）**与 JSON 对话完全是同一套**，
+`dialoguer.play()` 一个字都没改。`load_dialogue_from()` 按 path 判断要不要重读文件：
+换了文件就重读（所以连着追问两条不会串味），同一个文件连着播两段也不会白读盘。
+`_load_all()` 里的三张段级表（字间隔 / 音效 / 静音集合）也跟着一起清 —— 它们按 id 索引，
+换了文件之后同名 id 的设置会串味。
+
+**两条约定**：
+
+- **追问是临时对话**：不置 `_advance_when_dialogue_ends`，所以播完只收起对话框，
+  **不会把阶段推走**（见 `_on_dialogue_ended` 的说明）。追问完还能继续追问、继续判定。
+- **不打断阶段对话**：国王下旨 / 今日事件那几段还挂着「看完自动推进」时，追问直接返回 ——
+  打断等于把阶段对话换掉，而它不会再播第二次。
+
+#### 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_interview_ask.tscn
+```
+
+37 项，跑的是**真的 `interview.tscn`**（不是 `resume.tscn`）：当日名单 → 点词条 → 点「追问」，
+把播出的每一行与该条 `ask_path` 那份 json **逐字比对**，再验逐字显示、说话人 Label 随行切换、
+点到底对话框收起、**全程 `phase_finished` 一次都没发**、换第 2 条时播的是**它自己**那份 json
+（换文件确实重读了）、追问之后仍能按 id 装入默认 `dialogue.json` 而不留残留内容，
+以及四条守卫（非追问阶段 / 不是当前在面试的那位 / 下标越界 / `ask_path` 空或指错）都拦得住。
+全绿退出码 0。
+
+> ⚠️ 期望值全部**现场从 `data/asks/*.json` 读**，脚本里没有一句台词 —— 改文案、改说话人都不用动它；
+> 但改 json 的结构（行数、字段名）会在这里报出来。
 
 ---
 
@@ -654,7 +743,8 @@ DayLoop (Node)
 
 | 目录 | 粒度 | 装什么 |
 | --- | --- | --- |
-| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、等级、三项属性、职业（引用 `data/jobs/*.tres`）、特质（引用 `data/traits/*.tres`）、**简历抬头**（`resume_header`，一整段字）、**拼装立绘配方**、**逐条简历条目**（描述 / 追问 / 回答，内联 `sub_resource`，跟着本人走） |
+| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、等级、三项属性、职业（引用 `data/jobs/*.tres`）、特质（引用 `data/traits/*.tres`）、**简历抬头**（`resume_header`，一整段字）、**拼装立绘配方**、**逐条简历条目**（描述 + 追问 json 的路径，内联 `sub_resource`，跟着本人走） |
+| `data/asks/` | **一条追问一个文件**（`c_0001_1.json` … 共 75 份） | 那一条的追问对话本身：行数组，每行 `{ speaker_name, text }`，格式同 `data/dialogue.json` 的一段 |
 | `data/days/` | **一天一个文件**（`day_01.tres` … `day_10.tres`） | `day_index`、`candidates`（当天出场哪几个人，**引用** `data/candidates/*.tres`，数组顺序即出场顺序）、`slots`（当日名额）、`tutorial_step` |
 
 配套还有 `data/jobs/`（剑士 / 法师 / 牧师）与 `data/traits/`（性格 6 种 + 癖好 4 种）。
@@ -662,6 +752,11 @@ DayLoop (Node)
 > 简历条目**内联**在候选人文件里（而不是单独一个目录），因为它是「这个人」的一部分，
 > 不该被别的候选人复用；职业与特质**引用**外部文件，因为它们是多个人共用的词表。
 > 每日名单只列 id 引用，绝不内嵌副本 —— 改一次候选人，10 天里出场的那次跟着变。
+>
+> **追问对话反过来单独成文件**：它是「一段要播的戏」，有说话人、有行数、有节奏，
+> 归到对话数据里更顺手（写手改台词不用碰 `.tres`，也不怕手滑改坏资源格式）。
+> 档案只留 `ask_path` 一个路径 —— 这也是**唯一**允许指向 `data/asks/` 的地方。
+> 数据完整性由 `smoke_m0` 兜底：每条 `ask_path` 都得指到一份存在的、能解析成非空数组的 json。
 
 ### 11.2 数据怎么流到画面上
 
@@ -683,6 +778,9 @@ data/days/day_XX.tres
 ### 11.3 改数据不用改代码
 
 - 换简历文案 / 加一条词条 / 调属性 → 编辑器里点开对应的 `data/candidates/*.tres`。
+- **改追问台词** → 点开那一条的 `ask_path` 指的 `data/asks/*.json`。写手可以完全不碰 `.tres`：
+  说话人、行数、停顿时长（段级 `config`）都在 json 里。
+- **加一条追问** → `data/asks/` 下新建一份 json，再回候选人档案里把这一条的 `ask_path` 指过去。
 - **改抬头** → 同一个文件里的 `resume_header`，多行文本框，写什么就显示什么。
   想让人物的自我介绍更有性格（甚至藏一个后面能被手册戳破的谎言），改这一栏就行。
 - 换某天出场的人 / 调名额 → 点开 `data/days/day_XX.tres`，拖 `candidates` 数组。
@@ -692,7 +790,8 @@ data/days/day_XX.tres
 ### 11.4 覆盖率自检
 
 `smoke_m0` 第 `[3.1]` 节盯的就是这层数据：25 位候选人、10 天名单、每天 `slots` 不超过当天人数、
-名单里的每个人都能在 `data/candidates/` 里查到、每条简历都齐了描述 / 追问 / 回答三样、
+名单里的每个人都能在 `data/candidates/` 里查到、每条简历都齐了描述 + `ask_path` 两样、
+**每位候选人的每条追问 json 都真的存在且能解析**（75 份，路径写错 / 文件忘提交 / json 写坏都在这里炸）、
 **每位候选人都自带一段抬头文案**，以及 `GameState` 开局 / 换天时名单确实跟着换。
 
 ---

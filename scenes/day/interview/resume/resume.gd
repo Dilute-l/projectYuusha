@@ -37,6 +37,10 @@ func _ready() -> void:
 	if not visibility_changed.is_connected(_on_visibility_changed):
 		visibility_changed.connect(_on_visibility_changed)
 
+	# 菜单里的「追问」：本控件只负责把「谁 + 第几条」广播出去，不碰对话（见 _on_ask_requested）。
+	if _token_menu != null and not _token_menu.ask_requested.is_connected(_on_ask_requested):
+		_token_menu.ask_requested.connect(_on_ask_requested)
+
 	# 没人喂数据时保持空纸：场景里预摆的词条只是版面占位，不该有内容。
 	# （F6 单独跑本场景看到的就是一张空简历，这是预期行为。）
 	if _candidate == null:
@@ -126,12 +130,31 @@ func _connect_token(token: ResumeToken) -> void:
 
 
 ## 点了某一条词条 → 在它旁边弹出菜单（§6.2 的第一步）。
-## 菜单里目前只有一个不接后续的「追问」，见 resume_token_menu.gd。
+## 菜单里那个「追问」的后续见 _on_ask_requested。
 func _on_token_selected(entry_index: int) -> void:
 	var token := _token_list.get_child(entry_index) as Control
 	if token == null or not token.visible:
 		return
 	_token_menu.open_for(token, entry_index)
+
+
+## 点了菜单里的「追问」→ 把「哪位候选人 + 第几条」广播出去（§5 的 resume_entry_asked）。
+##
+## 本控件**不播对话**：简历只负责显示与抛事件，台词由 interview.gd 去播。
+## 这不是洁癖 —— `resume.tscn` 在 `team_builder.tscn` 里也被复用（组队时要翻简历），
+## 那边根本没有 Dialoguer，所以这里不能去 `get_node("../Dialoguer")`。
+func _on_ask_requested(entry_index: int) -> void:
+	# 先收菜单：菜单只有巴掌大，留着会和对话框叠在一起
+	_token_menu.close()
+
+	if _candidate == null:
+		push_warning("[Resume] 纸上没有候选人，追问无处可问")
+		return
+	if entry_index < 0 or entry_index >= _candidate.resume.size():
+		push_warning("[Resume] 追问的条目下标越界：%d（共 %d 条）" % [
+			entry_index, _candidate.resume.size()])
+		return
+	EventBus.resume_entry_asked.emit(_candidate.id, entry_index)
 
 
 ## 菜单开着的时候：点菜单外面 = 收起，Esc = 收起。

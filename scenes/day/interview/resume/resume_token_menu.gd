@@ -3,10 +3,9 @@ extends Control
 
 ## 点开某一条简历词条后弹出的小菜单（ARCHITECTURE.md §4 / §6.2）。
 ##
-## 现在里面**只有一个「追问」按钮**，而且这个按钮点了没有任何后续 ——
-## §6.2 的「先给 question、再展开 answer」留到 M2。这里沿用和 resume_token 一样的
-## 做法：把 ask_requested 信号按架构预留好并照常 emit，但 resume.gd 目前不订阅它，
-## 所以「点追问 = 什么都不发生」是当前阶段的既定行为，不是漏了。
+## 现在里面**只有一个「追问」按钮**：点了由 resume.gd 订阅后广播
+## `EventBus.resume_entry_asked`，真正的台词交给 interview.gd 从那一条的
+## 追问 json 里播（§10.7）。
 ##
 ## ── 画布适配 ─────────────────────────────────────────────────────────────
 ## 1) 面板**按纹理原生尺寸摆，不拉伸**。手绘边框拉变形会很难看；窗口缩放这件事
@@ -15,7 +14,7 @@ extends Control
 ##    aspect=expand 下画布会随窗口比例变大变小，所以还监听 viewport 的 size_changed
 ##    重算一次 —— 先贴右边，右边放不下翻到左边，最后整体夹进画布，任何尺寸都不被切掉。
 
-## 「追问」被点击。M2 接追问流程时由 resume.gd 订阅。
+## 「追问」被点击，由 resume.gd 订阅后广播 resume_entry_asked（§10.7）。
 signal ask_requested(entry_index: int)
 
 ## 面板纹理的原生尺寸。换图要连下面 CONTENT_* 四个常量一起重新对
@@ -97,5 +96,5 @@ func _reposition() -> void:
 
 
 func _on_ask_pressed() -> void:
-	# 现在没有任何订阅者 → 一次空操作，菜单也不会自己关掉。M2 再说。
+	# 本控件只抛信号：收菜单、找 json、播对话都在订阅方（见 §10.7）。
 	ask_requested.emit(entry_index)

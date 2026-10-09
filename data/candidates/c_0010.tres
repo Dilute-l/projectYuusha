@@ -9,20 +9,17 @@
 [sub_resource type="Resource" id="Resource_6sb0q"]
 script = ExtResource("2_1wpqe")
 description = "PLACEHOLDER ENTRY 10-1"
-question = "PLACEHOLDER QUESTION 10-1"
-answer = "PLACEHOLDER ANSWER 10-1"
+ask_path = "res://data/asks/c_0010_1.json"
 
 [sub_resource type="Resource" id="Resource_phyb2"]
 script = ExtResource("2_1wpqe")
 description = "PLACEHOLDER ENTRY 10-2"
-question = "PLACEHOLDER QUESTION 10-2"
-answer = "PLACEHOLDER ANSWER 10-2"
+ask_path = "res://data/asks/c_0010_2.json"
 
 [sub_resource type="Resource" id="Resource_01tvq"]
 script = ExtResource("2_1wpqe")
 description = "PLACEHOLDER ENTRY 10-3"
-question = "PLACEHOLDER QUESTION 10-3"
-answer = "PLACEHOLDER ANSWER 10-3"
+ask_path = "res://data/asks/c_0010_3.json"
 
 [resource]
 script = ExtResource("3_mlqhf")
