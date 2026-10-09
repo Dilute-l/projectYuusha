@@ -3,6 +3,9 @@
 [ext_resource type="Script" uid="uid://cybo2ov47trcl" path="res://scenes/credits/credits_room.gd" id="1_5c5tq"]
 [ext_resource type="Texture2D" uid="uid://bn2iog84pr3k0" path="res://assets/art/Credit/CreditRoom_phd.jpg" id="2_0erdm"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="3_lofe2"]
+[ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="4_j82at"]
+[ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="5_28yq1"]
+[ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="6_28yq1"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0erdm"]
 
@@ -35,4 +38,24 @@ theme_override_styles/normal = SubResource("StyleBoxEmpty_0erdm")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_lofe2")
 text = "返回"
 
+[node name="Sunflower" type="TextureButton" parent="." unique_id=39142167]
+layout_mode = 0
+offset_left = 839.00006
+offset_top = 90.0
+offset_right = 913.00006
+offset_bottom = 163.0
+rotation = 0.038397245
+scale = Vector2(3.6, 3.6)
+texture_normal = ExtResource("4_j82at")
+texture_click_mask = ExtResource("5_28yq1")
+
+[node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("6_28yq1")]
+visible = false
+layout_mode = 0
+offset_left = -3.0
+offset_top = -5.0
+offset_right = -3.0
+offset_bottom = -5.0
+
 [connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="Sunflower" to="." method="_on_sunflower_pressed"]
