@@ -402,6 +402,18 @@ func _load_dialogue_from(path: String, id: String) -> bool:
 	return true
 
 
+## 往**当前已装入**的那段对话后面追加一行（只影响这一次播放，不改任何文件）。
+##
+## 给「同一段对话，换个场合要多说一句」用：组队阶段的「回忆」就是
+## 「当时那份追问 json + 面试官一句自言自语」（见 team_builder.gd）。
+##
+## 行的字段与 JSON 里的行一致（speaker_name / text），所以追加进来的这一句
+## 与文件里那几句待遇完全相同：一样逐字显示、一样点一下才翻页。
+## 要在 load_dialogue() / load_dialogue_from() **之后**、play() **之前**调用。
+func append_line(speaker_name: String, text: String) -> void:
+	lines.append({ "speaker_name": speaker_name, "text": text })
+
+
 ## 复制一份行数组（保持 Array[Dictionary] 类型，元素为不可变字典，浅拷贝即可）
 func _copy_lines(src: Variant) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []

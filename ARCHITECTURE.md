@@ -537,8 +537,8 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
   代价是所有行共用一个字号（现在 15）。若想让姓名单独放大，把这一个节点换成 `RichTextLabel` 走 BBCode
   即可（`HandbookEntry.body` 已经是这个路子），仍然是一个字符串。
 
-- **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（半透明琥珀底 + 描边），normal 是一条细下划线。
-  脚本里没有任何 `_on_mouse_entered`：hover 由 Button 自己驱动，改配色只动 `.tres`。
+- **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（**一个淡黄色矩形，没有描边**），
+  normal 是一条细下划线。脚本里没有任何 `_on_mouse_entered`：hover 由 Button 自己驱动，改配色只动 `.tres`。
 - **点击效果 = 在旁边弹出词条菜单**（见下面「词条菜单」与 §10.7）：`pressed` 与 `normal`
   指向**同一个** `.tres`，按下去的画法和没按一模一样；`focus_mode = 0` 关掉焦点框，点完不会残留高亮。
   视觉上的「选中」由 `resume.gd` 订阅 `selected` 后弹菜单来表达，不是按钮自己画的。
@@ -588,7 +588,7 @@ DayLoop (Node)
 
 | 文件 | 职责 |
 | --- | --- |
-| `scenes/day/interview/resume/resume_token_menu.gd` / `.tscn` | 面板 + 选项列表，`class_name ResumeTokenMenu`，对外信号 `ask_requested(entry_index)` |
+| `scenes/day/interview/resume/resume_token_menu.gd` / `.tscn` | 面板 + 选项列表，`class_name ResumeTokenMenu`，对外信号 `ask_requested(entry_index)`；文案可换（`set_option_text`）、可置灰（`open_for` 的 `enabled`） |
 | `assets/art/interview/resume_token_menu_phd.png` | 手绘白纸面板贴图，原生 145×223 |
 
 节点：`ResumeTokenMenu (Control)` → `Panel (TextureRect)` + `Options (MarginContainer)` →
@@ -596,13 +596,16 @@ DayLoop (Node)
 默认 `visible = false`，开关由 `resume.gd` 管。
 
 - **交互**：点词条 → `resume_token` 的 `selected` → `resume.gd._on_token_selected()` →
-  `menu.open_for(token, i)`；点菜单外面或按 Esc 收起。点菜单外面时**故意不 `set_input_as_handled()`**，
+  `menu.open_for(token, i, enabled)`；点菜单外面或按 Esc 收起。点菜单外面时**故意不 `set_input_as_handled()`**，
   所以点到别的词条上时那条词条照样收到 `pressed`，菜单顺势挪过去（要的就是这个手感）。
-- **「追问」按钮 → 广播 `resume_entry_asked`**：`resume.gd._on_ask_requested()` 先收菜单，
-  再把 `EventBus.resume_entry_asked(candidate_id, entry_index)` 发出去（§5 的信号名）。
-  **`resume.gd` 不播对话** —— `resume.tscn` 在 `team_builder.tscn` 里也被复用，那边没有 `Dialoguer`，
-  所以台词交给 `interview.gd` 按 `ask_path` 播（`_on_resume_entry_asked`，见 §10.7）。
-  按钮的 normal / hover 直接复用 `ui/styles/resume_token_*.tres`，和词条同一套观感。
+- **同一个按钮，两个阶段两种意思**：面试里是「追问」，组队里是「回忆」——
+  文案由 `resume.gd` 按自己的 `entry_menu` 设，点下去抛的仍是 `ask_requested`，
+  由 `resume.gd._on_ask_requested()` 分流成 `resume_entry_asked` / `resume_entry_recalled` 两个信号。
+  `enabled = false`（组队里「这条当时没问过」）时按钮**置灰且点不动**，但菜单照常弹出来 ——
+  玩家至少能看到「哦，这条我没问」。
+  **`resume.gd` 不播对话** —— 台词交给所在阶段（`interview.gd` 真的去问 / `team_builder.gd` 重播，见 §10.7）。
+  按钮的 normal / hover 直接复用 `ui/styles/resume_token_*.tres`，和词条同一套观感；
+  置灰另有 `font_disabled_color` + `disabled` 样式（同一个 normal 底，只把字压灰，别退回默认主题那个灰框）。
 
 **画布适配**（主画布在 `aspect=keep` 下恒为 1152×648、**不随窗口变**；位置仍不写死，
 因为 `SubViewport` 自检会自己造别的尺寸）：
@@ -692,16 +695,59 @@ _dialoguer.play()
 - **不打断阶段对话**：国王下旨 / 今日事件那几段还挂着「看完自动推进」时，追问直接返回 ——
   打断等于把阶段对话换掉，而它不会再播第二次。
 
+#### 「问过没有」记在哪儿
+
+追问**播成功**之后（`interview.gd` 里 `load_dialogue_from()` 返回 true、`play()` 之前），
+`GameState.record_entry_asked(candidate_id, entry_index)` 记一笔：
+
+```gdscript
+## 本日追问过的条目：candidate_id -> Array[int]。本日过程量，不入存档。
+var asked_entries: Dictionary = {}
+```
+
+- **为什么在 GameState 而不是 `ResumeEntry`**：`ResumeEntry` 是被候选人共用的**资源**，
+  往里写运行时状态会在「同一条被两个人引用」时串味，也会被编辑器当成数据改动。
+- **为什么「没播成就不算」**：`ask_path` 为空 / 文件不在 / 阶段不对时都没真的问出来，
+  这种条目在组队里不该亮起来（否则点开一片空白）。自检专门盯了这条。
+- 换天、开新局、读档、回主菜单都会把它清空（和 `passed_ids` 同命，见 `GameState` 里那四处 reset）。
+
+#### 组队阶段的「回忆」（§12）
+
+同一张简历、同一个菜单，到了组队阶段换成 `entry_menu = RECALL`：文案变「回忆」，
+**没问过的条目置灰**（`resume.gd._option_enabled()` 查的正是上面那份记录）。
+
+```
+菜单「回忆」─ ask_requested ─→ resume.gd._on_ask_requested()
+									│  entry_menu == RECALL → 发另一个信号
+									↓
+					 EventBus.resume_entry_recalled(candidate_id, entry_index)
+									↓
+			  team_builder.gd._on_resume_entry_recalled()
+									│  查记录（没记录就不播）
+									↓
+	typer.load_dialogue_from(ask_path) ─→ typer.append_line(面试官, "当时好像是这样追问的。")
+									─→ dialoguer.play()
+```
+
+**为什么两个信号不复用**：按钮是同一个、菜单也是同一个，但两个阶段要做的事完全不同
+（面试=真的去问，组队=重播当时那段）。分开之后，收信号的人不必再自己判断「现在是哪个阶段」。
+
+**最后那句自言自语走 `typer.append_line()`**：它只往**内存里这次播放**的行数组后面接一句，
+不碰任何文件 —— `data/asks/` 里那些 json 存的永远是「面试当时真正播的东西」。
+那句文案是 `team_builder.gd` 的两个常量（`RECALL_TAIL_SPEAKER` / `RECALL_TAIL_TEXT`）：
+它是场外补充，不属于任何候选人，和「当时真的说了什么」是两回事。
+
 #### 自检
 
 ```
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_interview_ask.tscn
 ```
 
-37 项，跑的是**真的 `interview.tscn`**（不是 `resume.tscn`）：当日名单 → 点词条 → 点「追问」，
-把播出的每一行与该条 `ask_path` 那份 json **逐字比对**，再验逐字显示、说话人 Label 随行切换、
-点到底对话框收起、**全程 `phase_finished` 一次都没发**、换第 2 条时播的是**它自己**那份 json
-（换文件确实重读了）、追问之后仍能按 id 装入默认 `dialogue.json` 而不留残留内容，
+37 项（再加「问过没有」的记录，见下），跑的是**真的 `interview.tscn`**（不是 `resume.tscn`）：
+当日名单 → 点词条 → 点「追问」，把播出的每一行与该条 `ask_path` 那份 json **逐字比对**，
+再验逐字显示、说话人 Label 随行切换、点到底对话框收起、**全程 `phase_finished` 一次都没发**、
+换第 2 条时播的是**它自己**那份 json（换文件确实重读了）、追问之后仍能按 id 装入默认
+`dialogue.json` 而不留残留内容，**播成功会记下「这一条问过」而没播成的不会**，
 以及四条守卫（非追问阶段 / 不是当前在面试的那位 / 下标越界 / `ask_path` 空或指错）都拦得住。
 全绿退出码 0。
 
@@ -843,8 +889,8 @@ data/days/day_XX.tres
 ```
 
 - **名单就是「今日出现的面试者」**：和面试同一个来源（`GameState.current_candidates`）。
-  §4 写的「从**通过者**中挑」需要 `GameState.get_passed_ids()` 过滤，那是后面接判定流程时的事 ——
-  现在展示的是当天全部出场者，符合「左半边显示今日出现的所有面试者的头像」这条要求。
+  左半边列的是当天**全部**出场者（不是只列通过者），玩家想改主意时还能把别人点进来；
+  §12.7 的初始名单会把面试录用的人先标上。
 - **右半边复用 `resume.tscn`，位置靠「同一个场景」而不是靠对齐代码**：`Resume` 是整屏 Control，
   纸面 `Paper` 用的是绝对偏移（624,62 ～ 980,542），所以把它实例化到组队场景里，
   位置与面试**逐像素相同**。`smoke_team_builder` 会把两边的 `Paper` 全局矩形拿来比，
@@ -860,6 +906,8 @@ data/days/day_XX.tres
 | **左键**点某条头像 | `toggled` → 在 `GameState.current_team` 里**加上**这一位的 id |
 | 再点一次同一条 | 已经在队里 → 从 `current_team` 里**去掉**（撤销），标记随之消失 |
 | 右键 / 滚轮 / 中键 | 一概不响应（`_gui_input` 只认 `MOUSE_BUTTON_LEFT`） |
+| 点简历词条 | 菜单里那一项是「**回忆**」：重播面试时问过的那一段（§10.7）。没问过的置灰 |
+| 「组队完成」 | 超员 → **拦住**；刚好满 → 出发；没满 → 提醒一次、再点一次出发 |
 | 表头 | `HIRED 已录用数 / 当日名额`，名额来自 `DayConfig.slots` |
 
 - 「已录用」的**真身是 `GameState.current_team`**（§2：本日过程量，不入存档），
@@ -869,6 +917,44 @@ data/days/day_XX.tres
   组队阶段挑的是「今天这一队」。提交队伍（`team_submitted` → `BattleReport`）留到接战报时再做。
 - 表头文案是英文（`HIRED`）：`assets/fonts` 还没接入中文字体，中文会变方块（§10.5），
   和简历页的 `RESUME ENTRIES` 一致。
+
+### 12.7 初始名单：面试录用了谁，就先标上谁
+
+一进组队，`_ready()` 里先播种再接线：
+
+```gdscript
+_seed_team_from_verdicts()   # GameState.current_team = GameState.get_passed_ids()
+_wire_ui()                   # 结尾 _push_team_to_ui() 把队伍画到界面上
+```
+
+- **为什么**：面试时按下的那个「录用」就是玩家的第一次筛选，组队要做的是**在此基础上调整**，
+  而不是让玩家凭记忆再点一遍。所以 `passed_ids` 直接变成开场队伍。
+- **顺序不能反**：`_wire_ui()` 结尾才把队伍推给界面。先接线再播种，界面拿到的还是空名单 ——
+  玩家会看到一个「明明录用了却没人被标上」的组队界面（这个坑 `smoke_team_builder` 抓过一次）。
+- **已经有队伍就不覆盖**：换阶段回来 / F6 重进时不该把玩家刚调整好的名单冲掉。
+
+### 12.8 超员：硬拦，不是提醒
+
+`passed_ids` 可能**比当天名额多**（面试录用了 3 位，今天只能带 2 位）。这时开场就处于超员状态，
+界面把他们全标上、其余条目锁住，玩家去掉几位才能出发 —— 该由玩家决定留下谁。
+
+```gdscript
+if TeamValidator.is_over(team, slots):   # size > slots，刚好满不算
+	_cancel_incomplete_confirm()
+	_play_dialogue("team_over")          # 播不出文案也**不放行**
+	return
+```
+
+- 和「没满」那条路**性质不同**：「没满」是提醒一次、再点一次就走（玩家有权少带人）；
+  「超员」是**硬拦** —— 多带的人没有名额，点多少次都出不去。
+- `TeamValidator.is_over()` 和 `is_full()` 是两个判定：`size >= slots` 是满，`size > slots` 才是超。
+  刚好满必须能出发，这是「满了就立刻走」那条路的前提。
+- 文案 `team_over` 在 `data/dialogue.json` 里（和 `team_not_full` 同一处）。
+
+> ⚠️ **数据现状**：`data/days/day_XX.tres` 里只有 day 01/02/04/06/08 填了 `slots`，
+> day 03/05/07/09/10 **没填**（`slots = 0`）。按 `TeamValidator.has_quota()` 的约定，
+> 名额为 0 = 「没有名额限制」，所以那 5 天既不会锁人、也不会触发超员拦截。
+> 要按设计走，得把那 5 天的 `slots` 补上。
 
 ### 12.4 圆形头像是怎么拼的
 
@@ -907,10 +993,15 @@ data/days/day_XX.tres
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_team_builder.tscn
 ```
 
-53 项：左半边条数 = 今日名单人数、每条的候选人与名字来自数据、头像尺寸 = `AVATAR_SIZE`、
+82 项：左半边条数 = 今日名单人数、每条的候选人与名字来自数据、头像尺寸 = `AVATAR_SIZE`、
 **圆外一个像素都没有 / 圆内有内容 / 填得够满 / 包围盒中心落在圆心**（±2px）、
 悬停换人后右半边抬头与词条都跟着换、**组队页的 `Paper` 全局矩形与面试页逐像素相同**、
-左键标记与撤销、右键无反应、表头计数、空名单不炸、以及
+左键标记与撤销、右键无反应、表头计数、空名单不炸、
+**面试录用的人一进组队就已经标好**（被拒的没有）、
+**「回忆」的整条链路**（菜单文案是「回忆」、没问过的置灰且点了没反应、问过的广播
+`resume_entry_recalled`、播出的行 = 当时那份 json + 最后那句自言自语）、
+**超员点多少次都出不去而减到名额以内一下就走**、
+**悬停样式只剩底色矩形、四边线宽合计为 0**，以及
 **`data/candidates/` 里 25 位候选人逐个拼得出「有内容且居中」的头像**。
 另外还比对了 `Interviewee` 与 `PortraitComposer` 取的是同一套部件图（防两边走偏）。
 全绿退出码 0。

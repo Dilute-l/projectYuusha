@@ -154,6 +154,12 @@ func _run() -> void:
 	var name_label: Label = dialoguer.get_node_or_null("Name")
 	_check(name_label != null and name_label.text == "面试官", "说话人 Label 显示「面试官」")
 
+	# 播成功 = 这一条「问过了」：组队阶段的「回忆」就是照这份记录判断哪几条能点
+	_check(GameState.has_asked_entry(candidate.id, 0), "追问成功后记下了「这一条问过」")
+	_check(GameState.get_asked_entries(candidate.id) == [0],
+			"记录里是第 0 条（实际 %s）" % str(GameState.get_asked_entries(candidate.id)))
+	_check(not GameState.has_asked_entry(candidate.id, 1), "没问过的第 1 条仍然没有记录")
+
 	# ---- 点一下：本行显示完 ----
 	typer.skip_line()
 	await _settle()
@@ -219,7 +225,9 @@ func _run() -> void:
 	_check(not dialoguer.visible, "越界的条目下标被忽略")
 
 	# ---- 档案忘配 ask_path：要拦住，而且不能拿上一份 json 顶包 ----
+	# 同时确认**没播成的追问不算「问过」** —— 否则组队里那条会亮起来，点开却什么也没有。
 	var saved := entry0.ask_path
+	var asked_before := GameState.get_asked_entries(candidate.id)
 	entry0.ask_path = ""
 	dialoguer.visible = false
 	EventBus.resume_entry_asked.emit(candidate.id, 0)
@@ -229,6 +237,8 @@ func _run() -> void:
 	EventBus.resume_entry_asked.emit(candidate.id, 0)
 	await _settle()
 	_check(not dialoguer.visible, "ask_path 指向不存在的文件 → 不播")
+	_check(GameState.get_asked_entries(candidate.id) == asked_before,
+			"没播成的追问不记「问过」（记录仍是 %s）" % str(asked_before))
 	entry0.ask_path = saved
 
 

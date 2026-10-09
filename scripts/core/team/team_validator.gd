@@ -38,6 +38,17 @@ static func remaining(team_ids: Array[StringName], slots: int) -> int:
 	return maxi(slots - team_ids.size(), 0)
 
 
+## **超出**名额了没有。比 is_full() 严格一格：刚好满（size == slots）不算超。
+##
+## 为什么会超：面试阶段「录用」的人可能比今天的名额多 —— 组队界面一开始就把他们
+## 全标上（§12 的「先带进来再调整」），于是开局就可能是超员状态。
+## 超员不是「提醒一下」而是**硬拦**：多带的人没有名额，不能就这么出发。
+static func is_over(team_ids: Array[StringName], slots: int) -> bool:
+	if not has_quota(slots):
+		return false
+	return team_ids.size() > slots
+
+
 ## 能不能把 candidate_id 加进这一队。
 ## 返回 { "ok": bool, "reason": StringName }，reason 取上面那四个常量。
 ##

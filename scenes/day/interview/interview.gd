@@ -211,6 +211,9 @@ func _on_resume_entry_asked(candidate_id: StringName, entry_index: int) -> void:
 	# 一份 json = 一条追问的一段对话，所以 id 留空（取文件里的第一段）
 	if not _dialoguer.typer.load_dialogue_from(ask_path):
 		return
+	# 播成功才算「问过」：组队阶段的「回忆」照这份记录判断哪几条能点
+	# （阶段不对 / json 缺失都不该让那一条在组队时亮起来）。
+	GameState.record_entry_asked(candidate.id, entry_index)
 	_dialoguer.play()
 
 

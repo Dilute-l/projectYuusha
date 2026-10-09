@@ -20,6 +20,12 @@ var current_team: Array[StringName] = []
 ## 本日通过者（面试阶段累计，组队阶段的候选池）
 var passed_ids: Array[StringName] = []
 
+## 本日**追问过**的条目：candidate_id -> Array[int]（简历里的条目下标）。
+##
+## 本日过程量，不入存档 —— 和 passed_ids 一样，读档后按种子重放即可得到。
+## 组队阶段的「回忆」靠它判断哪几条当时问过：问过的才能点，没问过的选项变灰。
+var asked_entries: Dictionary = {}
+
 ## 当日战报（BATTLE_REPORT 阶段的演出数据，本日过程量，不入存档）
 var battle_report: BattleReport = null
 
@@ -54,6 +60,7 @@ func start_new_run(seed_value: int = 0) -> RunState:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	asked_entries = {}
 	battle_report = null
 	# 当日出场名单来自 data/days/day_XX.tres（§6.1「候选人出场（写死）」）
 	load_day_candidates(run_state.day)
@@ -71,6 +78,7 @@ func apply_run_state(state: RunState) -> void:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	asked_entries = {}
 	battle_report = null
 	# 当日名单不进存档（§7：只存运行时状态），按存档里的天数重新从 data/days/ 取
 	load_day_candidates(run_state.day)
@@ -83,6 +91,7 @@ func clear_run() -> void:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	asked_entries = {}
 	battle_report = null
 
 # ---------------------------------------------------------------------------
@@ -129,6 +138,7 @@ func advance_day() -> bool:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	asked_entries = {}
 	battle_report = null
 	# 换天即换名单：新的一天出场哪几个人由 data/days/day_XX.tres 决定
 	load_day_candidates(run_state.day)
@@ -209,6 +219,40 @@ func get_passed_ids() -> Array[StringName]:
 	var ids: Array[StringName] = []
 	ids.assign(passed_ids)
 	return ids
+
+
+# ---------------------------------------------------------------------------
+# 追问记录（本日过程量，不入存档）
+# ---------------------------------------------------------------------------
+
+
+## 记下「这一条被追问过了」。组队阶段的「回忆」靠它判断哪几条能点。
+##
+## 由 interview.gd 在**追问真的播出去之后**调用 —— 没播成的（json 缺失 / 阶段不对）
+## 不算问过，组队时那一条就该是灰的。
+func record_entry_asked(candidate_id: StringName, entry_index: int) -> void:
+	if candidate_id == &"" or entry_index < 0:
+		return
+	var indices: Array = asked_entries.get(candidate_id, [])
+	if indices.has(entry_index):
+		return
+	indices.append(entry_index)
+	asked_entries[candidate_id] = indices
+
+
+## 这一条当时问过没有
+func has_asked_entry(candidate_id: StringName, entry_index: int) -> bool:
+	var indices: Array = asked_entries.get(candidate_id, [])
+	return indices.has(entry_index)
+
+
+## 某位候选人当时问过的条目下标（升序；没问过返回空数组）
+func get_asked_entries(candidate_id: StringName) -> Array[int]:
+	var result: Array[int] = []
+	for index in asked_entries.get(candidate_id, []):
+		result.append(int(index))
+	result.sort()
+	return result
 
 # ---------------------------------------------------------------------------
 # 剧情 flag

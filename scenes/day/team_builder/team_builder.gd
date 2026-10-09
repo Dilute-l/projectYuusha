@@ -13,8 +13,10 @@ extends Control
 ##   左键   → 在 GameState.current_team 里加上这一位；再点一次 = 从名单里去掉（撤销）
 ##   名额   → 能不能加由 scripts/core/team/team_validator.gd 判定（§0：规则不在表现层）
 ##
-## 「谁被录用了」是 GameState 的状态，不是 UI 的状态：本脚本只负责把名单同步给界面，
-## 以及把界面的两个信号翻译成状态变更。§6 那些数值 / 相性规则一条都不在这里。
+## 另外两件事（§12 / §10.7）：
+##
+##   初始名单 → 面试阶段选了「录用」的人**一开始就标好**（见 _seed_team_from_verdicts）
+##   回忆     → 点简历词条弹「回忆」：重播当时那段追问 + 面试官一句自言自语
 
 var _phase: int = DayPhase.Phase.DAY_BRIEFING
 
@@ -23,6 +25,12 @@ signal phase_finished()
 @onready var _ui: TeamBuilderUI = get_node_or_null("TeamBuilderUI") as TeamBuilderUI
 @onready var _resume: Resume = get_node_or_null("Resume") as Resume
 @onready var _dialoguer: Dialoguer = get_node_or_null("Dialoguer") as Dialoguer
+
+## 「回忆」最后追加的那句自言自语。
+## 这是**场外补充**，不属于任何候选人、也不在 data/asks/ 那几份 json 里 ——
+## 那几份是「当时真的说了什么」，这一句是现在回头看时面试官的感慨，两回事。
+const RECALL_TAIL_SPEAKER: String = "面试官"
+const RECALL_TAIL_TEXT: String = "当时好像是这样追问的。"
 
 ## 「队伍没满，真的要走吗？」已经问过一次了 —— 再点一次就出发。
 ##
@@ -53,12 +61,19 @@ func _ready() -> void:
 	elif GameState.current_candidates.is_empty():
 		GameState.load_day_candidates()
 
-	# 这里是「翻简历」，不是「面试」：resume.tscn 被复用过来，但点词条不该冒出
-	# 「追问」菜单 —— 追问是面试阶段才有的动作（见 resume.gd 的 token_menu_enabled）。
-	# 也可以改成在 team_builder.tscn 的 Resume 实例上覆盖这个 export，写在代码里更不容易漏。
+	# 这里是「翻简历」，不是「面试」，但词条照样能点开菜单 —— 只是里面那一项
+	# 从「追问」变成「回忆」：重播面试时问过的那一条（没问过的置灰）。
+	# 见 resume.gd 的 entry_menu。
 	if _resume != null:
-		_resume.token_menu_enabled = false
+		_resume.entry_menu = Resume.EntryMenu.RECALL
 
+	# 接上「回忆」：点词条 → 菜单 → 回忆（resume.gd 广播，见 _on_resume_entry_recalled）
+	if not EventBus.resume_entry_recalled.is_connected(_on_resume_entry_recalled):
+		EventBus.resume_entry_recalled.connect(_on_resume_entry_recalled)
+
+	# **先播种再接线**：_wire_ui() 结尾会把队伍推给界面（_push_team_to_ui），
+	# 顺序反了的话界面拿到的还是空名单，玩家会看到一个「没人被录用」的组队界面。
+	_seed_team_from_verdicts()
 	_wire_ui()
 	_refresh()
 
@@ -103,6 +118,68 @@ func _refresh() -> void:
 		return
 	_resume.set_candidate(null)
 	_resume.visible = false
+
+
+# ---------------------------------------------------------------------------
+# 初始名单：面试阶段选了「录用」的人
+# ---------------------------------------------------------------------------
+
+
+## 把面试阶段的通过者直接带进今天的队伍（§12）。
+##
+## 组队阶段要做的是「从通过者里调整出最终名额」，而不是让玩家凭记忆再点一遍 ——
+## 面试时按下的那个「录用」就是玩家的第一次筛选，这里把它接着用。
+##
+## 通过者可能**比名额多**：这时界面会把他们全标上，玩家去掉几位才能出发
+## （见 _on_confirm_pressed 的超员拦截）。这是有意的 —— 该由玩家决定留下谁。
+func _seed_team_from_verdicts() -> void:
+	# 已经有队伍就别覆盖：换阶段回来 / F6 重进不该把玩家刚调整好的名单冲掉
+	if not GameState.get_current_team().is_empty():
+		return
+	var passed := GameState.get_passed_ids()
+	if passed.is_empty():
+		return
+	GameState.set_current_team(passed)
+
+
+# ---------------------------------------------------------------------------
+# 回忆：重播面试时问过的那一条（§10.7）
+# ---------------------------------------------------------------------------
+
+
+## 玩家在组队阶段点了某一条的「回忆」。
+##
+## 播的内容 = **当时那份追问 json** + 面试官一句自言自语。
+## 追加那句走 Typer.append_line()：它只影响这一次播放，不动任何文件 ——
+## data/asks/ 那几份 json 里存的永远是「面试当时真正播的东西」。
+##
+## 这里**不校验「问过没有」**：菜单那层已经置灰了（resume.gd 的 _option_enabled），
+## 但万一有人绕过它发了信号，GameState 里没有记录就干脆不播，比播错强。
+func _on_resume_entry_recalled(candidate_id: StringName, entry_index: int) -> void:
+	if not GameState.has_asked_entry(candidate_id, entry_index):
+		push_warning("[TeamBuilder] %s 的第 %d 条没有追问记录，不播回忆" % [candidate_id, entry_index])
+		return
+	if _dialoguer == null:
+		push_error("[TeamBuilder] 找不到 Dialoguer，无法播出回忆")
+		return
+
+	var candidate := GameState.get_candidate(candidate_id)
+	if candidate == null or entry_index >= candidate.resume.size():
+		push_warning("[TeamBuilder] 回忆的条目找不到：%s[%d]" % [candidate_id, entry_index])
+		return
+	var entry: ResumeEntry = candidate.resume[entry_index]
+	if entry == null or entry.ask_path.strip_edges().is_empty():
+		push_warning("[TeamBuilder] 第 %d 条没有 ask_path，没有可回忆的内容" % entry_index)
+		return
+	if not FileAccess.file_exists(entry.ask_path):
+		push_error("[TeamBuilder] 追问 json 不存在：%s" % entry.ask_path)
+		return
+
+	# 一份 json = 一条追问，所以 id 留空（取文件里的第一段）
+	if not _dialoguer.typer.load_dialogue_from(entry.ask_path):
+		return
+	_dialoguer.typer.append_line(RECALL_TAIL_SPEAKER, RECALL_TAIL_TEXT)
+	_dialoguer.play()
 
 
 # ---------------------------------------------------------------------------
@@ -171,19 +248,31 @@ func hired_ids() -> Array[StringName]:
 
 ## 玩家点了「组队完成」。
 ##
+##   队伍**超员**   → 拦住，播 team_over 提示先减人（**不是**提醒一次就放行）
 ##   队伍**已满**   → 立刻出发
 ##   队伍**没满**   → 先播 team_not_full 提醒，**再点一次**才出发（同主菜单退出按钮）
 ##   当天没有名额数据 → 也直接出发（数据没填是开发期问题，不该变成玩家的疑问）
 ##
-## 注意第二下的实际路径：提醒对话开着时，Dialoguer 会吃掉左键（dialoguer.gd 的 _input），
+## 注意「没满」那条第二下的实际路径：提醒对话开着时，Dialoguer 会吃掉左键（dialoguer.gd 的 _input），
 ## 所以玩家得先把这段对话点完收起来，那一下才会真的落到按钮上 —— 主菜单的退出按钮同理。
 func _on_confirm_pressed() -> void:
+	var slots := _today_slots()
+	var team := GameState.get_current_team()
+
+	# 超员是**硬拦**：多带的人没有名额，怎么点都出不去。
+	# 为什么会超：面试录用的比名额多时，一进组队就是超员状态（见 _seed_team_from_verdicts）。
+	if TeamValidator.is_over(team, slots):
+		_cancel_incomplete_confirm()
+		if not _play_dialogue("team_over"):
+			# 提示文案缺失也不能放行 —— 否则「超员」这个状态就白设了
+			push_warning("[TeamBuilder] 队伍超出名额 %d/%d，且 team_over 播不出来" % [team.size(), slots])
+		return
+
 	if _confirming_incomplete:
 		_depart()
 		return
 
-	var slots := _today_slots()
-	if not TeamValidator.has_quota(slots) or _is_team_full():
+	if not TeamValidator.has_quota(slots) or TeamValidator.is_full(team, slots):
 		_depart()
 		return
 
@@ -192,11 +281,6 @@ func _on_confirm_pressed() -> void:
 		# 提醒文案缺失 / 没有对话框 —— 不能因此把玩家卡在这里
 		push_warning("[TeamBuilder] team_not_full 播不出来，直接出发")
 		_depart()
-
-
-## 今日队伍是否已满。判定在 TeamValidator（§0），这里只负责把数据凑齐。
-func _is_team_full() -> bool:
-	return TeamValidator.is_full(GameState.get_current_team(), _today_slots())
 
 
 ## 真的出发：报告本阶段结束，换阶段 / 换天 / 进结局由 day_loop 问 DayDirector 决定。

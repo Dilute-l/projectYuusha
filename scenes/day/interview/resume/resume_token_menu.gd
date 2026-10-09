@@ -1,11 +1,13 @@
 class_name ResumeTokenMenu
 extends Control
 
-## 点开某一条简历词条后弹出的小菜单（ARCHITECTURE.md §4 / §6.2）。
+## 点开某一条简历词条后弹出的小菜单（ARCHITECTURE.md §4 / §6.2 / §10.7）。
 ##
-## 现在里面**只有一个「追问」按钮**：点了由 resume.gd 订阅后广播
-## `EventBus.resume_entry_asked`，真正的台词交给 interview.gd 从那一条的
-## 追问 json 里播（§10.7）。
+## 现在里面**只有一个选项按钮**：面试阶段它是「追问」，组队阶段它是「回忆」——
+## 文案由调用方设（`set_option_text()`），点下去抛的都是 `ask_requested`；
+## 「这一下到底是去问还是去回忆」由 resume.gd 按自己的模式分流
+## （见 resume.gd 的 `entry_menu` / `_on_ask_requested()`）。
+## 没问过的条目传 `enabled = false` 进来，按钮变灰且点不动。
 ##
 ## ── 画布适配 ─────────────────────────────────────────────────────────────
 ## 1) 面板**按纹理原生尺寸摆，不拉伸**。手绘边框拉变形会很难看；窗口缩放这件事
@@ -17,8 +19,11 @@ extends Control
 ##    所以这条路径平时不会触发；但 tools/smoke_resume_menu.gd 用 SubViewport
 ##    自己造不同尺寸的画布，靠的就是它 —— 别删。
 
-## 「追问」被点击，由 resume.gd 订阅后广播 resume_entry_asked（§10.7）。
+## 选项按钮被点击（语义由 resume.gd 的 entry_menu 决定：追问 or 回忆）。
 signal ask_requested(entry_index: int)
+
+## 选项按钮的默认文案。面试阶段就是它；组队阶段会被 set_option_text() 改成「回忆」。
+const DEFAULT_OPTION_TEXT: String = "追问"
 
 ## 面板纹理的原生尺寸。换图要连下面 CONTENT_* 四个常量一起重新对
 ## （_ready() 里对不上会 push_warning）。
@@ -64,10 +69,22 @@ func _ready() -> void:
 			tex.get_size(), PANEL_SIZE])
 
 
-## 打开菜单并摆到 anchor（被点的那条词条）旁边
-func open_for(anchor: Control, index: int) -> void:
+## 换选项按钮的文案（面试 = 「追问」，组队 = 「回忆」）。入树前后调用都可以。
+func set_option_text(text: String) -> void:
+	if _ask_button == null:
+		return
+	_ask_button.text = text
+
+
+## 打开菜单并摆到 anchor（被点的那条词条）旁边。
+##
+## `enabled = false` 时选项变灰且点不动 —— 用于「这一条当时根本没问过，没什么可回忆的」。
+## 菜单**照常弹出来**（而不是干脆不弹）：玩家至少能看到「哦，这条我没问」。
+func open_for(anchor: Control, index: int, enabled: bool = true) -> void:
 	_anchor = anchor
 	entry_index = index
+	if _ask_button != null:
+		_ask_button.disabled = not enabled
 	visible = true
 	_reposition()
 
@@ -101,5 +118,8 @@ func _reposition() -> void:
 
 
 func _on_ask_pressed() -> void:
+	# 置灰是**看得见**的那一层；这里再挡一次，免得将来有人绕过 disabled 直接 emit。
+	if _ask_button != null and _ask_button.disabled:
+		return
 	# 本控件只抛信号：收菜单、找 json、播对话都在订阅方（见 §10.7）。
 	ask_requested.emit(entry_index)

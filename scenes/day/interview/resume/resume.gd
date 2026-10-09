@@ -29,12 +29,19 @@ const TOKEN_SCENE := preload("res://scenes/day/interview/resume/resume_token.tsc
 ## 当前铺在纸上的那位候选人；null = 纸是空的
 var _candidate: CandidateResource = null
 
-## 点词条时是否弹出「追问」菜单。
+## 点词条时弹出的菜单形态。
 ##
-## interview 里要弹（追问是面试的核心玩法）；team_builder 复用同一张简历，
-## 那边只是「翻一下看看」，不该冒出追问入口 —— 由调用方关掉（见 team_builder.gd）。
-## 默认 true = 保持 interview 现有的行为，谁要关谁自己关。
-@export var token_menu_enabled: bool = true
+## 同一张简历被两个阶段共用，但「点词条」这件事在两边的意思是不同的：
+## 面试里是去**问**（追问），组队里是去**回顾**（回忆当时的追问）。
+## 所以形态由调用方声明，本控件照着摆 —— interview 保持默认，team_builder 改成 RECALL。
+enum EntryMenu {
+	HIDDEN,   ## 不弹菜单（拿去做纯展示时）
+	ASK,      ## 「追问」：每条都能问
+	RECALL,   ## 「回忆」：只有面试时**问过**的条目能点，没问过的置灰
+}
+
+## 点词条时弹什么菜单。默认 ASK = 保持面试现有的行为。
+@export var entry_menu: EntryMenu = EntryMenu.ASK
 
 
 func _ready() -> void:
@@ -137,38 +144,63 @@ func _connect_token(token: ResumeToken) -> void:
 
 
 ## 点了某一条词条 → 在它旁边弹出菜单（§6.2 的第一步）。
-## 菜单里那个「追问」的后续见 _on_ask_requested。
+##
+## 摆出来的样子由 entry_menu 决定：面试是「追问」，组队是「回忆」（没问过的置灰）。
 func _on_token_selected(entry_index: int) -> void:
-	# 关掉追问入口的场合（team_builder）：点词条什么也不发生。
-	# 词条本身仍然可点、悬停高亮照旧，只是不弹菜单。
-	if not token_menu_enabled:
+	if entry_menu == EntryMenu.HIDDEN:
 		return
 	var token := _token_list.get_child(entry_index) as Control
 	if token == null or not token.visible:
 		return
-	_token_menu.open_for(token, entry_index)
+	# 文案与可用性都在这里定：菜单自己不知道现在是哪个阶段（它只是个控件）。
+	_token_menu.set_option_text(_option_text())
+	_token_menu.open_for(token, entry_index, _option_enabled(entry_index))
 
 
-## 点了菜单里的「追问」→ 把「哪位候选人 + 第几条」广播出去（§5 的 resume_entry_asked）。
+## 菜单里那个选项当前该显示什么字
+func _option_text() -> String:
+	if entry_menu == EntryMenu.RECALL:
+		return "回忆"
+	return ResumeTokenMenu.DEFAULT_OPTION_TEXT
+
+
+## 这一条现在能不能点。
 ##
-## 本控件**不播对话**：简历只负责显示与抛事件，台词由 interview.gd 去播。
-## 这不是洁癖 —— `resume.tscn` 在 `team_builder.tscn` 里也被复用（组队时要翻简历），
-## 那边根本没有 Dialoguer，所以这里不能去 `get_node("../Dialoguer")`。
+## 面试阶段都能问；组队阶段只有**当时真的问过**的才谈得上回忆 ——
+## 「问过没有」问 GameState（§2：运行时状态一律走 GameState，不写进 ResumeEntry，
+## 那是个被多个候选人共用的资源，往里写运行时状态会串味）。
+func _option_enabled(entry_index: int) -> bool:
+	if entry_menu != EntryMenu.RECALL:
+		return true
+	if _candidate == null:
+		return false
+	return GameState.has_asked_entry(_candidate.id, entry_index)
+
+
+## 选项被点。
+##
+## 本控件**不播对话**：简历只负责显示与抛事件，台词由所在阶段去播
+## （interview.gd 真的去问 / team_builder.gd 重播当时那段）。
+## 这不是洁癖 —— `resume.tscn` 在两个场景里被复用，team_builder 那边
+## 就算有 Dialoguer，播的也不是同一段东西，所以这里不能自己决定播什么。
 func _on_ask_requested(entry_index: int) -> void:
-	# 入口关掉时这里也不该有动作：菜单虽然弹不出来，但别留后门
-	if not token_menu_enabled:
+	if entry_menu == EntryMenu.HIDDEN:
 		return
 	# 先收菜单：菜单只有巴掌大，留着会和对话框叠在一起
 	_token_menu.close()
 
 	if _candidate == null:
-		push_warning("[Resume] 纸上没有候选人，追问无处可问")
+		push_warning("[Resume] 纸上没有候选人，这条无从问起")
 		return
 	if entry_index < 0 or entry_index >= _candidate.resume.size():
-		push_warning("[Resume] 追问的条目下标越界：%d（共 %d 条）" % [
+		push_warning("[Resume] 条目下标越界：%d（共 %d 条）" % [
 			entry_index, _candidate.resume.size()])
 		return
-	EventBus.resume_entry_asked.emit(_candidate.id, entry_index)
+	# 同一个按钮，两个阶段发两个信号：收信号的人不必再自己判断现在是哪个阶段。
+	if entry_menu == EntryMenu.RECALL:
+		EventBus.resume_entry_recalled.emit(_candidate.id, entry_index)
+	else:
+		EventBus.resume_entry_asked.emit(_candidate.id, entry_index)
 
 
 ## 菜单开着的时候：点菜单外面 = 收起，Esc = 收起。

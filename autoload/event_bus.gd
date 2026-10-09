@@ -29,6 +29,13 @@ signal candidate_opened(candidate_id: StringName)
 ## 玩家追问了简历上的某一条目（entry_index 为该候选人 resume 的下标）
 signal resume_entry_asked(candidate_id: StringName, entry_index: int)
 
+## 玩家在组队阶段「回忆」了面试时问过的某一条目。
+##
+## 和 resume_entry_asked 分开而不是复用：按钮是同一个、弹的菜单也是同一个，
+## 但两个阶段要做的事完全不同（面试=真的追问，组队=重播当时那段），
+## 各发各的信号之后，收信号的人不必再自己判断「现在是不是那个阶段」。
+signal resume_entry_recalled(candidate_id: StringName, entry_index: int)
+
 ## 对某位候选人给出录用判定
 signal verdict_issued(candidate_id: StringName, passed: bool)
 

@@ -252,6 +252,188 @@ func _run() -> void:
 	# ---- 单条条目也能自己用（F6 / 复用） ----
 	_check(entries[0].name == "CandidateEntry1", "条目按顺序命名（%s）" % entries[0].name)
 
+	# 前面那两个实例先撤掉：下面要**重开一局**，留着它们会让两个 TeamBuilder
+	# 同时挂在新一天的信号上（同一次「回忆」被播两遍）。
+	builder.queue_free()
+	interview.queue_free()
+	await _settle()
+
+	# ---- 4~7. 新一天：初始名单 / 回忆 / 超员拦截 / 悬停样式 ----
+	await _check_new_day(vp)
+
+	# ---- 悬停高亮：只剩一个淡黄色矩形，没有描边 ----
+	_check_hover_style()
+
+
+## 新一天的玩法（§12 / §10.7）：初始名单、回忆、超员拦截。
+func _check_new_day(vp: SubViewport) -> void:
+	GameState.start_new_run(20261011)
+	GameState.set_phase(DayPhase.Phase.TEAM_BUILD)
+	var candidates := GameState.current_candidates
+	_check(candidates.size() >= 2, "重开一局后名单至少 2 位（实际 %d）" % candidates.size())
+	if candidates.size() < 2:
+		return
+
+	# 面试阶段：录用第 1 位、拒绝第 2 位
+	GameState.issue_verdict(candidates[0].id, true)
+	GameState.issue_verdict(candidates[1].id, false)
+
+	var builder := TEAM_BUILDER_SCENE.instantiate()
+	vp.add_child(builder)
+	await _settle()
+
+	var ui: TeamBuilderUI = builder.get_node_or_null("TeamBuilderUI")
+	var resume: Resume = builder.get_node_or_null("Resume")
+	_check(ui != null and resume != null, "新一天的组队场景里有 UI 与简历")
+	if ui == null or resume == null:
+		return
+
+	# ---- 4. 初始名单 = 面试阶段「录用」的人 ----
+	var team := GameState.get_current_team()
+	_check(team.size() == 1 and team[0] == candidates[0].id,
+			"开场队伍 = 面试录用的人（实际 %s）" % str(team))
+	var entries := ui.entries()
+	_check(entries[0].is_hired(), "被录用的那位一开始就画着标记")
+	_check(not entries[1].is_hired(), "被拒的那位没有标记")
+	_check(ui.hired_count() == 1, "hired_count() = 1（实际 %d）" % ui.hired_count())
+
+	# ---- 5. 回忆 ----
+	await _check_recall(builder, resume, entries, candidates)
+
+	# ---- 6. 超员：拦住，不让出发 ----
+	await _check_over_quota_guard(builder, candidates)
+
+
+## 回忆：菜单文案变「回忆」，没问过的置灰，问过的重播当时那段 + 一句自言自语。
+func _check_recall(
+	builder: Node,
+	resume: Resume,
+	entries: Array[CandidateEntry],
+	candidates: Array[CandidateResource]
+) -> void:
+	var list: VBoxContainer = resume.get_node("Paper/Rows/TokenList")
+	var menu: ResumeTokenMenu = resume.get_node("TokenMenu")
+	var dialoguer: Dialoguer = builder.get_node_or_null("Dialoguer")
+	_check(resume.entry_menu == Resume.EntryMenu.RECALL, "组队里的简历是「回忆」模式")
+	_check(menu != null and dialoguer != null, "组队场景里有词条菜单与对话框")
+	if menu == null or dialoguer == null:
+		return
+
+	var ask: Button = menu.get_node("Options/OptionList/AskButton")
+	entries[0].mouse_entered.emit()
+	await _settle()
+	_check(resume.get_candidate() == candidates[0], "悬停后简历铺的是这一位")
+
+	var token: Control = list.get_child(0)
+	token.emit_signal("pressed")
+	await _settle()
+	_check(menu.is_open(), "组队里点词条 → 菜单照样打开")
+	_check(ask.text == "回忆", "选项文案是「回忆」（实际「%s」）" % ask.text)
+
+	# 这一条没问过 → 置灰
+	_check(not GameState.has_asked_entry(candidates[0].id, 0), "前提：这一条还没问过")
+	_check(ask.disabled, "没问过的条目，选项是灰的")
+	var recalled: Array = []
+	var spy := func(cid: StringName, i: int) -> void: recalled.append([cid, i])
+	EventBus.resume_entry_recalled.connect(spy)
+	ask.pressed.emit()
+	await _settle()
+	_check(recalled.is_empty(), "置灰的选项点了也没反应")
+
+	# 面试时问过这一条 → 亮起来
+	GameState.record_entry_asked(candidates[0].id, 0)
+	token.emit_signal("pressed")
+	await _settle()
+	_check(not ask.disabled, "问过的条目，选项可以点")
+	ask.pressed.emit()
+	await _settle()
+	EventBus.resume_entry_recalled.disconnect(spy)
+	_check(recalled == [[candidates[0].id, 0]],
+			"点「回忆」广播了 resume_entry_recalled（实际 %s）" % str(recalled))
+
+	# 播的内容 = 当时那份 json + 一句自言自语
+	var expect := _read_ask(candidates[0].resume[0].ask_path)
+	_check(dialoguer.visible, "回忆把对话框叫起来了")
+	_check(dialoguer.typer.lines.size() == expect.size() + 1,
+			"回忆的行数 = 当时那份 json + 1 句（%d + 1，实际 %d）" % [
+				expect.size(), dialoguer.typer.lines.size()])
+	if dialoguer.typer.lines.size() != expect.size() + 1:
+		return
+	var matched := true
+	for i in expect.size():
+		if String(dialoguer.typer.lines[i].get("text", "")) != String(expect[i].get("text", "")):
+			matched = false
+	_check(matched, "回忆的前几行 = 当时那份 json 的内容")
+	var tail: Dictionary = dialoguer.typer.lines[expect.size()]
+	_check(String(tail.get("speaker_name", "")) == "面试官"
+			and String(tail.get("text", "")) == "当时好像是这样追问的。",
+			"最后追加的是面试官那句自言自语（实际「%s：%s」）" % [
+				tail.get("speaker_name", ""), tail.get("text", "")])
+
+
+## 超员时不许出发（§12）；减到名额以内立刻就能走。
+func _check_over_quota_guard(builder: Node, candidates: Array[CandidateResource]) -> void:
+	var config := DataDB.get_day_config(GameState.get_day())
+	var slots: int = config.slots if config != null else 0
+	_check(slots > 0, "当天有名额数据（超员的前提，slots=%d）" % slots)
+	var confirm: Button = builder.get_node_or_null("Confirm")
+	_check(confirm != null, "组队场景里有「组队完成」按钮")
+	if slots <= 0 or confirm == null:
+		return
+
+	var departed: Array[int] = []
+	builder.phase_finished.connect(func() -> void: departed.append(1))
+
+	# 把队伍撑到 slots + 1（这里只关心条数，多出来的那位借第一位的 id 凑数）
+	var over: Array[StringName] = []
+	for i in slots + 1:
+		over.append(candidates[i % candidates.size()].id)
+	GameState.set_current_team(over)
+	_check(TeamValidator.is_over(over, slots),
+			"TeamValidator.is_over 认得超员（%d > %d）" % [over.size(), slots])
+
+	confirm.pressed.emit()
+	await _settle()
+	_check(departed.is_empty(), "队员超过名额 → 点「组队完成」出不去（连点两次也没用）")
+	confirm.pressed.emit()
+	await _settle()
+	_check(departed.is_empty(), "再点一次仍然出不去")
+
+	# 减到名额以内 → 立刻出发（证明拦的只是超员，不是把正常路也堵了）
+	var legal: Array[StringName] = []
+	for i in mini(slots, candidates.size()):
+		legal.append(candidates[i].id)
+	GameState.set_current_team(legal)
+	await _settle()
+	confirm.pressed.emit()
+	await _settle()
+	_check(departed.size() == 1, "减到名额以内后点一下就能出发")
+
+
+## 悬停高亮 = 只有一个淡黄色矩形，没有描边。
+## 直接量 StyleBox（不截图）：换个 .tres 就会在这儿响，不依赖渲染结果。
+func _check_hover_style() -> void:
+	var hover := load("res://ui/styles/resume_token_hover.tres") as StyleBoxFlat
+	_check(hover != null, "词条的悬停样式能加载")
+	if hover == null:
+		return
+	_check(hover.draw_center and hover.bg_color.a > 0.0,
+			"悬停画的是底色矩形（bg=%.2f,%.2f,%.2f a=%.2f）" % [
+				hover.bg_color.r, hover.bg_color.g, hover.bg_color.b, hover.bg_color.a])
+	var border := hover.border_width_left + hover.border_width_top \
+			+ hover.border_width_right + hover.border_width_bottom
+	_check(border == 0, "悬停不再描边（四边线宽合计 %d）" % border)
+
+
+## 读一份追问 json 的行数组（读不出来返回空数组）
+func _read_ask(path: String) -> Array:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return []
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	return parsed if parsed is Array else []
+
 
 ## 数据里**每一位**候选人都得拼得出一张「有内容、且人在圆正中」的头像。
 ## 矮人的三顶帽子身量差一倍、精灵的耳朵横着伸出画布，这条就是防它们被取景切坏的锁。
