@@ -7,7 +7,7 @@ extends RefCounted
 ## 这样「第 10 天走完该进结局」这类规则可以被测试直接调用，不需要跑起场景树。
 ##
 ## 流程（§4）：
-##   DayBriefing → SpecialEvent → 招人（Screening ⇄ Interview）→ TeamBuild
+##   DayBriefing → SpecialEvent → 招人（Interview）→ TeamBuild
 ##   → BattleReport → 第 1〜9 天回到 DayBriefing；第 10 天进 Ending
 
 ## 推进结果的三种走向
@@ -23,15 +23,13 @@ const LAST_PHASE: int = DayPhase.Phase.BATTLE_REPORT
 ## 由 interview.tscn 承载的阶段：
 ##   DAY_BRIEFING   国王下旨
 ##   SPECIAL_EVENT  记者报道今日魔物 / 特殊规则
-##   SCREENING      浏览简历
-##   INTERVIEW      追问面试
+##   INTERVIEW      招人：看简历、追问面试、录用判定
 ##
-## 这四段**共用同一个场景实例**：day_loop 在同一 scene_key 下不重建实例，只调 set_phase()，
-## 所以四段之间切换是无缝的（「招人」阶段本来就可以 Screening ⇄ Interview 来回切）。
+## 这三段**共用同一个场景实例**：day_loop 在同一 scene_key 下不重建实例，只调 set_phase()，
+## 所以三段之间切换是无缝的。
 const INTERVIEW_HOSTED: Array[int] = [
 	DayPhase.Phase.DAY_BRIEFING,
 	DayPhase.Phase.SPECIAL_EVENT,
-	DayPhase.Phase.SCREENING,
 	DayPhase.Phase.INTERVIEW,
 ]
 
@@ -48,8 +46,8 @@ static func advance(phase: int, day_index: int) -> Dictionary:
 		if day_index >= GameConfig.TOTAL_DAYS:
 			return { "step": Step.RUN_END, "phase": DayPhase.Phase.ENDING, "day": day_index }
 		return { "step": Step.DAY_END, "phase": DayPhase.Phase.DAY_BRIEFING, "day": day_index + 1 }
-	# 注：招人阶段实际可以在 Screening / Interview 之间来回切换（§4），
-	# 这里给出的是一条默认推进路线，够 M0 的空壳流程跑通；M2 再由面试流程自己决定何时离开。
+	# 注：招人阶段（Interview）内部由面试流程自己决定何时离开（M2 接）。
+	# 这里给出的是一条默认推进路线，够 M0 的空壳流程跑通。
 	return { "step": Step.PHASE, "phase": DayPhase.next(phase), "day": day_index }
 
 

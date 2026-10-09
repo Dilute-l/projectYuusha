@@ -287,7 +287,7 @@ class_name DayConfig extends Resource
 		↓
   SpecialEvent      记者报道今日魔物 / 特殊规则
 		↓
-  招人（每天一次）  Screening 浏览简历 ⇄ Interview 追问面试，两者可来回切换
+  招人（每天一次）  Interview 在面试场景里看简历、逐条追问、给出录用判定
 		↓
   TeamBuild         从通过者中挑满名额，组成今日队伍
 		↓
@@ -491,9 +491,9 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | `scenes/boot/boot.tscn` | `boot.gd` | 备用入口：DataDB 兜底检查 → 主菜单。当前**不是**启动场景，要开场演出时把 `run/main_scene` 改回来即可 |
 | `scripts/core/flow/day_director.gd` | — | 每日流程推进规则（纯静态）：`advance(phase, day)` / `scene_key_for(phase)` |
 
-- 一天走 6 个阶段：DayBriefing → SpecialEvent → Screening → Interview → TeamBuild → BattleReport；
-  第 10 天的 BattleReport 之后进 Ending，其余天数回到 DayBriefing。招人阶段实际可在
-  Screening / Interview 之间来回切换，`DayDirector` 给的是一条默认推进路线。
+- 一天走 5 个阶段：DayBriefing → SpecialEvent → Interview → TeamBuild → BattleReport；
+  第 10 天的 BattleReport 之后进 Ending，其余天数回到 DayBriefing。招人阶段（Interview）
+  内部怎么走由面试流程自己决定，`DayDirector` 给的是一条默认推进路线。
 - `day_loop` 与 `ending` 里各有一块 **占位 HUD**：M0 的阶段子场景还是空壳，得有东西点着才能走完十天。
   占位文案暂时是 ASCII —— `assets/fonts` 还没接入中文主字体，默认字体没有中文字形，中文会变方块。
   做出真正的阶段界面后直接删掉这两个节点即可：脚本对它们的引用全部走 `get_node_or_null`。
@@ -542,7 +542,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 #### 挂载点
 
 `resume.tscn` 作为 **`interview.tscn` 的子节点**实例化。`597305d` 之后 `interview` 一个场景承载
-DayBriefing / SpecialEvent / Screening / Interview 四个阶段：
+DayBriefing / SpecialEvent / Interview 三个阶段：
 
 ```
 DayLoop (Node)

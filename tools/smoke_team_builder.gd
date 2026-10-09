@@ -58,7 +58,7 @@ func _run() -> void:
 	# 这里**不造**测试用候选人，测的就是「data/days/*.tres → 左半边头像」这条路。
 	GameState.start_new_run(20261011)
 	# 面试场景在 DAY_BRIEFING 会自己播开场对话；自检不需要那一段，把阶段拨到招人。
-	GameState.set_phase(DayPhase.Phase.SCREENING)
+	GameState.set_phase(DayPhase.Phase.INTERVIEW)
 
 	var candidates := GameState.current_candidates
 	_check(candidates.size() >= 2, "第 1 天名单里至少 2 位候选人（实际 %d）" % candidates.size())

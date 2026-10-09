@@ -11,8 +11,7 @@ extends RefCounted
 enum Phase {
 	DAY_BRIEFING,   ## 国王下旨：今日名额 / 新解锁的面试内容 / 教程提示
 	SPECIAL_EVENT,  ## 记者报道今日魔物 / 特殊规则
-	SCREENING,      ## 招人：浏览简历
-	INTERVIEW,      ## 招人：追问面试（与 SCREENING 可来回切换）
+	INTERVIEW,      ## 招人：看简历 + 追问面试 + 录用判定
 	TEAM_BUILD,     ## 从通过者中挑满名额
 	BATTLE_REPORT,  ## 马车上看战报演出、车夫对话、当日分数
 	ENDING,         ## 第 10 天之后的结局场景
@@ -26,7 +25,6 @@ enum Phase {
 const NAMES: Array[StringName] = [
 	&"DAY_BRIEFING",
 	&"SPECIAL_EVENT",
-	&"SCREENING",
 	&"INTERVIEW",
 	&"TEAM_BUILD",
 	&"BATTLE_REPORT",
@@ -37,7 +35,6 @@ const NAMES: Array[StringName] = [
 const ORDER: Array[int] = [
 	Phase.DAY_BRIEFING,
 	Phase.SPECIAL_EVENT,
-	Phase.SCREENING,
 	Phase.INTERVIEW,
 	Phase.TEAM_BUILD,
 	Phase.BATTLE_REPORT,
@@ -47,7 +44,6 @@ const ORDER: Array[int] = [
 const DISPLAY_NAMES: Array[String] = [
 	"国王下旨",
 	"今日事件",
-	"浏览简历",
 	"追问面试",
 	"组队",
 	"战报",
@@ -75,9 +71,9 @@ static func from_name(phase_name: StringName) -> int:
 	return index if index >= 0 else Phase.DAY_BRIEFING
 
 
-## 「招人」阶段：Screening 与 Interview 都属于招人，可来回切换
+## 「招人」阶段：看简历与追问判定都发生在 Interview 这一段里
 static func is_recruiting(phase: int) -> bool:
-	return phase == Phase.SCREENING or phase == Phase.INTERVIEW
+	return phase == Phase.INTERVIEW
 
 
 ## 该阶段是否属于某个具体的一天（ENDING 不属于任何一天）

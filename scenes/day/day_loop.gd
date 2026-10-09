@@ -127,7 +127,7 @@ func _swap_phase_scene(phase: int) -> void:
 		return
 
 	var scene_key := DayDirector.scene_key_for(phase)
-	# 同一个 scene_key 表示共用一个场景实例（国王下旨 / 今日事件 / 浏览简历 / 追问面试
+	# 同一个 scene_key 表示共用一个场景实例（国王下旨 / 今日事件 / 追问面试
 	# 都挂在 interview.tscn 下）；此时不重建，只把新阶段告诉它。
 	if scene_key == _phase_scene_key:
 		if _phase_instance != null and _phase_instance.has_method("set_phase"):

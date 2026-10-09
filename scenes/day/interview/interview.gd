@@ -1,10 +1,9 @@
 extends Control
 
-## interview.tscn 承载四个阶段（ARCHITECTURE.md §4）：
+## interview.tscn 承载三个阶段（ARCHITECTURE.md §4）：
 ##   DAY_BRIEFING   国王下旨
 ##   SPECIAL_EVENT  记者报道今日魔物 / 特殊规则
-##   SCREENING      浏览简历
-##   INTERVIEW      追问面试
+##   INTERVIEW      招人：看简历、追问面试、录用判定
 ##
 ## 它们共用一个场景实例：day_loop 在同一个 scene_key 下不会重建本场景，
 ## 只调 set_phase() 把新阶段告诉它。所以「阶段 → 显示」的切换全部落在
@@ -75,7 +74,7 @@ func set_phase(phase: int) -> void:
 
 	if entered:
 		# 每次进入新阶段都先撤销「对话结束就推进」的标记。
-		# 有些阶段（如 SCREENING / INTERVIEW）根本不播阶段对话，
+		# 有些阶段（如 INTERVIEW）根本不播阶段对话，
 		# 留着上一阶段留下的 true，会让**下一段临时对话**（如提示板）播完时误推进。
 		_advance_when_dialogue_ends = false
 
@@ -93,8 +92,6 @@ func set_phase(phase: int) -> void:
 				])
 			DayPhase.Phase.INTERVIEW:
 				# 进入追问 = 新一轮判定，计数归零。
-				# 注意：等实现 §4 的「Screening ⇄ Interview 来回切换」后，这里会把已判定的进度丢掉；
-				# 届时把复位挪到「进入整轮招人」（SCREENING），或者改成「已判定集合」。
 				finished_interviewee = 0
 				_refresh_interviewee()
 
