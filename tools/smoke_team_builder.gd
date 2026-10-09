@@ -170,6 +170,9 @@ func _run() -> void:
 	var itv_vp := _make_canvas()
 	var interview := INTERVIEW_SCENE.instantiate()
 	itv_vp.add_child(interview)
+	# 面试场景一进招人阶段就会演一段出场（§13），刚挂上去时纸还在画面下方。
+	# 这里要比的是**站定之后**的纸面矩形，所以先把演出跳过再量。
+	interview.skip_animation()
 	await _settle()
 	var itv_resume: Resume = interview.get_node_or_null("Resume")
 	_check(itv_resume != null, "面试场景里也有 Resume")

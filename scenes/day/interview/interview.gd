@@ -15,11 +15,15 @@ extends Control
 ## 面试者从哪来：**当天出场名单**（data/days/day_XX.tres）里的第 finished_interviewee 位，
 ## 由 GameState.current_candidates 提供。本脚本一句候选人文案都不写死 ——
 ## 立绘配方和简历内容分别落在 data/candidates/*.tres 的 portrait_* 字段与 resume 数组里。
+##
+## 一位面试者的**出场 / 退场演出**（走进来、简历升起、走出去、简历移走）也归本脚本调度，
+## 见下面「出场演出」一节与 ARCHITECTURE.md §13。
 
 ## 当前阶段（DayPhase.Phase）
 var _phase: int = DayPhase.Phase.DAY_BRIEFING
 
 @onready var _resume: Resume = get_node_or_null("Resume") as Resume
+@onready var _interviewee: Interviewee = get_node_or_null("Interviewee") as Interviewee
 @onready var _approved: TextureButton = get_node_or_null("Approved") as TextureButton
 @onready var _nah: TextureButton = get_node_or_null("Nah") as TextureButton
 @onready var _dialoguer: Dialoguer = get_node_or_null("Dialoguer") as Dialoguer
@@ -98,6 +102,8 @@ func set_phase(phase: int) -> void:
 				# 进入追问 = 新一轮判定，计数归零。
 				finished_interviewee = 0
 				_refresh_interviewee()
+				# 第一位面试者从画面右边走进来，站定之后简历才从下方升起（§13）
+				_play_enter_sequence()
 
 	_apply_phase_visuals()
 
@@ -127,18 +133,18 @@ func _apply_phase_visuals() -> void:
 	#
 	# 写成「不在这些阶段」而不是「只在招人阶段」：以后往招人流程里插新阶段时，
 	# 面试者默认仍可见，不会莫名消失。
-	#
-	# 用 get_node_or_null 现查而不是 @onready 缓存：方便场景里换节点名。
-	var interviewee := get_node_or_null("Interviewee") as Control
-	if interviewee != null:
-		interviewee.visible = _has_interviewee and (
+	if _interviewee != null:
+		_interviewee.visible = _has_interviewee and (
 			_phase != DayPhase.Phase.DAY_BRIEFING
 			and _phase != DayPhase.Phase.SPECIAL_EVENT
 		)
 
 	# 第 1 层守卫（UI 层）：隐藏的 Control 收不到鼠标输入，也不会被焦点导航选中，
 	# 所以这一层就挡住了绝大多数误操作。逻辑层的守卫见 _judge()。
-	var judging := _is_judging_allowed()
+	#
+	# 演出期间也算「不许判定」：立绘还在往画面里走的时候不该能按下录用按钮
+	# （按了也没用，见 _judge 的 _animating 守卫 —— 但按钮消失更直观）。
+	var judging := _is_judging_allowed() and not _animating
 	if _approved != null:
 		_approved.visible = judging
 	if _nah != null:
@@ -177,6 +183,12 @@ func _on_resume_entry_asked(candidate_id: StringName, entry_index: int) -> void:
 	# 第 2 层守卫：阶段对话还没播完时**不要打断它**（同 _on_notice_board_pressed）。
 	# 打断等于把阶段对话换掉，而它不会再播第二次 —— 那个阶段就失去了「看完自动推进」这条路径。
 	if _advance_when_dialogue_ends:
+		return
+
+	# 第 3 层守卫：演出期间不受理追问。
+	# 这时那张纸正在画面外／正在往上往下滑，点到的词条马上就会跟着纸一起跑掉，
+	# 问出来的对话也就没根了。静默忽略 —— 这是玩家手快，不是接线错了。
+	if _animating:
 		return
 
 	if _dialoguer == null:
@@ -315,6 +327,269 @@ func _refresh_interviewee() -> void:
 
 
 # ---------------------------------------------------------------------------
+# 出场演出（ARCHITECTURE.md §13）
+# ---------------------------------------------------------------------------
+#
+# 一位面试者的完整戏份，按时间顺序：
+#
+#   从画面右边走进来（边走边上下晃）→ 站定 → 简历从画面下方升起
+#     → ……玩家看简历、追问、按下录用 / 拒绝……
+#   → 判定之后：向左走出去 → 他的简历往画面上方移走
+#     → 下一位从右边走进来 → 下一位的简历从下方升起
+#
+# 做到「最后一位」时就停在「走出去 + 简历移走」，然后发 phase_finished 把阶段交出去。
+#
+# **演出用 Tween 串，不用协程 await**：
+# day_loop 换阶段时会 queue_free() 掉本场景，而 `await` 一个已被释放的节点的信号
+# 会让那个协程永远挂在那儿（不报错、不回收）。Tween 是绑在各自节点上的，
+# 节点一没它自己就跟着没了，一个都不会漏。
+#
+# **顺序靠「等这一步动完」而不是「按固定时长往下排」**：见 _begin_sequence。
+#
+# 演出期间**不收任何输入**：判定按钮在 _apply_phase_visuals() 里藏起来（UI 层），
+# _judge() 与 _on_resume_entry_asked() 再各挡一道（逻辑层）。
+
+## 从画面右边外面走到站定处的时长
+const WALK_IN_DURATION := 0.85
+
+## 判定之后向左走出画面的时长
+const WALK_OUT_DURATION := 0.65
+
+## 简历从画面下方升到位的时长
+const RESUME_IN_DURATION := 0.40
+
+## 简历往画面上方移走的时长
+const RESUME_OUT_DURATION := 0.30
+
+## 正在演出吗（演出期间不收判定、不收追问、判定按钮也不画）
+var _animating: bool = false
+
+## 这一段演出收场时要做的事。
+##
+## ⚠️ **必须写成「把场面收成应该有的样子」，而不是「接着往下做」**：
+## 它既会在演出自然播完时调用，也会在 skip_animation() 把演出掐掉时调用，
+## 而掐掉的那一刻可能还停在任何一个中间步骤上 —— 所以它做的每一步都得是幂等的。
+var _after_sequence: Callable = Callable()
+
+## 这一段演出依次要做的动作（每一项返回一条 Tween，见「演出内部：一步一步的动作」）
+var _steps: Array[Callable] = []
+
+## 下一步在 _steps 里的下标
+var _step_index: int = 0
+
+## 当前这一步的动作；跑完就松手（null = 没有动作在跑）
+var _step_tween: Tween = null
+
+
+## 正在演出吗
+func is_animating() -> bool:
+	return _animating
+
+
+## 立刻结束当前这段演出，直接落到「都站好了」的收场姿态。
+##
+## 给自检用：演出是按真实时间走的，测试没必要陪它等两秒。
+## 也是玩家侧「点击跳过演出」的现成入口 —— 收场动作本身就是幂等的。
+func skip_animation() -> void:
+	if not _animating:
+		return
+	_finish_sequence()
+
+
+## 第一位面试者的出场：走进来 → 站定 → 简历从下方升起。
+##
+## 摆位（把人放到画面右边外面、把纸放到画面下方）是**同步**做的，不塞进 Tween 的回调：
+## 回调要等到下一帧才跑，而 _apply_phase_visuals() 会在本函数之后把两者显示出来 ——
+## 中间空出来的那一帧，纸会停在原地明明白白地闪一下。
+func _play_enter_sequence() -> void:
+	if not _has_interviewee:
+		# 当天名单是空的（M0 空流程）：没有人也没有纸可演。
+		# 界面保持现状，玩家的判定按钮照常可用，流程不会因此卡住。
+		return
+
+	if _resume != null:
+		_resume.snap_slide(_resume.travel_distance())
+	if _interviewee != null:
+		_interviewee.stand_at(_interviewee.offscreen_right_x())
+
+	var steps: Array[Callable] = [_step_walk_in, _step_resume_rise]
+	_begin_sequence(_stand_candidate_ready, steps)
+
+
+## 判定之后的演出：这位走开 → 他的简历移走 → （还有下一位的话）下一位进来。
+## is_last = 这是今天最后一位，走完就交阶段。
+func _play_verdict_sequence(is_last: bool) -> void:
+	if not _has_interviewee:
+		# 没有人可演：直接按结果收口（空名单时 _candidate_total() 恒为 1，所以一定是最后一位）
+		if is_last:
+			_defer_phase_finished()
+		return
+
+	# 1) 面试者向左走开（和走进来是同一套走路：平移 + 上下晃动）
+	# 2) 然后简历往画面上方移走
+	var steps: Array[Callable] = [_step_walk_out, _step_resume_raise]
+	if not is_last:
+		# 3) 换下一位：此刻人与纸都在画面外，换立绘、换字都看不见 —— 正是换数据的时候。
+		#    换完让他从右边走进来。
+		# 4) 他站定之后，他的简历再从下方升起
+		steps.append(_step_next_candidate_walk_in)
+		steps.append(_step_resume_rise)
+
+	_begin_sequence(_conclude_interview if is_last else _stand_candidate_ready, steps)
+
+
+# ---- 演出内部：一步一步的动作 -------------------------------------------------
+#
+# 每一步是一个**返回 Tween 的函数**：返回的那条 Tween 跑完 = 这一步做完了。
+# 返回 null 表示这一步没有动作可等（节点不在），调度会立刻往下走。
+#
+# 它们只负责「把谁从哪儿送到哪儿」，不负责收场 —— 收场统一在收口函数里
+# （_stand_candidate_ready / _conclude_interview），这样跳过演出也不会留下半路姿态。
+
+
+## 走进来：先把纸放到画面下方等着（这一位还在走的时候纸上不该有东西），再起步
+func _step_walk_in() -> Tween:
+	if _interviewee == null:
+		return null
+	if _resume != null:
+		_resume.snap_slide(_resume.travel_distance())
+	return _interviewee.walk_to(
+		_interviewee.offscreen_right_x(),
+		_interviewee.rest_position().x,
+		WALK_IN_DURATION,
+	)
+
+
+## 换下一位之后走进来：先换数据、再把纸摆到下方，然后起步
+##
+## 换数据放在这一步（而不是上一步走完的那一刻）是有意的：
+## 到这一步时人已经停在画面左边外面、纸停在画面上方外面，换脸换字都看不见。
+func _step_next_candidate_walk_in() -> Tween:
+	_refresh_interviewee()
+	return _step_walk_in()
+
+
+## 走出去：一直走到画面左边外面
+func _step_walk_out() -> Tween:
+	if _interviewee == null:
+		return null
+	return _interviewee.walk_to(
+		_interviewee.rest_position().x,
+		_interviewee.offscreen_left_x(),
+		WALK_OUT_DURATION,
+	)
+
+
+## 简历从下方升起：从画面下方滑回站定的那一处
+func _step_resume_rise() -> Tween:
+	if _resume == null:
+		return null
+	return _resume.slide_to(0.0, RESUME_IN_DURATION)
+
+
+## 简历往上方移走
+func _step_resume_raise() -> Tween:
+	if _resume == null:
+		return null
+	return _resume.slide_to(-_resume.travel_distance(), RESUME_OUT_DURATION)
+
+
+# ---- 演出内部：收口 ----------------------------------------------------------
+
+
+## 收场成「这一位正站在台前、简历摊开」。
+##
+## 换下一位之后、以及首次出场的演出自然播完时都走这里 —— 两种情况下它都是幂等的：
+## 数据本来就是这一位的（重刷一遍不换人），位置本来也已经在站定处（回位不动）。
+## 但**跳过演出**时它就不幂等了：那正是它存在的意义 —— 把半路的人拽回站定处、
+## 把还没换的数据换成当前这一位的。
+func _stand_candidate_ready() -> void:
+	_refresh_interviewee()
+	if _interviewee != null:
+		_interviewee.stand_still()
+	if _resume != null:
+		_resume.stand_still()
+
+
+## 收场成「今天面试完了」：这位停在画面左边外面、他的简历停在画面上方外面，
+## 然后交阶段。
+##
+## 收场姿态要显式摆出来，而不是「反正马上就切场景了」：
+## 跳过演出时可能才走到一半，不摆的话镜头会停在一个人站在画面正中的画面上。
+func _conclude_interview() -> void:
+	if _interviewee != null:
+		_interviewee.stand_at(_interviewee.offscreen_left_x())
+	if _resume != null:
+		_resume.snap_slide(-_resume.travel_distance())
+	_defer_phase_finished()
+
+
+# ---- 演出内部：调度 ----------------------------------------------------------
+
+
+## 开一段演出。after = 收场动作（见 _after_sequence），steps = 依次要做的动作。
+##
+## ⚠️ **演出是「等这一步动完再开下一步」，不是「按固定时长往下排」**：
+## 排时长要求「总闸的 interval」与「子 Tween」两条独立 Tween 分毫不差，
+## 而它们同一帧里谁先谁后本来就差一点点 —— 几步累积下来就成了
+## 「人还在往左走，纸已经开始往上升了」。等子 Tween 自己的 finished 就没有这个偏差：
+## 顺序就是动作本身的顺序，也就不需要任何「留一点余量」的魔法常量。
+func _begin_sequence(after: Callable, steps: Array[Callable]) -> void:
+	_animating = true
+	_after_sequence = after
+	_steps = steps
+	_step_index = 0
+	# 演出一开始就把判定按钮收起来（UI 层守卫），见 _apply_phase_visuals
+	_apply_phase_visuals()
+	_run_next_step()
+
+
+## 跑下一步：启动它的动作，等**这条动作自己**跑完再接下下一步。
+func _run_next_step() -> void:
+	# 走到这里说明上一步的动画已经跑完（这里就是它的 finished 回调），
+	# 所以先松手 —— 免得收场时去 kill 一条已经跑完的 Tween。
+	_step_tween = null
+	if not _animating:
+		return
+	if _step_index >= _steps.size():
+		_finish_sequence()
+		return
+
+	var step: Callable = _steps[_step_index]
+	_step_index += 1
+	var tween: Tween = step.call()
+	if tween == null or not tween.is_valid():
+		# 这一步没有动作可等 → 立刻往下走。
+		# 用 defer 而不是直接递归：连着几步都没动画时不至于把调用栈压深。
+		_run_next_step.call_deferred()
+		return
+	_step_tween = tween
+	_step_tween.finished.connect(_run_next_step, CONNECT_ONE_SHOT)
+
+
+## 演出结束（自然播完或被跳过）后的唯一出口。
+func _finish_sequence() -> void:
+	if not _animating:
+		return
+	# 跳过演出时，这一步的动画可能才走到一半 —— 这里要把它掐掉，
+	# 否则它会在收场之后继续往前跑，把刚摆好的姿态又推歪。
+	# （kill() 不发 finished，所以不会把 _run_next_step 再叫起来。）
+	if _step_tween != null and _step_tween.is_valid():
+		_step_tween.kill()
+	_step_tween = null
+	_steps = []
+	_step_index = 0
+
+	_animating = false
+	var after := _after_sequence
+	_after_sequence = Callable()
+	# 演出完了，判定按钮重新出现
+	_apply_phase_visuals()
+	if after.is_valid():
+		after.call()
+
+
+# ---------------------------------------------------------------------------
 # 录用判定
 # ---------------------------------------------------------------------------
 
@@ -340,11 +615,19 @@ func _on_nah_pressed() -> void:
 
 ## 录用 / 拒绝的唯一入口。
 ## 两个按钮只是 passed 不同，判定与计数逻辑只写一份 —— 顺手修掉原来「两个按钮行为完全相同」的问题。
+##
+## 判定之后不立刻翻页，而是交给 _play_verdict_sequence() 演一段（§13）：
+## 这位走出去 → 他的简历往上移走 → 下一位走进来 → 下一位的简历从下方升起。
 func _judge(passed: bool) -> void:
 	# 第 2 层守卫（逻辑层）：不在追问环节就不接受判定。
 	# 走到这里说明有别的代码在乱调、或者场景接线出了问题 —— 要响，不要吞。
 	if not _is_judging_allowed():
 		push_warning("[Interview] 阶段 %s 不接受录用判定，已忽略" % DayPhase.to_name(_phase))
+		return
+
+	# 演出期间不接受第二次判定：按钮这时是藏着的，走到这里说明是代码在连点。
+	# 静默忽略 —— 判定本身没错，只是来早了，不应该把它当成错误报出来。
+	if _animating:
 		return
 
 	var candidate := current_candidate()
@@ -356,13 +639,11 @@ func _judge(passed: bool) -> void:
 
 	finished_interviewee += 1
 	# 用 >= 而不是 ==：多算一次也还能收口，不会永远不触发
-	if finished_interviewee >= _candidate_total():
+	var is_last := finished_interviewee >= _candidate_total()
+	if is_last:
 		finished_interviewee = 0
-		_refresh_interviewee()
-		_defer_phase_finished()
-		return
-	# 换下一位：立绘与简历一起翻页
-	_refresh_interviewee()
+	# 换下一位：立绘与简历一起翻页 —— 翻页的动作在演出里（_play_verdict_sequence）
+	_play_verdict_sequence(is_last)
 
 
 # ---------------------------------------------------------------------------

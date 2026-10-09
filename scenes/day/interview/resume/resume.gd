@@ -43,8 +43,20 @@ enum EntryMenu {
 ## 点词条时弹什么菜单。默认 ASK = 保持面试现有的行为。
 @export var entry_menu: EntryMenu = EntryMenu.ASK
 
+## 站定的位置：_ready() 时记下来。整页的进出动画都是**相对它**算的纵向偏移，
+## 偏移归零 = 回到场景里摆的那一处（和组队页共用的绝对偏移，§12.2）。
+var _rest_position: Vector2 = Vector2.ZERO
+
+## 当前纵向偏移（正 = 往下，负 = 往上，0 = 站定）
+var _slide_offset: float = 0.0
+
+## 正在跑的滑动 Tween；没有 = 待在原地
+var _slide_tween: Tween = null
+
 
 func _ready() -> void:
+	_rest_position = position
+
 	# interview.gd 会按阶段把本节点整块显隐（_apply_phase_visuals）。
 	# 父节点隐藏时子节点只是不画，菜单自己的 visible 还是 true —— 再回到招人阶段就会「诈尸」。
 	# 所以本节点一被藏起来就顺手把菜单收掉。
@@ -134,8 +146,70 @@ func set_entries(descriptions: Array) -> void:
 		(placed[i] as Control).visible = false
 
 
-# ---- 词条菜单 ---------------------------------------------------------------
+# ---- 整页的进出（§13：站定之后从下方升起 / 判定之后往上方移走）-----------------
+#
+# 和 interviewee.gd 的走路一样，这里只提供「怎么滑」这一个动作，
+# **什么时候滑、滑到哪儿**由 interview.gd 的演出调解决定。
+#
+# 动的是一整页（本节点），不是只动 Paper：纸、纸上的字、词条、以及贴在最底下的
+# ResumePagePhd 是同一张纸的组成部分，拆开动会散架。
 
+
+## 当前纵向偏移：正 = 被推到画面下方，负 = 被推到画面上方，0 = 站定
+func slide_offset() -> float:
+	return _slide_offset
+
+
+## 一整页的滑动行程：一个画布高度。
+##
+## 用 viewport 的高度而不是写死 648：纸面本身只占 62..542，一个画布高度足够
+## 把它**完全**推出画面（进、出都够），而画布尺寸本来就该由 viewport 说了算。
+func travel_distance() -> float:
+	return get_viewport_rect().size.y
+
+
+## 滑到某个纵向偏移（正 = 往下，负 = 往上），duration 秒内匀速走完。返回这个 Tween。
+func slide_to(offset_y: float, duration: float) -> Tween:
+	stop_slide()
+	_slide_tween = create_tween()
+	_slide_tween.tween_method(
+		_apply_slide, _slide_offset, offset_y, duration)
+	return _slide_tween
+
+
+## 不给动画、立刻挪到某个偏移（摆位 / 跳过动画时用）
+func snap_slide(offset_y: float) -> void:
+	stop_slide()
+	_apply_slide(offset_y)
+
+
+## 回到站定的那一处
+func stand_still() -> void:
+	snap_slide(0.0)
+
+
+## 是否正在滑（演出调度用它判断「到位了没有」）
+##
+## ⚠️ 同 Interviewee.is_walking()：判据是 `is_running()` 而不是 `is_valid()` ——
+##   跑完之后 `is_valid()` 还会再真几帧。
+func is_sliding() -> bool:
+	return _slide_tween != null and _slide_tween.is_valid() and _slide_tween.is_running()
+
+
+## 停掉滑动，停在当前这一处（收场用，不回位）
+func stop_slide() -> void:
+	if _slide_tween != null and _slide_tween.is_valid():
+		_slide_tween.kill()
+	_slide_tween = null
+
+
+## tween_method 的回调
+func _apply_slide(offset_y: float) -> void:
+	_slide_offset = offset_y
+	position = _rest_position + Vector2(0.0, offset_y)
+
+
+# ---- 词条菜单 ---------------------------------------------------------------
 
 ## 每条词条都要接上 —— 新现场 instantiate() 出来的那些也要，所以放在 set_entries 里逐条接。
 func _connect_token(token: ResumeToken) -> void:

@@ -91,6 +91,10 @@ func _run() -> void:
 
 	var interview := INTERVIEW_SCENE.instantiate()
 	vp.add_child(interview)
+	# 面试场景一进招人阶段就会演一段出场（§13）：面试者从右边走进来，站定后简历从下方升起。
+	# 追问测的是「点词条 → 播 json」这条路，不陪演出等真实时间，直接跳到站定姿态。
+	# （演出期间不受理追问是**故意**的，见 interview.gd 的 _animating 守卫。）
+	interview.skip_animation()
 	await _settle()
 
 	var resume: Resume = interview.get_node_or_null("Resume")
