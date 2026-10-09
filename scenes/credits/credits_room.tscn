@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://1vjphav6dfo6"]
+
+[ext_resource type="Script" uid="uid://cybo2ov47trcl" path="res://scenes/credits/credits_room.gd" id="1_5c5tq"]
+[ext_resource type="Texture2D" uid="uid://bn2iog84pr3k0" path="res://assets/art/Credit/CreditRoom_phd.jpg" id="2_0erdm"]
+[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="3_lofe2"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0erdm"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_lofe2"]
+
+[node name="CreditsRoom" type="Control" unique_id=1778240386]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_5c5tq")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1032463924]
+position = Vector2(575.53125, 324.50003)
+scale = Vector2(0.50797105, 0.50784934)
+texture = ExtResource("2_0erdm")
+
+[node name="Button" type="Button" parent="." unique_id=2060295476]
+layout_mode = 0
+offset_left = 1047.0
+offset_top = 116.0
+offset_right = 1116.0
+offset_bottom = 170.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("3_lofe2")
+theme_override_font_sizes/font_size = 48
+theme_override_styles/normal = SubResource("StyleBoxEmpty_0erdm")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_lofe2")
+text = "返回"
+
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]

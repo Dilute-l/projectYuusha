@@ -17,6 +17,7 @@ const SCENES: Dictionary = {
 	&"team_builder": "res://scenes/day/team_builder/team_builder.tscn",
 	&"battle_report": "res://scenes/day/battle_report.tscn",
 	&"ending": "res://scenes/ending/ending.tscn",
+	&"credits_room": "res://scenes/credits/credits_room.tscn",
 }
 
 ## 过场遮罩所在层级，压在一切 UI 之上（CanvasLayer 默认 1）

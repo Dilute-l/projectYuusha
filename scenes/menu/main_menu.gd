@@ -63,13 +63,7 @@ func _cancel_exit_confirm() -> void:
 
 
 func _on_credits_pressed() -> void:
-	var dialoguer = get_node_or_null("Dialoguer")
-	if dialoguer == null:
-		push_error("[MainMenu] 找不到 Dialoguer")
-		return
-	if not dialoguer.typer.load_dialogue("Sorry"):
-		return
-	dialoguer.play()
+	SceneRouter.goto_scene(&"credits_room")
 
 ##占位符按钮，按下来之后可以看到mcc花了个把小时都干了些什么
 func _on_place_holder_button_pressed() -> void:
