@@ -734,12 +734,12 @@ TeamBuilder (Control) [team_builder.gd]
 ```
 data/days/day_XX.tres
    └─ candidates ──► GameState.current_candidates        （本日过程量，§7 不进存档）
-                        └─ team_builder.gd
-                             ├─ TeamBuilderUI.set_candidates()  → 一人一条 CandidateEntry
-                             │     └─ CandidateEntry.set_candidate()
-                             │          ├─ 头像 ← PortraitComposer.avatar_texture(candidate, 112)
-                             │          └─ 名字 ← candidate.display_name
-                             └─ TeamBuilderUI.set_hired_ids()   → 画「已录用」标记
+						└─ team_builder.gd
+							 ├─ TeamBuilderUI.set_candidates()  → 一人一条 CandidateEntry
+							 │     └─ CandidateEntry.set_candidate()
+							 │          ├─ 头像 ← PortraitComposer.avatar_texture(candidate, 112)
+							 │          └─ 名字 ← candidate.display_name
+							 └─ TeamBuilderUI.set_hired_ids()   → 画「已录用」标记
 ```
 
 - **名单就是「今日出现的面试者」**：和面试同一个来源（`GameState.current_candidates`）。

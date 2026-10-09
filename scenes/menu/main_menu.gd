@@ -95,3 +95,23 @@ func _on_title_pressed() -> void:
 	var win := get_window()
 	if win != null:
 		win.gui_release_focus()
+
+
+func _on_seal_button_pressed() -> void:
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("MenuSeal"):
+		return
+	dialoguer.play()
+
+
+func _on_ink_button_pressed() -> void:
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("MenuSeal"):
+		return
+	dialoguer.play()

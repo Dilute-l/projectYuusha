@@ -1,12 +1,21 @@
 [gd_scene format=3 uid="uid://pwbk4clsjugj"]
 
 [ext_resource type="Script" uid="uid://cq3veurloj544" path="res://scenes/menu/main_menu.gd" id="1_kiqgm"]
-[ext_resource type="Texture2D" uid="uid://cvn3mctesct76" path="res://assets/art/MenuPlaceHolderER.jpg" id="2_xn6kt"]
+[ext_resource type="Texture2D" uid="uid://b3uf8jyul8ost" path="res://assets/art/Menu/Menu1.png" id="2_isoef"]
 [ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="3_hj162"]
 [ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="4_xn6kt"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="5_hj162"]
+[ext_resource type="Texture2D" uid="uid://c8r8d53u5j687" path="res://assets/art/Menu/MenuSeal.png" id="6_vovv2"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="6_xn6kt"]
+[ext_resource type="BitMap" uid="uid://b8wb7oo1d4jok" path="res://assets/art/Menu/MenuSeal.tres" id="7_1k4da"]
+[ext_resource type="Texture2D" uid="uid://c6ueytqenf3pt" path="res://assets/art/Menu/MenuSealHover.png" id="7_bbqo6"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="7_isoef"]
+[ext_resource type="Texture2D" uid="uid://dyqnimbyyv5je" path="res://assets/art/Menu/MenuInk.png" id="9_d4hu8"]
+[ext_resource type="Texture2D" uid="uid://de1rb4le8tgrp" path="res://assets/art/Menu/MenuInkHover.png" id="10_p1nwe"]
+[ext_resource type="BitMap" uid="uid://cbknfc8a7st3d" path="res://assets/art/Menu/MenuInk.tres" id="11_p1nwe"]
+[ext_resource type="Texture2D" uid="uid://dmd32k82egwh3" path="res://assets/art/Menu/MenuBook.png" id="12_27h4x"]
+[ext_resource type="Texture2D" uid="uid://uta2kam4gwa0" path="res://assets/art/Menu/MenuBookHover.png" id="13_gdhp0"]
+[ext_resource type="BitMap" uid="uid://daoqtwnd8x65d" path="res://assets/art/Menu/MenuBook.tres" id="14_gdhp0"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qgo02"]
 
@@ -45,15 +54,15 @@ script = ExtResource("1_kiqgm")
 
 [node name="MainMenuBgPholder" type="Sprite2D" parent="." unique_id=1260226298]
 scale = Vector2(0.50823534, 0.5082353)
-texture = ExtResource("2_xn6kt")
+texture = ExtResource("2_isoef")
 centered = false
 
 [node name="Exitgame" type="TextureButton" parent="." unique_id=229930480]
 layout_mode = 0
-offset_left = 493.0
-offset_top = 476.00003
-offset_right = 567.0
-offset_bottom = 549.0
+offset_left = 1304.0
+offset_top = 423.00006
+offset_right = 1378.0
+offset_bottom = 496.00006
 rotation = 0.6667158
 scale = Vector2(3.6, 3.6)
 texture_normal = ExtResource("3_hj162")
@@ -61,20 +70,20 @@ texture_click_mask = ExtResource("4_xn6kt")
 
 [node name="Startgame" type="TextureButton" parent="." unique_id=1904601391]
 layout_mode = 0
-offset_left = -39.0
-offset_top = 510.99997
-offset_right = 35.0
-offset_bottom = 584.0
+offset_left = 1173.0
+offset_top = -62.00006
+offset_right = 1247.0
+offset_bottom = 10.999939
 scale = Vector2(3.6, 4.595)
 texture_normal = ExtResource("3_hj162")
 texture_click_mask = ExtResource("4_xn6kt")
 
 [node name="Typertest" type="TextureButton" parent="." unique_id=1214602148]
 layout_mode = 0
-offset_left = 288.0
-offset_top = 460.0
-offset_right = 362.0
-offset_bottom = 533.0
+offset_left = 1296.0
+offset_top = 173.99994
+offset_right = 1370.0
+offset_bottom = 246.99994
 rotation = 0.6667158
 scale = Vector2(3.6, 3.6)
 texture_normal = ExtResource("3_hj162")
@@ -82,14 +91,14 @@ texture_click_mask = ExtResource("4_xn6kt")
 
 [node name="StartgameText" type="Button" parent="." unique_id=943792285]
 layout_mode = 0
-offset_left = 724.0
-offset_top = 377.0
-offset_right = 914.0
-offset_bottom = 458.0
+offset_left = 486.0
+offset_top = 370.0
+offset_right = 676.0
+offset_bottom = 437.0
 theme_override_colors/font_color = Color(0.891585, 0.48765498, 5.7756904e-07, 1)
 theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
 theme_override_fonts/font = ExtResource("7_isoef")
-theme_override_font_sizes/font_size = 72
+theme_override_font_sizes/font_size = 60
 theme_override_styles/normal = SubResource("StyleBoxEmpty_qgo02")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_vovv2")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_1k4da")
@@ -97,14 +106,14 @@ text = "开始游戏"
 
 [node name="ExitgameText" type="Button" parent="." unique_id=794199868]
 layout_mode = 0
-offset_left = 722.0
-offset_top = 504.0
-offset_right = 912.0
-offset_bottom = 585.0
+offset_left = 484.0
+offset_top = 471.0
+offset_right = 674.0
+offset_bottom = 538.0
 theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
 theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
 theme_override_fonts/font = ExtResource("7_isoef")
-theme_override_font_sizes/font_size = 72
+theme_override_font_sizes/font_size = 60
 theme_override_styles/normal = SubResource("StyleBoxEmpty_4i75y")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_p1nwe")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_prbor")
@@ -112,29 +121,44 @@ text = "退出游戏"
 
 [node name="Title" type="Button" parent="." unique_id=792540628]
 layout_mode = 0
-offset_left = 548.0
-offset_top = 158.0
-offset_right = 1181.0
-offset_bottom = 299.0
+offset_left = 284.0
+offset_top = 209.0
+offset_right = 917.0
+offset_bottom = 350.0
 theme_override_colors/font_color = Color(0.7200729, 0.10525405, 2.8878452e-07, 1)
 theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
 theme_override_fonts/font = ExtResource("7_isoef")
-theme_override_font_sizes/font_size = 120
+theme_override_font_sizes/font_size = 96
 theme_override_styles/normal = SubResource("StyleBoxEmpty_fp42q")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_27h4x")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_isoef")
-text = "败犬勇者太多了 ！"
+text = "败犬勇者太多了！"
+
+[node name="Title2" type="Button" parent="." unique_id=788296782]
+layout_mode = 0
+offset_left = 261.0
+offset_top = 166.0
+offset_right = 894.0
+offset_bottom = 217.0
+theme_override_colors/font_color = Color(0.7200729, 0.10525405, 2.8878452e-07, 1)
+theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
+theme_override_fonts/font = ExtResource("7_isoef")
+theme_override_font_sizes/font_size = 45
+theme_override_styles/normal = SubResource("StyleBoxEmpty_fp42q")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_27h4x")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_isoef")
+text = "警告:勇者数量已超过路边野狗——"
 
 [node name="Credits" type="Button" parent="." unique_id=844051336]
 layout_mode = 0
-offset_left = 676.0
-offset_top = 440.0
-offset_right = 961.0
-offset_bottom = 521.0
+offset_left = 440.0
+offset_top = 418.0
+offset_right = 725.0
+offset_bottom = 485.0
 theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
 theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
 theme_override_fonts/font = ExtResource("7_isoef")
-theme_override_font_sizes/font_size = 72
+theme_override_font_sizes/font_size = 60
 theme_override_styles/normal = SubResource("StyleBoxEmpty_1bhjn")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_bbqo6")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_d4hu8")
@@ -142,10 +166,10 @@ text = "制作人员名单"
 
 [node name="PlaceHolderButton" type="Button" parent="." unique_id=774604693]
 layout_mode = 0
-offset_left = 551.0
-offset_top = 561.0
-offset_right = 1096.0
-offset_bottom = 642.0
+offset_left = 305.0
+offset_top = 538.0
+offset_right = 850.0
+offset_bottom = 619.0
 theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
 theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
 theme_override_fonts/font = ExtResource("7_isoef")
@@ -153,7 +177,35 @@ theme_override_font_sizes/font_size = 48
 theme_override_styles/normal = SubResource("StyleBoxEmpty_gdhp0")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_pstia")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_41tvm")
-text = "点我查看nz都更新了些什么的按键"
+text = "点我查看nz今天又干了什么"
+
+[node name="SealButton" type="TextureButton" parent="." unique_id=1963211041]
+layout_mode = 0
+offset_left = 951.0
+offset_top = 448.0
+offset_right = 1151.0
+offset_bottom = 647.0
+texture_normal = ExtResource("6_vovv2")
+texture_hover = ExtResource("7_bbqo6")
+texture_click_mask = ExtResource("7_1k4da")
+
+[node name="InkButton" type="TextureButton" parent="." unique_id=979587469]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 181.0
+offset_right = 337.0
+offset_bottom = 487.0
+texture_normal = ExtResource("9_d4hu8")
+texture_hover = ExtResource("10_p1nwe")
+texture_click_mask = ExtResource("11_p1nwe")
+
+[node name="BookButton" type="TextureButton" parent="." unique_id=1900475042]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture_normal = ExtResource("12_27h4x")
+texture_hover = ExtResource("13_gdhp0")
+texture_click_mask = ExtResource("14_gdhp0")
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("5_hj162")]
 layout_mode = 0
@@ -173,5 +225,8 @@ offset_right = -8.0
 [connection signal="mouse_exited" from="ExitgameText" to="." method="_on_exitgame_mouse_exited"]
 [connection signal="pressed" from="ExitgameText" to="." method="_on_exitgame_pressed"]
 [connection signal="pressed" from="Title" to="." method="_on_title_pressed"]
+[connection signal="pressed" from="Title2" to="." method="_on_title_pressed"]
 [connection signal="pressed" from="Credits" to="." method="_on_credits_pressed"]
 [connection signal="pressed" from="PlaceHolderButton" to="." method="_on_place_holder_button_pressed"]
+[connection signal="pressed" from="SealButton" to="." method="_on_seal_button_pressed"]
+[connection signal="pressed" from="InkButton" to="." method="_on_ink_button_pressed"]
