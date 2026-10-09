@@ -20,6 +20,9 @@ var current_team: Array[StringName] = []
 ## 本日通过者（面试阶段累计，组队阶段的候选池）
 var passed_ids: Array[StringName] = []
 
+## 当日战报（BATTLE_REPORT 阶段的演出数据，本日过程量，不入存档）
+var battle_report: BattleReport = null
+
 
 func _ready() -> void:
 	# 未开局时给一个空的 RunState：UI 可以无脑读 day / phase，不用到处判空
@@ -51,6 +54,7 @@ func start_new_run(seed_value: int = 0) -> RunState:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	battle_report = null
 	# 当日出场名单来自 data/days/day_XX.tres（§6.1「候选人出场（写死）」）
 	load_day_candidates(run_state.day)
 	EventBus.run_started.emit(used_seed)
@@ -67,6 +71,7 @@ func apply_run_state(state: RunState) -> void:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	battle_report = null
 	# 当日名单不进存档（§7：只存运行时状态），按存档里的天数重新从 data/days/ 取
 	load_day_candidates(run_state.day)
 	EventBus.run_loaded.emit(run_state.run_seed)
@@ -78,6 +83,7 @@ func clear_run() -> void:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	battle_report = null
 
 # ---------------------------------------------------------------------------
 # 天数与阶段
@@ -123,6 +129,7 @@ func advance_day() -> bool:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	battle_report = null
 	# 换天即换名单：新的一天出场哪几个人由 data/days/day_XX.tres 决定
 	load_day_candidates(run_state.day)
 	EventBus.day_started.emit(run_state.day)
@@ -294,3 +301,20 @@ func get_current_team() -> Array[StringName]:
 	var copy: Array[StringName] = []
 	copy.assign(current_team)
 	return copy
+
+# ---------------------------------------------------------------------------
+# 当日战报（本日过程量，不入存档）
+# ---------------------------------------------------------------------------
+
+
+## 写入当日战报并广播。
+## 产出方是 scripts/core/battle/combat_resolver.gd（纯静态），
+## GameState 只当仓库，不算任何东西 —— §2 尾注的纪律。
+func set_battle_report(report: BattleReport) -> void:
+	battle_report = report
+	EventBus.battle_report_ready.emit(report)
+
+
+## 读取当日战报；还没生成时返回 null（调用方必须判空）。
+func get_battle_report() -> BattleReport:
+	return battle_report
