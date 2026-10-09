@@ -108,10 +108,23 @@ func _on_seal_button_pressed() -> void:
 
 
 func _on_ink_button_pressed() -> void:
+	# 墨水按钮：把主角的手换成黑色的那只（贴图存在 haohan.tscn 里）。
+	AudioService.play_sfx(TITLE_SFX_PATH)
+	var win := get_window()
+	if win != null:
+		win.gui_release_focus()
+	var haohan = get_node_or_null("Haohan")
+	if haohan == null:
+		push_error("[MainMenu] 找不到 Haohan")
+		return
+	haohan.use_black_hand()
+
+
+func _on_book_button_pressed() -> void:
 	var dialoguer = get_node_or_null("Dialoguer")
 	if dialoguer == null:
 		push_error("[MainMenu] 找不到 Dialoguer")
 		return
-	if not dialoguer.typer.load_dialogue("MenuSeal"):
+	if not dialoguer.typer.load_dialogue("Sorry"):
 		return
 	dialoguer.play()

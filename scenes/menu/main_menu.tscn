@@ -230,3 +230,4 @@ offset_right = -8.0
 [connection signal="pressed" from="PlaceHolderButton" to="." method="_on_place_holder_button_pressed"]
 [connection signal="pressed" from="SealButton" to="." method="_on_seal_button_pressed"]
 [connection signal="pressed" from="InkButton" to="." method="_on_ink_button_pressed"]
+[connection signal="pressed" from="BookButton" to="." method="_on_book_button_pressed"]

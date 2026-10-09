@@ -39,12 +39,7 @@
 	{ "speaker_name": "腻子", "text": "老大抱歉喵^1 这里我还没做出来喵^1 只做了个占位符喵" }
   ],
 	"WhatN1zHasDone":[
-	{ "speaker_name": "腻子", "text": "什么都没干喵但还是好累喵^1 \n(再次点击鼠标左键查看完整内容。" },
-	{ "speaker_name": "腻子", "text": "按照自己的想法画了一个标题界面的demo。 ^1之后还会再细化， 还有一点动画效果想做。" },
-	{ "speaker_name": "腻子", "text": "对话框也搞了一个方正一点的版本。 ^1这两个图片命名为phdER， 也就是placeholder的比较级。" },
-	{ "speaker_name": "腻子", "text": "那几个向日葵撇到了左下角。 坐下吧你们" },
-	{ "speaker_name": "腻子", "text": "然后还找了个字体， 其实本来想用以撒那个字体， 但是没找到资源" },
-	{ "speaker_name": "腻子", "sound": "su", "text": "好累喵（鼠掉）" }
+	{ "speaker_name": "腻子", "text": "只把标题界面重做了一下。^1 画这个真的好累" }
   ],
 	"MenuSeal":[
 	{ "speaker_name": "腻子", "text": "这里本来是一个印章的 ^1但是看起来太像清凉油，于是只好改成了火漆" }
