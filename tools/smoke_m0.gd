@@ -12,7 +12,7 @@ extends Node
 ##   · GameState 能连续走完 10 天（第 10 天不再推进，应走结局）
 ##   · SaveService 存读档后状态一致
 ##   · SceneRouter 能真实完成 主菜单 → 每日循环 的场景切换
-##   · 在真实 day_loop 场景里点满 10 天 × 7 阶段，并落到结局场景
+##   · 在真实 day_loop 场景里点满 10 天 × 6 阶段，并落到结局场景
 ##
 ## 全部通过退出码 0；有失败项退出码 1。
 
@@ -427,11 +427,11 @@ func _walk_day_loop() -> void:
 			presses += 1
 			await get_tree().process_frame
 
-	_check(walk_ok, "按 DayBriefing→SpecialEvent→Screening→Interview→TeamBuild→BattleReport→DayResult 走完 10 天")
+	_check(walk_ok, "按 DayBriefing→SpecialEvent→Screening→Interview→TeamBuild→BattleReport 走完 10 天")
 	if not walk_ok:
 		for line in phase_log:
 			printerr("   " + line)
-	_check(presses == GameConfig.TOTAL_DAYS * day_phases.size(), "共推进 %d 次（10 天 × 7 阶段）" % presses)
+	_check(presses == GameConfig.TOTAL_DAYS * day_phases.size(), "共推进 %d 次（10 天 × %d 阶段）" % [presses, day_phases.size()])
 	_check(GameState.get_day() == GameConfig.TOTAL_DAYS, "走完后停在第 %d 天" % GameConfig.TOTAL_DAYS)
 	_check(GameState.get_phase_name() == DayPhase.to_name(DayPhase.Phase.ENDING), "走完后阶段是 ENDING")
 	_check(SaveService.has_auto_save(), "每日流程里自动存档已生成")

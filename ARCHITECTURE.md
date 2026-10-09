@@ -293,8 +293,6 @@ class_name DayConfig extends Resource
 		↓
   BattleReport      马车上看战报演出、车夫对话、逐条事件播报、当日分数
 		↓
-  DayResult         当日得分明细、累计分、手册新解锁
-		↓
   ├─ 第 1〜9 天：天数 +1，回到 DayBriefing 开始下一天
   └─ 第 10 天：→ Ending（按累计分与 flag 判定结局）
 ```
@@ -493,8 +491,8 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | `scenes/boot/boot.tscn` | `boot.gd` | 备用入口：DataDB 兜底检查 → 主菜单。当前**不是**启动场景，要开场演出时把 `run/main_scene` 改回来即可 |
 | `scripts/core/flow/day_director.gd` | — | 每日流程推进规则（纯静态）：`advance(phase, day)` / `scene_key_for(phase)` |
 
-- 一天走 7 个阶段：DayBriefing → SpecialEvent → Screening → Interview → TeamBuild → BattleReport → DayResult；
-  第 10 天的 DayResult 之后进 Ending，其余天数回到 DayBriefing。招人阶段实际可在
+- 一天走 6 个阶段：DayBriefing → SpecialEvent → Screening → Interview → TeamBuild → BattleReport；
+  第 10 天的 BattleReport 之后进 Ending，其余天数回到 DayBriefing。招人阶段实际可在
   Screening / Interview 之间来回切换，`DayDirector` 给的是一条默认推进路线。
 - `day_loop` 与 `ending` 里各有一块 **占位 HUD**：M0 的阶段子场景还是空壳，得有东西点着才能走完十天。
   占位文案暂时是 ASCII —— `assets/fonts` 还没接入中文主字体，默认字体没有中文字形，中文会变方块。

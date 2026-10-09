@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## 流程（§4）：
 ##   DayBriefing → SpecialEvent → 招人（Screening ⇄ Interview）→ TeamBuild
-##   → BattleReport → DayResult → 第 1〜9 天回到 DayBriefing；第 10 天进 Ending
+##   → BattleReport → 第 1〜9 天回到 DayBriefing；第 10 天进 Ending
 
 ## 推进结果的三种走向
 enum Step {
@@ -18,7 +18,7 @@ enum Step {
 }
 
 ## 当天最后一个阶段
-const LAST_PHASE: int = DayPhase.Phase.DAY_RESULT
+const LAST_PHASE: int = DayPhase.Phase.BATTLE_REPORT
 
 ## 由 interview.tscn 承载的阶段：
 ##   DAY_BRIEFING   国王下旨

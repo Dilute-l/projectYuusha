@@ -38,7 +38,7 @@ signal team_submitted(member_ids: Array[StringName])
 ## 战报演出数据就绪
 signal battle_report_ready(report: BattleReport)
 
-## 当日结算完成，result = {day, gained, total, breakdown}
+## 当日得分记录完成，result = {day, gained, total, breakdown}
 signal day_scored(result: Dictionary)
 
 ## 手册条目解锁

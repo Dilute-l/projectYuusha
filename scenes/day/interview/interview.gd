@@ -74,6 +74,11 @@ func set_phase(phase: int) -> void:
 	_phase = phase
 
 	if entered:
+		# 每次进入新阶段都先撤销「对话结束就推进」的标记。
+		# 有些阶段（如 SCREENING / INTERVIEW）根本不播阶段对话，
+		# 留着上一阶段留下的 true，会让**下一段临时对话**（如提示板）播完时误推进。
+		_advance_when_dialogue_ends = false
+
 		match phase:
 			DayPhase.Phase.DAY_BRIEFING:
 				# 对话 id 的命名约定见 data/dialogue.json：day1_briefing（**不补零**）
@@ -144,6 +149,16 @@ func _apply_phase_visuals() -> void:
 # ---------------------------------------------------------------------------
 
 
+## 本次播放的对话结束时，是否要推进阶段。
+##
+## 为什么需要它：Dialoguer 只有**一个** `dialogue_ended` 信号，**不区分是哪一段对话结束的**；
+## 而连接一旦建立就会一直挂着。于是「点提示板顺手看一段」播完时，那个回调照样会跑到 ——
+## 阶段就被推进了。
+##
+## 所以「要不要推进」必须是**每次播放时决定的状态**，不能靠「连接存不存在」来表达。
+var _advance_when_dialogue_ends := false
+
+
 ## 播一段阶段对话，**等玩家看完再推进**。
 ##
 ## 为什么推进挂在 dialogue_ended 上，而不是 play() 之后立刻 emit：
@@ -171,12 +186,18 @@ func _play_phase_dialogue(ids: Array[String]) -> void:
 		_defer_phase_finished()
 		return
 
-	if not _dialoguer.dialogue_ended.is_connected(_on_phase_dialogue_ended):
-		_dialoguer.dialogue_ended.connect(_on_phase_dialogue_ended)
+	_advance_when_dialogue_ends = true
+	if not _dialoguer.dialogue_ended.is_connected(_on_dialogue_ended):
+		_dialoguer.dialogue_ended.connect(_on_dialogue_ended)
 	_dialoguer.play()
 
 
-func _on_phase_dialogue_ended() -> void:
+## **所有**对话结束时都会到这里（阶段对话、提示板、以后的任何临时对话）。
+## 只有「结束时该推进」的那一段才真的推进 —— 见 _advance_when_dialogue_ends 的说明。
+func _on_dialogue_ended() -> void:
+	if not _advance_when_dialogue_ends:
+		return
+	_advance_when_dialogue_ends = false
 	_defer_phase_finished()
 
 
@@ -280,6 +301,12 @@ func _on_notice_board_pressed() -> void:
 	if _dialoguer == null:
 		push_error("[Interview] 找不到 Dialoguer")
 		return
+	# 阶段对话还没播完时**不要打断它**：Dialoguer 只有一个正文 Label，
+	# 打断等于把阶段对话换掉，而它不会再播第二次 —— 这个阶段就失去了
+	# 「看完自动推进」这条路径（现在还有占位 HUD 的按钮兜底，等 HUD 删掉就是死路）。
+	if _advance_when_dialogue_ends:
+		return
 	if not _dialoguer.typer.load_dialogue("Boardery"):
 		return
+	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
 	_dialoguer.play()

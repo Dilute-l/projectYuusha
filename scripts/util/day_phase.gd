@@ -15,11 +15,14 @@ enum Phase {
 	INTERVIEW,      ## 招人：追问面试（与 SCREENING 可来回切换）
 	TEAM_BUILD,     ## 从通过者中挑满名额
 	BATTLE_REPORT,  ## 马车上看战报演出、车夫对话、当日分数
-	DAY_RESULT,     ## 当日得分明细、累计分、手册新解锁
 	ENDING,         ## 第 10 天之后的结局场景
 }
 
-## 与 Phase 一一对应的名字表，索引即枚举值
+## 与 Phase 一一对应的名字表，索引即枚举值。
+##
+## ⚠️ 增删 Phase 里的一项时，NAMES / DISPLAY_NAMES / ORDER 必须在**对应下标**同步增删：
+## 前两张表是「索引即枚举值」的平行数组，漏改会让所有后续阶段的存档名整体错位，
+## 而且**不会报任何错**。
 const NAMES: Array[StringName] = [
 	&"DAY_BRIEFING",
 	&"SPECIAL_EVENT",
@@ -27,7 +30,6 @@ const NAMES: Array[StringName] = [
 	&"INTERVIEW",
 	&"TEAM_BUILD",
 	&"BATTLE_REPORT",
-	&"DAY_RESULT",
 	&"ENDING",
 ]
 
@@ -39,7 +41,6 @@ const ORDER: Array[int] = [
 	Phase.INTERVIEW,
 	Phase.TEAM_BUILD,
 	Phase.BATTLE_REPORT,
-	Phase.DAY_RESULT,
 ]
 
 ## 便于在占位 HUD / 调试输出里显示的中文阶段名，索引与 Phase 一一对应
@@ -50,7 +51,6 @@ const DISPLAY_NAMES: Array[String] = [
 	"追问面试",
 	"组队",
 	"战报",
-	"当日结算",
 	"结局",
 ]
 
@@ -85,7 +85,8 @@ static func is_day_phase(phase: int) -> bool:
 	return ORDER.has(phase)
 
 
-## 下一个阶段；DAY_RESULT 之后回到 DAY_BRIEFING（由 GameState.advance_day 决定是否进结局）
+## 下一个阶段。当天最后一个阶段（BATTLE_REPORT）没有「下一个」，
+## 这里回到 DAY_BRIEFING —— 是否真的换天 / 进结局由 DayDirector 与 GameState.advance_day 决定。
 static func next(phase: int) -> int:
 	var index := ORDER.find(phase)
 	if index < 0 or index >= ORDER.size() - 1:
