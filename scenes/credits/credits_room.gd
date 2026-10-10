@@ -58,7 +58,6 @@ func _flash_bighead(bighead: Sprite2D) -> void:
 
 
 func _on_liuxu_pressed() -> void:
-	AudioService.play_sfx(TITLE_SFX_PATH)
 	var win := get_window()
 	if win != null:
 		win.gui_release_focus()
