@@ -16,6 +16,8 @@
 [ext_resource type="Texture2D" uid="uid://dmd32k82egwh3" path="res://assets/art/Menu/MenuBook.png" id="12_27h4x"]
 [ext_resource type="Texture2D" uid="uid://uta2kam4gwa0" path="res://assets/art/Menu/MenuBookHover.png" id="13_gdhp0"]
 [ext_resource type="BitMap" uid="uid://daoqtwnd8x65d" path="res://assets/art/Menu/MenuBook.tres" id="14_gdhp0"]
+[ext_resource type="Texture2D" uid="uid://c005r21ugkj7v" path="res://assets/art/hand_notuse.png" id="16_41tvm"]
+[ext_resource type="Texture2D" uid="uid://bk8dttnke8gec" path="res://assets/art/hand_black_notuse.png" id="17_vxdmp"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qgo02"]
 
@@ -209,6 +211,8 @@ texture_click_mask = ExtResource("14_gdhp0")
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("5_hj162")]
 layout_mode = 0
+hand_texture = ExtResource("16_41tvm")
+hand_black_texture = ExtResource("17_vxdmp")
 
 [node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("6_xn6kt")]
 visible = false

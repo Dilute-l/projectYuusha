@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://6oo5djyng3tk"]
 
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_jnxpl"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_lghhw"]
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_1d337"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_2fu6d"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_lghhw"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_1d337"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_2fu6d"]
 [ext_resource type="Resource" path="res://data/traits/hot_blooded.tres" id="5_g2idq"]
 [ext_resource type="Resource" path="res://data/traits/drunkard.tres" id="6_3nu1y"]
 

@@ -1,11 +1,13 @@
 [gd_scene format=3 uid="uid://1vjphav6dfo6"]
 
 [ext_resource type="Script" uid="uid://cybo2ov47trcl" path="res://scenes/credits/credits_room.gd" id="1_5c5tq"]
-[ext_resource type="Texture2D" uid="uid://bn2iog84pr3k0" path="res://assets/art/Credit/CreditRoom_phd.jpg" id="2_0erdm"]
+[ext_resource type="Texture2D" uid="uid://063f0ibo1fpa" path="res://assets/art/Credit/CreditRoom_phder.jpg" id="2_qmx4p"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="3_lofe2"]
 [ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="4_j82at"]
 [ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="5_28yq1"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="6_28yq1"]
+[ext_resource type="Texture2D" uid="uid://dhdn7e77550ai" path="res://assets/art/Credit/GlaucusCompressed.jpg" id="6_nv12v"]
+[ext_resource type="Texture2D" uid="uid://0rhmt1nast4x" path="res://assets/art/Credit/WhyAreYouHere.png" id="8_5uiah"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0erdm"]
 
@@ -20,10 +22,10 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_5c5tq")
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1032463924]
+[node name="CreditBackground" type="Sprite2D" parent="." unique_id=1032463924]
 position = Vector2(575.53125, 324.50003)
 scale = Vector2(0.50797105, 0.50784934)
-texture = ExtResource("2_0erdm")
+texture = ExtResource("2_qmx4p")
 
 [node name="Button" type="Button" parent="." unique_id=2060295476]
 layout_mode = 0
@@ -40,14 +42,23 @@ text = "返回"
 
 [node name="Sunflower" type="TextureButton" parent="." unique_id=39142167]
 layout_mode = 0
-offset_left = 839.00006
-offset_top = 90.0
-offset_right = 913.00006
-offset_bottom = 163.0
+offset_left = 9.999998
+offset_top = 389.00003
+offset_right = 84.0
+offset_bottom = 462.00003
 rotation = 0.038397245
 scale = Vector2(3.6, 3.6)
 texture_normal = ExtResource("4_j82at")
 texture_click_mask = ExtResource("5_28yq1")
+
+[node name="Liuxu" type="TextureButton" parent="." unique_id=1738997261]
+layout_mode = 0
+offset_left = 335.00003
+offset_top = 144.0
+offset_right = 401.00003
+offset_bottom = 210.0
+scale = Vector2(3.6, 3.6)
+texture_normal = ExtResource("6_nv12v")
 
 [node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("6_28yq1")]
 visible = false
@@ -57,5 +68,12 @@ offset_top = -5.0
 offset_right = -3.0
 offset_bottom = -5.0
 
+[node name="bighead" type="Sprite2D" parent="." unique_id=979255608]
+visible = false
+position = Vector2(286, 246.00003)
+scale = Vector2(0.80849355, 0.83240026)
+texture = ExtResource("8_5uiah")
+
 [connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
 [connection signal="pressed" from="Sunflower" to="." method="_on_sunflower_pressed"]
+[connection signal="pressed" from="Liuxu" to="." method="_on_liuxu_pressed"]
