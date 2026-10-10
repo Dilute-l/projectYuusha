@@ -27,6 +27,8 @@ var _phase: int = DayPhase.Phase.DAY_BRIEFING
 @onready var _approved: TextureButton = get_node_or_null("Approved") as TextureButton
 @onready var _nah: TextureButton = get_node_or_null("Nah") as TextureButton
 @onready var _dialoguer: Dialoguer = get_node_or_null("Dialoguer") as Dialoguer
+@onready var _handbook: Handbook = get_node_or_null("Handbook") as Handbook
+@onready var _notice_board: TextureButton = get_node_or_null("NoticeBoard") as TextureButton
 
 ## 本阶段做完了。day_loop 挂载本场景时会把它接到 advance() 上。
 signal phase_finished()
@@ -59,6 +61,10 @@ func _ready() -> void:
 	# 接上「玩家追问了简历某一条」（resume.gd 广播，见 _on_resume_entry_asked）。
 	if not EventBus.resume_entry_asked.is_connected(_on_resume_entry_asked):
 		EventBus.resume_entry_asked.connect(_on_resume_entry_asked)
+
+	# 手册关掉时要把本场景别的操作放开（见 _set_scene_interaction_enabled）
+	if _handbook != null and not _handbook.closed.is_connected(_on_handbook_closed):
+		_handbook.closed.connect(_on_handbook_closed)
 
 	# 由 day_loop **首次实例化**本场景时走的是「新建实例」那条路，不会调 set_phase()，
 	# 所以这里自己按 GameState 里的当前阶段初始化一次。
@@ -113,8 +119,12 @@ func get_phase() -> int:
 	return _phase
 
 
-## 追问环节才允许做录用判定（§4：其余阶段不该出现这个操作）
+## 追问环节才允许做录用判定（§4：其余阶段不该出现这个操作）。
+##
+## 手册开着时**一律不允许** —— 那是「在看手册」的模态状态，别的操作都该停手。
 func _is_judging_allowed() -> bool:
+	if is_handbook_open():
+		return false
 	return _phase == DayPhase.Phase.INTERVIEW
 
 
@@ -655,6 +665,10 @@ func _on_notice_board_pressed() -> void:
 	if _dialoguer == null:
 		push_error("[Interview] 找不到 Dialoguer")
 		return
+	# 手册开着时提示板也不给看：那是模态状态，一点点击都不该漏出去。
+	# （按钮这时本身也是 disabled 的，这里只是第二层防线。）
+	if is_handbook_open():
+		return
 	# 阶段对话还没播完时**不要打断它**：Dialoguer 只有一个正文 Label，
 	# 打断等于把阶段对话换掉，而它不会再播第二次 —— 这个阶段就失去了
 	# 「看完自动推进」这条路径（现在还有占位 HUD 的按钮兜底，等 HUD 删掉就是死路）。
@@ -664,3 +678,61 @@ func _on_notice_board_pressed() -> void:
 		return
 	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
 	_dialoguer.play()
+
+
+# ---------------------------------------------------------------------------
+# 手册（模态浮层，§10.4）
+# ---------------------------------------------------------------------------
+
+
+## 打开手册时先看哪一条。
+## 占位：等关键词检索 / 图鉴列表做出来之后，这里换成「按玩家点的那条」传进去。
+const HANDBOOK_PLACEHOLDER_ID := &"slime"
+
+
+func _on_handbook_button_pressed() -> void:
+	if _handbook == null:
+		push_error("[Interview] 找不到 Handbook")
+		return
+	if is_handbook_open():
+		return
+	# 阶段对话还没播完时不打开：Dialoguer 的 _input 在 GUI 输入**之前**就吃掉左键，
+	# 那时开着手册，点哪儿都只会把对话往下推。
+	if _advance_when_dialogue_ends:
+		return
+	# 演出期间也不打开：画面正在动，这时候叠一层手册没有意义
+	if _animating:
+		return
+
+	if not _handbook.open_entry(HANDBOOK_PLACEHOLDER_ID):
+		return
+	_set_scene_interaction_enabled(false)
+
+
+## 手册当前是不是开着。本场景的其它入口据此判断要不要理人。
+func is_handbook_open() -> bool:
+	return _handbook != null and _handbook.is_open()
+
+
+## 手册关掉了 → 把本场景别的操作放开。
+func _on_handbook_closed() -> void:
+	_set_scene_interaction_enabled(true)
+
+
+## 手册开着期间，把本场景其它交互入口全堵上。
+##
+## 鼠标与键盘**两条路都要堵**，所以不能只加一层挡板：
+##   按钮 disabled   → 点击和 ui_accept（回车 / 空格）都不会再发 pressed；
+##   词条菜单 HIDDEN → 追问菜单根本弹不出来（手册盖着它，弹出来也是打架）；
+##   逻辑层另有一道  → _is_judging_allowed() 在手册开着时返回 false。
+##
+## 关掉之后恢复：按钮 enabled、词条菜单回到 ASK（面试里点词条 = 追问）。
+func _set_scene_interaction_enabled(enabled: bool) -> void:
+	var buttons: Array[TextureButton] = [_approved, _nah, _notice_board]
+	for button in buttons:
+		if button != null:
+			button.disabled = not enabled
+	if _resume != null:
+		_resume.entry_menu = Resume.EntryMenu.ASK if enabled else Resume.EntryMenu.HIDDEN
+		if not enabled:
+			_resume.close_token_menu()

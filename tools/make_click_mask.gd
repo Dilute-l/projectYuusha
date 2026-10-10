@@ -34,10 +34,10 @@ extends EditorScript
 ## 会和看到的图形对不上——而且不会报任何错，很难查。
 
 ## ★ 源贴图：改成你要生成掩码的按钮图
-var source_texture := "res://assets/art/Menu/MenuBook.png"
+var source_texture := "res://assets/art/interview/handbook_phd.png"
 
 ## ★ 输出路径。小掩码用 .tres（文本、可 diff）；很大的掩码可改成 .res
-var output_mask := "res://assets/art/Menu/MenuBook.tres"
+var output_mask := "res://assets/art/interview/handbook_phd.tres"
 
 ## ★ alpha 阈值：alpha 大于它的像素算「可点击」。
 ## 调大可以排除抗锯齿的软边缘。

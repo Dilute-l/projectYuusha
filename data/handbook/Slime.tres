@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HandbookEntry" format=3 uid="uid://fvj30r7piyco"]
+
+[ext_resource type="Script" uid="uid://by0tcgfmhfwsq" path="res://scripts/resources/handbook_entry.gd" id="1_y04vp"]
+
+[resource]
+script = ExtResource("1_y04vp")
+id = &"slime"
+category = &"monster"
+title = "史莱姆"
+body = "1.史莱姆
+2.史莱姆莱史
+3.among us"
+metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

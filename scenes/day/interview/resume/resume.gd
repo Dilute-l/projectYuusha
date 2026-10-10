@@ -217,6 +217,12 @@ func _connect_token(token: ResumeToken) -> void:
 		token.selected.connect(_on_token_selected)
 
 
+## 收起词条菜单。手册弹开时上层会调它 —— 菜单只有巴掌大，留着会和手册叠在一起。
+func close_token_menu() -> void:
+	if _token_menu != null:
+		_token_menu.close()
+
+
 ## 点了某一条词条 → 在它旁边弹出菜单（§6.2 的第一步）。
 ##
 ## 摆出来的样子由 entry_menu 决定：面试是「追问」，组队是「回忆」（没问过的置灰）。
