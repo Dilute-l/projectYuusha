@@ -132,7 +132,7 @@ func _is_judging_allowed() -> bool:
 ##
 ## 目前实现两条：
 ##   1. 简历页只在招人阶段出现
-##   2. 录用判定按钮只在追问环节出现
+##   2. 录用判定按钮只在追问环节出现（**演出期间也在**，只是压暗按不动 —— 见 _apply_judge_button）
 ## 国王下旨 / 今日事件的正式界面属于 M1〜M2 的内容，做的时候在这里按 _phase 切换即可
 ## （需要通知子控件时，也可以从这里发信号，而不是让子控件自己去读 GameState）。
 func _apply_phase_visuals() -> void:
@@ -152,13 +152,41 @@ func _apply_phase_visuals() -> void:
 	# 第 1 层守卫（UI 层）：隐藏的 Control 收不到鼠标输入，也不会被焦点导航选中，
 	# 所以这一层就挡住了绝大多数误操作。逻辑层的守卫见 _judge()。
 	#
-	# 演出期间也算「不许判定」：立绘还在往画面里走的时候不该能按下录用按钮
-	# （按了也没用，见 _judge 的 _animating 守卫 —— 但按钮消失更直观）。
-	var judging := _is_judging_allowed() and not _animating
-	if _approved != null:
-		_approved.visible = judging
-	if _nah != null:
-		_nah.visible = judging
+	# ⚠️ **按钮的显隐只看阶段，不看演出**：曾经写成 `_is_judging_allowed() and not _animating`，
+	# 结果面试者走进来（约 1.3s）和判定之后换人（约 2.2s）的整段时间里，这两个按钮都凭空消失 ——
+	# 玩家看到的是界面在闪，而不是「现在不能按」。演出期间要挡的是**点击**，不是**按钮本身**：
+	# 现在它们照常画在屏幕上，只是压暗 + 不接鼠标（见 _apply_judge_button）。
+	var judging := _is_judging_allowed()
+	_apply_judge_button(_approved, judging)
+	_apply_judge_button(_nah, judging)
+
+
+## 判定按钮（录用 / 拒绝）的显隐与「演出期间按不动」。
+##
+## 三种状态：
+##   不在招人阶段 / 手册开着 → visible = false：这个阶段压根没有「判定」这回事，按钮不该在场
+##   演出期间               → 照常画着，但压暗 + MOUSE_FILTER_IGNORE：看得见、按不动
+##   平时                   → 原样、可点
+##
+## 为什么压暗 + 不吃鼠标，而不是 `disabled`：
+##   TextureButton 的 `texture_disabled` 是空的（interview.tscn 没填），一 `disabled`
+##   引擎就**什么都不画** —— 又变回「按钮消失」了。压暗走的是 `modulate` 的 **RGB**，
+##   和 BaseButton 的 `disabled` 各管各的，手册那条路（_set_scene_interaction_enabled）
+##   该怎么用 `disabled` 还怎么用。
+##
+## ⚠️ 压暗是**调亮度**（RGB 乘一个小于 1 的数），**不是半透明**：
+##   按钮是不透明的手绘贴图，alpha 一降就会把底下的面试间背景透出来，
+##   看着像「贴纸没贴牢」，也不像「现在不能按」。
+func _apply_judge_button(button: TextureButton, judging: bool) -> void:
+	if button == null:
+		return
+	button.visible = judging
+	if not judging:
+		return
+	button.modulate = JUDGE_LOCKED_TINT if _animating else Color.WHITE
+	button.mouse_filter = (
+		Control.MOUSE_FILTER_IGNORE if _animating else Control.MOUSE_FILTER_STOP
+	)
 
 
 # ---------------------------------------------------------------------------
@@ -356,8 +384,9 @@ func _refresh_interviewee() -> void:
 #
 # **顺序靠「等这一步动完」而不是「按固定时长往下排」**：见 _begin_sequence。
 #
-# 演出期间**不收任何输入**：判定按钮在 _apply_phase_visuals() 里藏起来（UI 层），
-# _judge() 与 _on_resume_entry_asked() 再各挡一道（逻辑层）。
+# 演出期间**不收任何输入**：判定按钮在 _apply_phase_visuals() 里压暗并摘掉鼠标（UI 层），
+# `_judge()` 与 `_on_resume_entry_asked()` 再各挡一道（逻辑层）。
+# 按钮本身**不消失** —— 演出只有一两秒，藏起来更像界面出问题（见 _apply_judge_button）。
 
 ## 从画面右边外面走到站定处的时长
 const WALK_IN_DURATION := 0.85
@@ -371,7 +400,13 @@ const RESUME_IN_DURATION := 0.40
 ## 简历往画面上方移走的时长
 const RESUME_OUT_DURATION := 0.30
 
-## 正在演出吗（演出期间不收判定、不收追问、判定按钮也不画）
+## 演出期间判定按钮的压暗程度 —— **亮度**，不是透明度。
+##
+## modulate 的 RGB 直接乘在贴图上，alpha 保持 1.0：按钮还是一块不透明的贴图，
+## 只是整体变暗（看着像「没通电」），底下的背景不会透出来。见 _apply_judge_button。
+const JUDGE_LOCKED_TINT := Color(0.55, 0.55, 0.55, 1.0)
+
+## 正在演出吗（演出期间不收判定、不收追问；判定按钮压暗但**不隐藏**）
 var _animating: bool = false
 
 ## 这一段演出收场时要做的事。
@@ -549,7 +584,7 @@ func _begin_sequence(after: Callable, steps: Array[Callable]) -> void:
 	_after_sequence = after
 	_steps = steps
 	_step_index = 0
-	# 演出一开始就把判定按钮收起来（UI 层守卫），见 _apply_phase_visuals
+	# 演出一开始就把判定按钮压暗、摘掉鼠标（UI 层守卫），见 _apply_phase_visuals
 	_apply_phase_visuals()
 	_run_next_step()
 
@@ -593,7 +628,7 @@ func _finish_sequence() -> void:
 	_animating = false
 	var after := _after_sequence
 	_after_sequence = Callable()
-	# 演出完了，判定按钮重新出现
+	# 演出完了，判定按钮恢复可点（它们本来就没被藏起来）
 	_apply_phase_visuals()
 	if after.is_valid():
 		after.call()
@@ -635,7 +670,8 @@ func _judge(passed: bool) -> void:
 		push_warning("[Interview] 阶段 %s 不接受录用判定，已忽略" % DayPhase.to_name(_phase))
 		return
 
-	# 演出期间不接受第二次判定：按钮这时是藏着的，走到这里说明是代码在连点。
+	# 演出期间不接受第二次判定：按钮这时是压暗且按不动的（MOUSE_FILTER_IGNORE），
+	# 走到这里说明是代码在连点。
 	# 静默忽略 —— 判定本身没错，只是来早了，不应该把它当成错误报出来。
 	if _animating:
 		return

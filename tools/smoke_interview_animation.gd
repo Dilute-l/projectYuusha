@@ -245,11 +245,17 @@ func _run() -> void:
 			"简历**当场**被摆到画面下方等着（偏移 %.0f）" % resume.slide_offset())
 	_check(absf(interviewee.position.x - right_out) < 0.001,
 			"立绘**当场**被摆到画面右边外面（x %.0f）" % interviewee.position.x)
-	_check(not approved.visible and not nah.visible,
-			"演出期间判定按钮不画出来（UI 层守卫）")
+	_check(approved.visible and nah.visible,
+			"演出期间判定按钮**照常画着**，没有凭空消失")
+	_check(approved.mouse_filter == Control.MOUSE_FILTER_IGNORE
+			and nah.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"演出期间判定按钮不接鼠标（UI 层守卫：看得见、按不动）")
+	_check(approved.modulate.v < 1.0 and is_equal_approx(approved.modulate.a, 1.0),
+			"演出期间判定按钮**调暗**（亮度 %.2f，alpha 仍是 %.2f —— 不是半透明）" % [
+				approved.modulate.v, approved.modulate.a])
 
-	# 演出期间不受理判定：按钮藏着是第 1 道，_judge() 里的 _animating 是第 2 道。
-	# 这里按钮本来就是藏着的，所以直接发信号，走的就是第 2 道。
+	# 演出期间不受理判定：压暗 + 摘鼠标是第 1 道，_judge() 里的 _animating 是第 2 道。
+	# 这里直接发信号，走的就是第 2 道（按钮没被藏起来，手快点到的话就是这条兜着）。
 	approved.pressed.emit()
 	await get_tree().process_frame
 	_check(GameState.get_passed_ids().is_empty(),
@@ -328,7 +334,10 @@ func _run() -> void:
 			"出场结束后立绘正好站在场景摆的那一处（%s）" % interviewee.position)
 	_check(absf(resume.slide_offset()) < 0.001, "出场结束后简历正好回到站定处")
 	_check(resume.get_candidate() == list[0], "出场后简历上铺的是名单第 1 位")
-	_check(approved.visible and nah.visible, "演出结束后判定按钮重新出现")
+	_check(approved.visible and nah.visible, "出场演出结束后判定按钮仍然在场上")
+	_check(approved.mouse_filter == Control.MOUSE_FILTER_STOP
+			and approved.modulate.is_equal_approx(Color.WHITE),
+			"出场演出结束后判定按钮恢复原样（亮度 1.00、a 1.00）、可以按")
 
 	# ---- 3. 判定第一位：走出去 → 简历移走 → 下一位走进来 ----
 	var advanced: Array[int] = []
@@ -337,7 +346,8 @@ func _run() -> void:
 	approved.pressed.emit()
 	_check(interview.is_animating(), "按下录用 → 开始演判定之后的这一段")
 	_check(GameState.get_passed_ids().has(list[0].id), "第 1 位进了录用名单")
-	_check(not approved.visible, "判定演出期间按钮又不画了")
+	_check(approved.visible and approved.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"判定演出期间按钮也照常画着，只是按不动（不消失）")
 
 	var swap := Track.new()
 	var swap_done := await _record_until_idle(interview, interviewee, resume, swap)
@@ -386,7 +396,8 @@ func _run() -> void:
 			and absf(interviewee.position.y - rest.y) < 0.001,
 			"第 2 位也站在站定那一处（%s）" % interviewee.position)
 	_check(absf(resume.slide_offset()) < 0.001, "第 2 位的简历也升到位了")
-	_check(approved.visible, "换人演出结束后判定按钮又出现了")
+	_check(approved.visible and approved.mouse_filter == Control.MOUSE_FILTER_STOP,
+			"换人演出结束后判定按钮恢复可点")
 	_check(advanced.is_empty(), "换人演出没有推进阶段（还有人在等着面试）")
 
 	# ---- 4. 剩下的几位：判定 → 跳过演出（顺带验跳过后的收场姿态）----
@@ -401,7 +412,8 @@ func _run() -> void:
 		_check(absf(resume.slide_offset()) < 0.001
 				and absf(interviewee.position.x - rest.x) < 0.001,
 				"跳过后立绘与简历都收在站定姿态")
-		_check(approved.visible, "跳过后判定按钮可用")
+		_check(approved.visible and approved.mouse_filter == Control.MOUSE_FILTER_STOP,
+				"跳过后判定按钮可用")
 
 	# ---- 5. 最后一位：演出走完之后才交阶段 ----
 	var last_index := list.size() - 1

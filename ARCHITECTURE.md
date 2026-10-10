@@ -1084,12 +1084,23 @@ if TeamValidator.is_over(team, slots):   # size > slots，刚好满不算
 
 | 层 | 落点 | 表现 |
 | --- | --- | --- |
-| UI 层 | `_apply_phase_visuals()` | `judging = _is_judging_allowed() and not _animating` —— 演出期间录用 / 拒绝按钮**不画** |
-| 逻辑层 | `_judge()` | `_animating` 时直接 return（静默：按钮本来就是藏的，走到这里只可能是代码连点） |
+| UI 层 | `_apply_phase_visuals()` → `_apply_judge_button()` | 录用 / 拒绝按钮**只在「这个阶段不该判定」时消失**（非招人阶段 / 手册开着）。演出期间它们**照常画着**，只是压暗（`JUDGE_LOCKED_TINT`）+ `MOUSE_FILTER_IGNORE` —— 看得见、按不动 |
+| 逻辑层 | `_judge()` | `_animating` 时直接 return（静默：按钮这时按不动，走到这里只可能是代码连点） |
 | 逻辑层 | `_on_resume_entry_asked()` | `_animating` 时直接 return：这时那张纸正在画面外 / 正在滑，点到的词条马上会跟着纸跑掉 |
 
-演出**开始与结束**都会重刷一次 `_apply_phase_visuals()` —— 按钮的显隐跟着 `_animating` 走，
+演出**开始与结束**都会重刷一次 `_apply_phase_visuals()` —— 按钮的压暗 / 摘鼠标跟着 `_animating` 走，
 而 `_animating` 只在 `_begin_sequence()` / `_finish_sequence()` 两处变。
+
+> ⚠️ **按钮的显隐不能跟 `_animating` 绑**：早先写的是 `judging = _is_judging_allowed() and not _animating`，
+> 于是面试者走进来（约 1.3s）和判定之后换人（约 2.2s）的两段时间里，两个按钮凭空消失 ——
+> 在玩家眼里那不是「现在不能按」，而是界面闪了一下。**演出期间要挡的是点击，不是按钮本身。**
+>
+> 另外这里用的是 `modulate` + `mouse_filter`，**不是 `disabled`**：`interview.tscn` 没给这两个
+> `TextureButton` 填 `texture_disabled`，一旦 `disabled`，引擎什么都不画 —— 又变回「按钮消失」了。
+> `disabled` 仍然归 `_set_scene_interaction_enabled()`（手册那条路）用，两者各管各的。
+>
+> 压暗用的是 **modulate 的 RGB（亮度）**，alpha 保持 1.0：按钮是不透明的手绘贴图，
+> 半透明会让面试间的背景从按钮里透出来，既不像「不能按」，也看着像贴纸没贴牢。
 
 ### 13.5 收场与「跳过演出」
 
@@ -1124,7 +1135,7 @@ if TeamValidator.is_over(team, slots):   # size > slots，刚好满不算
 - 挂上去那一帧就已经摆好位（纸不会先在原地闪一下）；
 - 走进来是**单向**从右往左、**上下都晃到了**、且不越过配置的振幅、走完正好停在场景摆的那一处；
 - 简历只在画面下方、**立绘站定之后**才开始升、升完正好回到站定处；
-- 演出期间按钮不画、发来的判定被忽略；
+- 演出期间判定按钮**不消失**（照常画着、压暗且按不动），发来的判定被忽略；
 - 判定之后**人先走光、纸才往上升**、下一位**从下方**进来、**简历移走之后**下一位才走进来；
 - 换人换干净（立绘与简历都是名单第 2 位）、全程没有推进阶段；
 - 跳过演出立刻收在站定姿态、最后一位**演出收场之后**才发 `phase_finished`。
