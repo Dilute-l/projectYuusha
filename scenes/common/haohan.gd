@@ -49,17 +49,17 @@ func _process(_delta: float) -> void:
 
 ## 换成本场景里记录的那只「黑色的手」
 func use_black_hand() -> void:
-	_set_texture(hand_black_texture)
+	$Hand.texture = hand_black_texture
 
 
 ## 换回默认（白色）的手
 func use_default_hand() -> void:
-	_set_texture(hand_texture)
+	$Hand.texture = hand_texture
 
 
 ## 直接指定任意贴图
 func set_hand_texture(texture: Texture2D) -> void:
-	_set_texture(texture)
+	$Hand.texture = texture
 
 
 ## 当前手上用的贴图
