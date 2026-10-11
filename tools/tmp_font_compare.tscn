@@ -1,0 +1,111 @@
+[gd_scene format=3 uid="uid://coxwttrwah72i"]
+
+[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="1_silver"]
+
+[node name="FontCompare" type="Control" unique_id=1930652936]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 780.0
+offset_bottom = 580.0
+
+[node name="Bg" type="ColorRect" parent="." unique_id=579030975]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Rows" type="VBoxContainer" parent="." unique_id=851360491]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 12.0
+theme_override_constants/separation = 14
+
+[node name="CapBefore" type="Label" parent="Rows" unique_id=630331188]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+text = "RESUME ENTRIES"
+
+[node name="CapCur" type="Label" parent="Rows" unique_id=249625408]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 12
+text = "RESUME ENTRIES"
+
+[node name="Cap18" type="Label" parent="Rows" unique_id=397595461]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 18
+text = "RESUME ENTRIES"
+
+[node name="HeadBefore" type="Label" parent="Rows" unique_id=797539503]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_font_sizes/font_size = 15
+text = "PLACEHOLDER HEADER 01"
+
+[node name="HeadCur" type="Label" parent="Rows" unique_id=1851364879]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 15
+text = "PLACEHOLDER HEADER 01"
+
+[node name="Head21" type="Label" parent="Rows" unique_id=1867689864]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 21
+text = "PLACEHOLDER HEADER 01"
+
+[node name="Head22" type="Label" parent="Rows" unique_id=1161393278]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 22
+text = "PLACEHOLDER HEADER 01"
+
+[node name="Head23" type="Label" parent="Rows" unique_id=1711256325]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 23
+text = "PLACEHOLDER HEADER 01"
+
+[node name="TokenBefore" type="Label" parent="Rows" unique_id=234243807]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.13, 0.11, 0.09, 1)
+theme_override_font_sizes/font_size = 15
+text = "PLACEHOLDER ENTRY 01-1"
+
+[node name="TokenCur" type="Label" parent="Rows" unique_id=2080952824]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.13, 0.11, 0.09, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 15
+text = "PLACEHOLDER ENTRY 01-1"
+
+[node name="Token22" type="Label" parent="Rows" unique_id=391878843]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.13, 0.11, 0.09, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 22
+text = "PLACEHOLDER ENTRY 01-1"
+
+[node name="Ask15" type="Label" parent="Rows" unique_id=1105801048]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 15
+text = "追问"
+
+[node name="Ask22" type="Label" parent="Rows" unique_id=1467904731]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
+theme_override_fonts/font = ExtResource("1_silver")
+theme_override_font_sizes/font_size = 22
+text = "追问"

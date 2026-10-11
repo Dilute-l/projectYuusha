@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://dhmx2jff8wa2f" path="res://assets/art/interview/resume_page_phd.png" id="2_vnthk"]
 [ext_resource type="PackedScene" uid="uid://c30g1ll4c2ch5" path="res://scenes/day/interview/resume/resume_token.tscn" id="3_yu2w1"]
 [ext_resource type="PackedScene" path="res://scenes/day/interview/resume/resume_token_menu.tscn" id="4_menu"]
+[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="5_silver"]
 
 [node name="Resume" type="Control" unique_id=429165533]
 layout_mode = 3
@@ -35,7 +36,8 @@ theme_override_constants/separation = 6
 [node name="HeaderInfo" type="Label" parent="Paper/Rows" unique_id=1467143720]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = ExtResource("5_silver")
+theme_override_font_sizes/font_size = 22
 text = ""
 
 [node name="Spacer" type="Control" parent="Paper/Rows" unique_id=2141977583]
@@ -45,7 +47,8 @@ layout_mode = 2
 [node name="EntriesCaption" type="Label" parent="Paper/Rows" unique_id=502821112]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.37, 0.3, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_fonts/font = ExtResource("5_silver")
+theme_override_font_sizes/font_size = 18
 text = "RESUME ENTRIES"
 
 [node name="TokenList" type="VBoxContainer" parent="Paper/Rows" unique_id=1833902498]

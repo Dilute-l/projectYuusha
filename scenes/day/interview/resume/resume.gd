@@ -15,8 +15,9 @@ extends Control
 ##   姓名 / 职业 / 等级 / 属性 / 特质要不要写、怎么分行、什么顺序，全由那段字自己决定。
 ##   词条同理，逐条取 `resume[i].description`。
 ##
-## ⚠️ 文案是中文字，而 assets/fonts 还没接入中文主字体：默认字体没有中文字形，
-##   纸上的中文现在会渲染成方块（同 dialogue.json 的处境）。字体接进来后这里不用改。
+## ⚠️ 字体：纸上的字和游戏别处用的是同一款 —— `assets/fonts/Silver.ttf`。
+##   抬头 / 段标题 / 词条 / 菜单按钮四处在**场景里**各自 `theme_override_fonts/font`，
+##   所以中文能正常显示（Silver 带中文字形）。本脚本不碰字体，改字体去改 .tscn。
 
 const TOKEN_SCENE := preload("res://scenes/day/interview/resume/resume_token.tscn")
 

@@ -534,8 +534,21 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
   换句话说：**抬头是文案，不是由数值推导出来的**。`display_name` / `level` / `strength` 那些字段
   是给玩法（判定、相性、战报）用的数值，和抬头故意不联动 —— 抬头里写什么、写不写全，由文案说了算。
   `RESUME ENTRIES` 那行**没有**并进去 —— 它是词条区的段标题（场景自己的装饰文案），不是候选人信息。
-  代价是所有行共用一个字号（现在 15）。若想让姓名单独放大，把这一个节点换成 `RichTextLabel` 走 BBCode
+  代价是所有行共用一个字号（现在 **22**）。若想让姓名单独放大，把这一个节点换成 `RichTextLabel` 走 BBCode
   即可（`HandbookEntry.body` 已经是这个路子），仍然是一个字符串。
+
+- **字号是照着「换字体前的视觉大小」定的，不是拍的**：`Silver.ttf` 是等宽的 CJK 点阵字体
+  （`unitsPerEm=1900`，拉丁字宽恒为 600、CJK 为 1200），它的**大写高只有 0.474 em**，
+  而原先兜底的默认字体约为 0.714 em —— 同样是 `font_size=15`，Silver 画出来只有 **0.7 倍大**。
+  所以接上字体时必须同步放大字号（4× 超采样量墨迹高对齐）：
+
+  | 位置 | 原字号（默认字体） | 现字号（Silver） | 大写高 前 → 后 |
+  | --- | --- | --- | --- |
+  | 抬头 / 词条 / 菜单按钮 | 15 | **22** | 10.75px → 10.50px |
+  | `RESUME ENTRIES` 段标题 | 12 | **18** | 8.75px → 8.50px |
+
+  换字体（或再换一次）时这几个数要跟着重算，别只改 `font` 不改 `font_size`。
+  字号放大后内容仍然装得进纸面：占位数据 199px、三行中文抬头 255px，纸面可用高 448px。
 
 - **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（**一个淡黄色矩形，没有描边**），
   normal 是一条细下划线。脚本里没有任何 `_on_mouse_entered`：hover 由 Button 自己驱动，改配色只动 `.tres`。
@@ -550,8 +563,10 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 - **条目数量自适应**：`set_entries()` 会先复用场景里预摆的 5 个实例（编辑器里直接看到真实版面，
   但它们**不写死任何正文**，`text` 全是空串），数据比预摆多就现场 `instantiate()`，
   少就把富余的 `visible = false`。所以「若干项」都不用回头改场景。
-- 纸上的文案现在是**中文**（和 `data/dialogue.json` 一致）—— 中文字体没接入前会变方块，原因见 §10.5。
-  字体接进来后这里一行都不用改。
+- 纸上的文案现在是**中文**（和 `data/dialogue.json` 一致）。字体和游戏别处是同一款：
+  抬头 / `RESUME ENTRIES` 段标题 / 词条 / 菜单按钮这四处在各自场景里
+  `theme_override_fonts/font = ExtResource(Silver.ttf)`，不再落到没有中文字形的默认字体上（§10.5）。
+  字体是**场景属性**，`resume.gd` 一个字都没碰 —— 纸上的内容仍然全部来自数据。
 
 #### 挂载点
 
@@ -617,9 +632,10 @@ DayLoop (Node)
   靠的就是这条路径，**别删**。
 - `_ready()` 校验纹理尺寸 == `PANEL_SIZE`，对不上就 `push_warning`（换图必然要重新量内边距）。
 
-> ⚠️ 按钮文案「追问」是中文，而 `assets/fonts` 还没接入中文字体：`smoke_resume_menu` 实测
-> `ThemeDB.fallback_font.has_char('追')` 为 **false**，按钮现在会显示成**两个方块**。
-> 字体接进来后这里不用改代码。
+> 按钮文案「追问」是中文，字体和词条一样走 `theme_override_fonts/font = Silver.ttf`，
+> 所以 `smoke_resume_menu` 查的是**按钮自己生效的那款字体**（`get_theme_font("font")`），
+> 实测「追问」两个字都有字形。这里曾经查 `ThemeDB.fallback_font` —— 那是**引擎默认字体**
+> 缺中文字形，和这枚按钮画成什么样无关，接上 Silver 后就成了假警报。
 
 #### 自检
 

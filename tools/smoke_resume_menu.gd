@@ -109,16 +109,19 @@ func _run() -> void:
 	_check((third as Button).text.contains(candidate.resume[2].description),
 			"第三条词条正文 = 数据里的 description")
 
-	# 顺带如实报一下默认字体能不能画中文 —— assets/fonts 还没接入主字体（§10.5），
-	# 画不出来按钮就是两个方块。这条只提示，不算失败。
+	# 顺带如实报一下按钮能不能画中文（§10.5）。
+	# 查的是**按钮真正生效的那一款字体**（get_theme_font 会把 theme_override_fonts/font 解出来），
+	# 不是引擎的 fallback —— 简历这边已经和别处一样接上了 assets/fonts/Silver.ttf，
+	# 再拿 fallback 去问「缺不缺中文」就成了与按钮无关的假警报。
+	var ask_font := ask.get_theme_font("font")
 	var missing := ""
 	for ch in ask.text:
-		if not ThemeDB.fallback_font.has_char(ch.unicode_at(0)):
+		if not ask_font.has_char(ch.unicode_at(0)):
 			missing += ch
 	if missing.is_empty():
-		print("  [note] 默认字体有「%s」的字形，按钮能正常显示" % ask.text)
+		print("  [note] 按钮字体有「%s」的字形，按钮能正常显示" % ask.text)
 	else:
-		print("  [note] ⚠ 默认字体缺字形「%s」—— 按钮会显示成两个方块，等 assets/fonts 接入中文字体" % missing)
+		print("  [note] ⚠ 按钮字体缺字形「%s」—— 按钮会显示成方块" % missing)
 
 	# ---- 点词条 → 开菜单 ----
 	_check(third.selected.get_connections().size() > 0, "词条的 selected 已接到 resume.gd")
