@@ -4,6 +4,10 @@
 [ext_resource type="Script" uid="uid://bd1of343hyfjf" path="res://scenes/day/interview/handbook.gd" id="1_i3lxf"]
 [ext_resource type="Texture2D" uid="uid://d2fxvvdx2licx" path="res://assets/art/interview/Handbook/handbook_slime_phd.png" id="2_lau0t"]
 [ext_resource type="Texture2D" uid="uid://dj3enpeabj3ja" path="res://assets/art/interview/Handbook/quit.png" id="3_spygj"]
+[ext_resource type="Texture2D" uid="uid://d0qcx87slluqn" path="res://assets/art/interview/Handbook/handbook_nextpg_phd.png" id="5_chs8u"]
+[ext_resource type="BitMap" uid="uid://bckdx83o03y5m" path="res://assets/art/interview/Handbook/handbook_nextpg_phd.tres" id="6_s4pqe"]
+[ext_resource type="Texture2D" uid="uid://cfxargkx8jd6p" path="res://assets/art/interview/Handbook/handbook_lastpg_phd.png" id="7_wx0wo"]
+[ext_resource type="BitMap" uid="uid://cvxqxpkg43oog" path="res://assets/art/interview/Handbook/handbook_lastpg_phd.tres" id="8_foxst"]
 
 [node name="Handbook" type="Control" unique_id=2016442786]
 layout_mode = 3
@@ -36,4 +40,20 @@ offset_bottom = 272.0
 scale = Vector2(0.48, 0.48)
 texture_normal = ExtResource("3_spygj")
 
+[node name="nextpage" type="TextureButton" parent="." unique_id=1130353836]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+texture_normal = ExtResource("5_chs8u")
+texture_click_mask = ExtResource("6_s4pqe")
+
+[node name="lastpage" type="TextureButton" parent="." unique_id=533819768]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+texture_normal = ExtResource("7_wx0wo")
+texture_click_mask = ExtResource("8_foxst")
+
 [connection signal="pressed" from="quit" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="nextpage" to="." method="_on_nextpage_pressed"]
+[connection signal="pressed" from="lastpage" to="." method="_on_lastpage_pressed"]

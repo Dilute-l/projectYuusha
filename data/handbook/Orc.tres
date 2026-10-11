@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HandbookEntry" format=3 uid="uid://w4u5ssmi0u4g"]
+
+[ext_resource type="Script" uid="uid://by0tcgfmhfwsq" path="res://scripts/resources/handbook_entry.gd" id="1_sufcl"]
+
+[resource]
+script = ExtResource("1_sufcl")
+id = &"orc"
+category = &"monster"
+title = "兽人"
+body = "1.啊好像，好像有兽人来袭
+2.经典模组兽人与饼
+3.不是那个毛茸茸兽人"
+unlock_condition = "day>=3"
+metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

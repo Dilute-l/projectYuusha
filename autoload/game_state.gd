@@ -142,6 +142,9 @@ func advance_day() -> bool:
 	battle_report = null
 	# 换天即换名单：新的一天出场哪几个人由 data/days/day_XX.tres 决定
 	load_day_candidates(run_state.day)
+	# 换天 = 解锁条件可能变了：把新满足的条目登记进手册账本。
+	# 登记顺序就是手册页序，所以新解锁的会排到最后一页（见 record_handbook_unlocks）。
+	record_handbook_unlocks()
 	EventBus.day_started.emit(run_state.day)
 	EventBus.day_phase_changed.emit(DayPhase.Phase.DAY_BRIEFING)
 	return true
@@ -289,6 +292,48 @@ func unlock_handbook_entry(entry_id: StringName) -> bool:
 
 func is_handbook_unlocked(entry_id: StringName) -> bool:
 	return run_state.handbook_unlocked.has(entry_id)
+
+
+## 解锁账本，**有序**：谁先变得可见谁排前面。
+## 手册按这个顺序组页，所以「新解锁的排在最后一页」是账本顺序的直接结果。
+func get_handbook_unlock_order() -> Array[StringName]:
+	return run_state.handbook_unlocked
+
+
+## 把「解锁条件已经满足、但还没登记」的条目补进账本。幂等。
+##
+## 这是「排期」到「既成事实」的落地动作 —— 一旦登记就不再反悔：
+## 条件日后变假了，玩家已经看过的东西也不该从手册里消失。
+##
+## 一次有多条同时满足时（读旧存档、直接跳天），按**条件最早哪天成立**排，
+## 再拿 id 兜底保证可复现 —— 只按 id 排会让新解锁的条目插到老条目前面。
+func record_handbook_unlocks() -> void:
+	var fresh: Array[StringName] = []
+	var conditions: Dictionary = {}
+	for resource in DataDB.get_all(&"handbook"):
+		var entry := resource as HandbookEntry
+		if entry == null or is_handbook_unlocked(entry.id):
+			continue
+		if not UnlockSchedule.is_satisfied(
+			entry.unlock_condition, run_state.day, get_total_score(), get_roster().size()
+		):
+			continue
+		fresh.append(entry.id)
+		conditions[entry.id] = entry.unlock_condition
+
+	if fresh.is_empty():
+		return
+	var day := run_state.day
+	var total_score := get_total_score()
+	var hired_count := get_roster().size()
+	fresh.sort_custom(func(a: StringName, b: StringName) -> bool:
+		var day_a := UnlockSchedule.first_satisfied_day(conditions[a], day, total_score, hired_count)
+		var day_b := UnlockSchedule.first_satisfied_day(conditions[b], day, total_score, hired_count)
+		if day_a != day_b:
+			return day_a < day_b
+		return String(a) < String(b))
+	for entry_id in fresh:
+		unlock_handbook_entry(entry_id)
 
 # ---------------------------------------------------------------------------
 # 当日候选人 / 当前队伍（本日过程量，不入存档）

@@ -3,13 +3,13 @@ extends Control
 
 ## 手册浮层（ARCHITECTURE.md §4 / §10.4）：玩家判断简历真伪的常识依据。
 ##
-## 只做三件事：**显示某一条目**、**关闭**、**开着的时候把别处的输入挡掉**。
-## 规则一条都不在这里 —— 能不能查、解锁没解锁，由上层（interview.gd / GameState）决定。
+## 做四件事：**组装可翻阅的条目列表**、**翻页**、**显示当前页**、**开着时把别处的输入挡掉**。
 ##
-## 数据来源：
-##   条目 → DataDB.get_handbook_entry(id)（data/handbook/*.tres）
-##   图标 → assets/art/interview/Handbook/handbook_<id>_phd.png
-##   正文 → HandbookEntry.body（BBCode），直接铺进 RichTextLabel
+## ⚠️ 本控件不持有真身，只持有一份**视图快照**：
+##   条目数据 → DataDB（data/handbook/*.tres）
+##   解锁状态 → GameState（handbook_unlocked / 天数 / 累计分 / 录用数）
+##   「谁该出现」的规则 → scripts/core/flow/unlock_schedule.gd（§0：规则不在表现层）
+##   所以列表是**每次 open_entry() 现算**的，解锁了新条目下次打开就能翻到。
 
 ## 图标目录。路径集中在这里，以后挪目录只改这一行。
 const ICON_DIR := "res://assets/art/interview/Handbook/"
@@ -22,18 +22,25 @@ const ICON_DIR := "res://assets/art/interview/Handbook/"
 ## 想换字体只改这一行；更好的做法是把 Silver 设成项目默认字体
 ## （ProjectSettings: gui/theme/custom_font），那样所有中文 UI 一起好 —— 但那会
 ## 改变已有的文字宽度，得整体看一眼版面。
+##
+## 注：**字号与颜色不在这里** —— 它们是版面的组成部分，写在 handbook.tscn 的
+## Theme Overrides 上（代码里再覆盖一次会让 Inspector 的调整失效）。
 const CONTENT_FONT_PATH := "res://assets/fonts/Silver.ttf"
-
-## 正文颜色。**必须显式给** —— RichTextLabel 的 default_color 是纯白，
-## 而手册底板是一整张白图（实测像素就是 (1,1,1,1)），白字压白底等于没字。
-## 用深墨色，和简历纸上的文字（candidate.gd 的 NAME_COLOR）同一套观感。
-const CONTENT_INK_COLOR := Color(0.12, 0.10, 0.09, 1.0)
 
 ## 本界面关闭了。上层（interview.gd）据此恢复别的操作。
 signal closed()
 
 @onready var _icon: Sprite2D = get_node_or_null("HandbookIcon") as Sprite2D
 @onready var _content: RichTextLabel = get_node_or_null("HandbookContent") as RichTextLabel
+@onready var _next_page: TextureButton = get_node_or_null("nextpage") as TextureButton
+@onready var _last_page: TextureButton = get_node_or_null("lastpage") as TextureButton
+
+## 本次打开时可供翻阅的条目（视图快照，**顺序 = 解锁顺序**，新解锁的在最后）。
+## 真身是 DataDB（数据）+ GameState 的解锁账本（顺序），这里只是组装成「能翻的几页」。
+var _entries: Array[HandbookEntry] = []
+
+## 当前看到第几页（_entries 的下标）
+var _index: int = 0
 
 
 func _ready() -> void:
@@ -49,33 +56,28 @@ func _ready() -> void:
 	# bbcode_enabled 默认是 false —— 不打开的话标签会原样显示成一堆方括号。
 	if _content != null:
 		_content.bbcode_enabled = true
-		_apply_content_style()
+		_apply_content_font()
 
 	_install_input_blocker()
 	visible = false
 
 
-## 给正文挂上字体与颜色。
-##
-## 两样缺一不可，而且**都不能靠默认值**：
-##   字体 —— 引擎默认字体没有中文字形（实测 has_char("史") == false），中文一个字都画不出来；
-##   颜色 —— RichTextLabel 的 default_color 是**纯白**，而手册底板是整张白图，
-##           白字压白底等于什么都看不见。
-func _apply_content_style() -> void:
+## 给正文挂上带中文字形的字体（理由见 CONTENT_FONT_PATH）。
+## 字体缺失就报错、退回默认字体 —— 默认字体画不出中文，但至少不会崩。
+func _apply_content_font() -> void:
 	if _content == null:
 		return
 	if ResourceLoader.exists(CONTENT_FONT_PATH):
 		_content.add_theme_font_override("normal_font", load(CONTENT_FONT_PATH))
 	else:
 		push_error("[Handbook] 找不到正文字体：%s（退回默认字体，中文会画不出来）" % CONTENT_FONT_PATH)
-	_content.add_theme_color_override("default_color", CONTENT_INK_COLOR)
 
 
 ## 全屏「挡板」：本界面开着时，鼠标点到哪儿都穿不到下面的场景去。
 ##
 ## 为什么放在代码里而不是场景里：根节点原来是 0 尺寸，光靠它挡不住整屏；
 ## 挡板必须显式铺满并设成 STOP。加为**第一个**子节点 —— Godot 的命中测试从后往前，
-## 所以 quit 按钮仍然排在它之上、照常可点。
+## 所以 quit / 翻页按钮仍然排在它之上、照常可点。
 func _install_input_blocker() -> void:
 	if has_node("InputBlocker"):
 		return
@@ -96,14 +98,19 @@ func _install_input_blocker() -> void:
 # ---------------------------------------------------------------------------
 
 
-## 打开并显示某一条目。条目缺失会报错并返回 false（图标缺失只报错、仍然打开）。
+## 打开手册，并翻到 entry_id 那一页。
+## 该条目现在不可见（条件没满足）时退回第一页；一条可看的都没有就返回 false。
 func open_entry(entry_id: StringName) -> bool:
-	var entry := DataDB.get_handbook_entry(entry_id)
-	if entry == null:
-		push_error("[Handbook] data/handbook 里没有 id 为「%s」的条目" % entry_id)
+	_build_entries()
+	if _entries.is_empty():
+		push_warning("[Handbook] 现在没有任何可翻阅的条目（解锁条件都没满足？）")
 		return false
-	_apply_icon(entry_id)
-	_apply_body(entry.body)
+
+	var page := _find_page(entry_id)
+	if page < 0:
+		# 条目不存在、或者现在还没解锁 —— 不报错，安静地从第一页开始
+		page = 0
+	_show_page(page)
 	visible = true
 	return true
 
@@ -117,6 +124,85 @@ func close() -> void:
 
 func is_open() -> bool:
 	return visible
+
+
+## 当前这一页的条目（没有可看条目时为 null）。测试 / 调试用。
+func current_entry() -> HandbookEntry:
+	if _index < 0 or _index >= _entries.size():
+		return null
+	return _entries[_index]
+
+
+## 当前可翻阅的条目数（= 页数）
+func page_count() -> int:
+	return _entries.size()
+
+
+# ---------------------------------------------------------------------------
+# 组页
+# ---------------------------------------------------------------------------
+
+
+## 把「现在能看哪些条目」组装出来，**顺序就是解锁顺序**。
+##
+## 每次都重新算：条件看的是当天状态，玩家换了一天再打开就该多出条目。
+## 顺序取自 GameState 的解锁账本（有序）：新登记的 append 在末尾，
+## 于是**新解锁的条目排在最后一页** —— 这正是想要的翻阅手感。
+##
+## ⚠️「谁该出现」这条规则**不在这里** —— 它在 scripts/core/flow/unlock_schedule.gd，
+## 由 GameState.record_handbook_unlocks() 落地进账本；本控件只负责读账本、铺页面。
+func _build_entries() -> void:
+	# 先让账本落地：条件已满足但还没登记的条目补进去（幂等）
+	GameState.record_handbook_unlocks()
+
+	_entries.clear()
+	for entry_id in GameState.get_handbook_unlock_order():
+		var entry := DataDB.get_handbook_entry(entry_id)
+		if entry != null:
+			_entries.append(entry)
+
+
+func _find_page(entry_id: StringName) -> int:
+	for i in _entries.size():
+		if _entries[i].id == entry_id:
+			return i
+	return -1
+
+
+# ---------------------------------------------------------------------------
+# 翻页
+# ---------------------------------------------------------------------------
+
+
+## 翻开第 index 页（会自动夹进合法范围），并铺上图标与正文。
+func _show_page(index: int) -> void:
+	if _entries.is_empty():
+		return
+	_index = clampi(index, 0, _entries.size() - 1)
+	var entry := _entries[_index]
+	_apply_icon(entry.id)
+	_apply_body(entry.body)
+	_refresh_page_buttons()
+
+
+## 边界上把对应的按钮藏起来：第一页没有「上一页」，最后一页没有「下一页」。
+##
+## 藏起来的 Control 收不到鼠标输入，所以点击会落到下面的全屏挡板上 —— 不用额外处理。
+func _refresh_page_buttons() -> void:
+	if _last_page != null:
+		_last_page.visible = _index > 0
+	if _next_page != null:
+		_next_page.visible = _index < _entries.size() - 1
+
+
+func _on_nextpage_pressed() -> void:
+	if _index < _entries.size() - 1:
+		_show_page(_index + 1)
+
+
+func _on_lastpage_pressed() -> void:
+	if _index > 0:
+		_show_page(_index - 1)
 
 
 # ---------------------------------------------------------------------------
