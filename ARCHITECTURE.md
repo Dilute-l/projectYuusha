@@ -362,6 +362,12 @@ signal run_finished(ending_id: StringName)
 `data/handbook/` 的条目承担两件事：
 给出魔物弱点、同时给出**常识基线**（例如"初级剑士不可能单人讨伐食人魔"），让撒谎能被推理而不是靠猜。
 
+**翻页按钮的可点区域比图形大**（`handbook.gd` 的 `PAGE_HITBOX_SIDE`）：`nextpage` / `lastpage`
+两个 `TextureButton` 的 rect 都是整块 1152×648 画布（贴图就是整张图），判定完全由
+`texture_click_mask` 决定。美术切好的那张 mask 精确到笔画本身（next 65×52、last 66×39），
+鼠标偏几个像素就点不中，手感很差 —— 所以 `_ready()` 里把两张 mask 换成
+**贴下角的 200×200 正方形**：图形一个字没动，变的只有「能点到哪儿」。
+
 ### 6.4 相性与组队
 `synergy_calculator.gd` 读取 `TraitInteractionTable`，对队伍做两两配对：
 

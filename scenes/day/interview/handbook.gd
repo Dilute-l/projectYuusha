@@ -14,6 +14,15 @@ extends Control
 ## 图标目录。路径集中在这里，以后挪目录只改这一行。
 const ICON_DIR := "res://assets/art/interview/Handbook/"
 
+## 翻页按钮的**可点区域**：边长（画布坐标），两个按钮各贴一个下角。
+##
+## 为什么要在代码里给：美术切好的 texture_click_mask 精确到笔画本身
+## （next 65×52 @ (1016,547)、last 66×39 @ (75,555)），鼠标偏几个像素就点不中，手感很差。
+## 这里把判定换成 200×200 的正方形 —— **只换判定，不碰画面**：按钮仍是整块画布、
+## 贴图与显隐逻辑一个字没动，两个箭头也仍然落在各自的方块里。
+## 想调手感只改这一个数字。
+const PAGE_HITBOX_SIDE := 200
+
 ## 正文字体。
 ##
 ## ⚠️ 不设它的话正文**一个字都看不见** —— 引擎默认字体没有中文字形
@@ -59,6 +68,7 @@ func _ready() -> void:
 		_apply_content_font()
 
 	_install_input_blocker()
+	_install_page_hitboxes()
 	visible = false
 
 
@@ -91,6 +101,35 @@ func _install_input_blocker() -> void:
 	blocker.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(blocker)
 	move_child(blocker, 0)
+
+
+## 把两个翻页按钮的可点区域换成「贴下角的大正方形」（理由见 PAGE_HITBOX_SIDE）。
+##
+## 为什么是运行时生成而不是美术切一张方块 mask：mask 是 1152×648 的位图 .tres（120KB 文本），
+## 两张就得再进仓库两份死数据；而这里一行 create + set_bit_rect 就够，还能跟着画布尺寸走。
+##
+## ⚠️ 两个按钮的 rect 都是整块画布（贴图就是整张 1152×648），所以它们**完全重叠**：
+## 能不能点得中**只由 mask 决定**。换成两个对角方块之后它们才互不遮挡 ——
+## 这也是为什么方块必须贴角、不能都堆在中间。
+##
+## 场景（handbook.tscn）里仍然挂着美术切的那张 mask：它是**兜底** ——
+## 万一这段脚本没跑起来，判定退回旧的手感，总好过整块画布都能点。
+func _install_page_hitboxes() -> void:
+	var canvas := Vector2i(get_viewport_rect().size)
+	var side := mini(PAGE_HITBOX_SIDE, mini(canvas.x, canvas.y))
+	_install_square_hitbox(_next_page, canvas, Rect2i(canvas.x - side, canvas.y - side, side, side))
+	_install_square_hitbox(_last_page, canvas, Rect2i(0, canvas.y - side, side, side))
+
+
+## 给一个翻页按钮装上「只有 rect 那块正方形为真」的点击遮罩。
+## mask 的尺寸必须与贴图一致（TextureButton 的约定），所以整张按画布大小开。
+func _install_square_hitbox(button: TextureButton, canvas: Vector2i, rect: Rect2i) -> void:
+	if button == null:
+		return
+	var mask := BitMap.new()
+	mask.create(canvas)
+	mask.set_bit_rect(rect, true)
+	button.texture_click_mask = mask
 
 
 # ---------------------------------------------------------------------------
