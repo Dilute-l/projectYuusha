@@ -1,15 +1,22 @@
 [gd_scene format=3 uid="uid://1vjphav6dfo6"]
 
 [ext_resource type="Script" uid="uid://cybo2ov47trcl" path="res://scenes/credits/credits_room.gd" id="1_5c5tq"]
-[ext_resource type="Texture2D" uid="uid://063f0ibo1fpa" path="res://assets/art/Credit/CreditRoom_phder.jpg" id="2_qmx4p"]
+[ext_resource type="Texture2D" uid="uid://dkr8asosqkhus" path="res://assets/art/Credit/CreditRoom.png" id="2_pvhpk"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="3_lofe2"]
 [ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="4_j82at"]
 [ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="5_28yq1"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="6_28yq1"]
-[ext_resource type="Texture2D" uid="uid://dhdn7e77550ai" path="res://assets/art/Credit/GlaucusCompressed.jpg" id="6_nv12v"]
+[ext_resource type="Texture2D" uid="uid://caclqx5gkffm" path="res://assets/art/Credit/Glaucus.jpg" id="6_t3xfx"]
+[ext_resource type="Texture2D" uid="uid://joeymg4xf1b5" path="res://assets/art/Credit/Niko.jpg" id="7_prj0f"]
 [ext_resource type="Texture2D" uid="uid://0rhmt1nast4x" path="res://assets/art/Credit/WhyAreYouHere.png" id="8_5uiah"]
+[ext_resource type="Texture2D" uid="uid://doub0lpusskbk" path="res://assets/art/Credit/Dilute.jpg" id="8_cihqu"]
+[ext_resource type="Texture2D" uid="uid://dpjcdiutsmuna" path="res://assets/art/Credit/Nazuna.jpg" id="9_1nkmf"]
+[ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_nv12v"]
+[ext_resource type="Texture2D" uid="uid://cpykf64vwa6yi" path="res://assets/art/Credit/BlueWhiteAnimal.jpg" id="10_k1nnw"]
+[ext_resource type="Texture2D" uid="uid://cxll8kmo8ylmc" path="res://assets/art/Credit/red.png" id="10_t3xfx"]
+[ext_resource type="Texture2D" uid="uid://dt34bjkdhymi6" path="res://assets/art/Credit/Lines.png" id="12_qxjbb"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0erdm"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pvhpk"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_lofe2"]
 
@@ -25,27 +32,27 @@ script = ExtResource("1_5c5tq")
 [node name="CreditBackground" type="Sprite2D" parent="." unique_id=1032463924]
 position = Vector2(575.53125, 324.50003)
 scale = Vector2(0.50797105, 0.50784934)
-texture = ExtResource("2_qmx4p")
+texture = ExtResource("2_pvhpk")
 
-[node name="Button" type="Button" parent="." unique_id=2060295476]
+[node name="GetBack" type="Button" parent="." unique_id=2060295476]
 layout_mode = 0
-offset_left = 1047.0
-offset_top = 116.0
-offset_right = 1116.0
-offset_bottom = 170.0
+offset_left = 1042.0
+offset_top = 144.0
+offset_right = 1151.0
+offset_bottom = 198.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("3_lofe2")
 theme_override_font_sizes/font_size = 48
-theme_override_styles/normal = SubResource("StyleBoxEmpty_0erdm")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_pvhpk")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_lofe2")
 text = "返回"
 
 [node name="Sunflower" type="TextureButton" parent="." unique_id=39142167]
 layout_mode = 0
-offset_left = 9.999998
-offset_top = 389.00003
-offset_right = 84.0
-offset_bottom = 462.00003
+offset_left = 784.99994
+offset_top = 314.00003
+offset_right = 858.99994
+offset_bottom = 387.00003
 rotation = 0.038397245
 scale = Vector2(3.6, 3.6)
 texture_normal = ExtResource("4_j82at")
@@ -53,12 +60,61 @@ texture_click_mask = ExtResource("5_28yq1")
 
 [node name="Liuxu" type="TextureButton" parent="." unique_id=1738997261]
 layout_mode = 0
-offset_left = 335.00003
-offset_top = 144.0
-offset_right = 401.00003
-offset_bottom = 210.0
-scale = Vector2(3.6, 3.6)
-texture_normal = ExtResource("6_nv12v")
+offset_left = 182.0
+offset_top = 109.00001
+offset_right = 404.0
+offset_bottom = 331.0
+scale = Vector2(0.88, 0.88)
+texture_normal = ExtResource("6_t3xfx")
+
+[node name="NZ" type="TextureButton" parent="." unique_id=87086318]
+layout_mode = 0
+offset_left = 492.99997
+offset_top = 79.0
+offset_right = 1093.0
+offset_bottom = 679.0
+scale = Vector2(0.315, 0.315)
+texture_normal = ExtResource("7_prj0f")
+
+[node name="Dilute" type="TextureButton" parent="." unique_id=1184382941]
+layout_mode = 0
+offset_left = 780.00006
+offset_top = 48.0
+offset_right = 1420.0
+offset_bottom = 688.0
+scale = Vector2(0.315, 0.315)
+texture_normal = ExtResource("8_cihqu")
+
+[node name="M3" type="TextureButton" parent="." unique_id=1399242029]
+layout_mode = 0
+offset_left = 207.0
+offset_top = 384.0
+offset_right = 847.00006
+offset_bottom = 1024.0
+scale = Vector2(0.315, 0.315)
+texture_normal = ExtResource("9_1nkmf")
+
+[node name="red" type="Sprite2D" parent="." unique_id=1127460299]
+visible = false
+position = Vector2(315, 486.91)
+rotation = 0.08552113
+scale = Vector2(0.33984375, 0.35121095)
+texture = ExtResource("10_t3xfx")
+
+[node name="MasterD" type="TextureButton" parent="." unique_id=1682742691]
+layout_mode = 0
+offset_left = 494.0
+offset_top = 362.0
+offset_right = 1134.0
+offset_bottom = 1002.0
+scale = Vector2(0.315, 0.315)
+texture_normal = ExtResource("10_k1nnw")
+
+[node name="NailsAndLines" type="Sprite2D" parent="." unique_id=1083572789]
+position = Vector2(688.00006, 364.99997)
+rotation = -0.08726645
+scale = Vector2(0.65000004, 0.65000004)
+texture = ExtResource("12_qxjbb")
 
 [node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("6_28yq1")]
 visible = false
@@ -70,10 +126,17 @@ offset_bottom = -5.0
 
 [node name="bighead" type="Sprite2D" parent="." unique_id=979255608]
 visible = false
-position = Vector2(286, 246.00003)
+position = Vector2(781, 221)
 scale = Vector2(0.80849355, 0.83240026)
 texture = ExtResource("8_5uiah")
 
-[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
+[node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("9_nv12v")]
+layout_mode = 0
+
+[connection signal="pressed" from="GetBack" to="." method="_on_button_pressed"]
 [connection signal="pressed" from="Sunflower" to="." method="_on_sunflower_pressed"]
 [connection signal="pressed" from="Liuxu" to="." method="_on_liuxu_pressed"]
+[connection signal="pressed" from="NZ" to="." method="_on_nz_pressed"]
+[connection signal="pressed" from="Dilute" to="." method="_on_dilute_pressed"]
+[connection signal="pressed" from="M3" to="." method="_on_m_3_pressed"]
+[connection signal="pressed" from="MasterD" to="." method="_on_master_d_pressed"]

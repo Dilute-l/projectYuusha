@@ -1,18 +1,28 @@
 extends Control
 
 const TITLE_SFX_PATH: String = "res://assets/sound/suspicious.wav"
+const M_PATH: String = "res://assets/sound/romance.wav"
 
 ## 大脸（bighead）淡入 / 停留 / 淡出的时长（秒）
 const BIGHEAD_FADE_IN: float = 0.25
 const BIGHEAD_HOLD: float = 1.4
 const BIGHEAD_FADE_OUT: float = 0.35
 
+## 点 M3 时「red」缓慢显现用的时长（秒）
+const RED_FADE_IN: float = 1.5
+
 ## 正在播的那条 bighead 淡入淡出 Tween（重新点向日葵时先把上一条掐掉）
 var _bighead_tween: Tween = null
 
+## 正在播的那条 red 淡入 Tween（反复点 M3 时先把上一条掐掉）
+var _red_tween: Tween = null
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
+	##var red := get_node_or_null("red") as Sprite2D
+	##if red != null:
+	##	red.modulate.a = 0.0
+	pass
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -66,5 +76,62 @@ func _on_liuxu_pressed() -> void:
 		push_error("[MainMenu] 找不到 Dialoguer")
 		return
 	if not dialoguer.typer.load_dialogue("Liuxu"):
+		return
+	dialoguer.play()
+
+
+func _on_nz_pressed() -> void:
+	var win := get_window()
+	if win != null:
+		win.gui_release_focus()
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("NZ"):
+		return
+	dialoguer.play()
+
+
+func _on_dilute_pressed() -> void:
+	var win := get_window()
+	if win != null:
+		win.gui_release_focus()
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("Dilute"):
+		return
+	dialoguer.play()
+
+
+func _on_m_3_pressed() -> void:
+	AudioService.play_sfx(M_PATH)
+	# 点 M3 → bighead 闪一下 + red 缓慢显现。
+	# red 初始在场景里是可见的，_ready() 把它的 alpha 归 0（见那里）。
+	var red := get_node_or_null("red") as Sprite2D
+	if red != null:
+		_flash_red(red)
+
+
+func _flash_red(red: Sprite2D) -> void:
+	if _red_tween != null and _red_tween.is_valid():
+		_red_tween.kill()
+	red.visible = true
+	red.modulate.a = 0.0
+	_red_tween = create_tween()
+	_red_tween.tween_property(red, "modulate:a", 1.0, BIGHEAD_FADE_IN)
+
+
+func _on_master_d_pressed() -> void:
+	var win := get_window()
+	if win != null:
+		win.gui_release_focus()
+	var dialoguer = get_node_or_null("Dialoguer")
+	if dialoguer == null:
+		push_error("[MainMenu] 找不到 Dialoguer")
+		return
+	if not dialoguer.typer.load_dialogue("Midu"):
 		return
 	dialoguer.play()
