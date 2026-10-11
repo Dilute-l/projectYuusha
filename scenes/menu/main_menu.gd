@@ -32,6 +32,12 @@ func _on_startgame_pressed() -> void:
 	SceneRouter.goto_scene(&"day_loop")
 
 
+## 退出按钮。
+##
+## 退出是破坏性操作，所以要点两次：第一下弹提醒对话，第二下才真的退出。
+## 这段提醒用**穿透模式**（play(true)）：对话不会被左键吃掉，玩家仍然可以
+## 正常操作界面 —— 包括「再点一下退出按钮」这一下，它会一边把对话推完、
+## 一边照常触发按钮（同时也支持去点别的按钮，比如反悔点「新游戏」）。
 func _on_exitgame_pressed() -> void:
 	if _exit_confirming:
 		SceneRouter.quit_game()
@@ -43,7 +49,7 @@ func _on_exitgame_pressed() -> void:
 		return
 	if not dialoguer.typer.load_dialogue("test1"):
 		return
-	dialoguer.play()
+	dialoguer.play(true)
 
 
 func _on_exitgame_mouse_exited() -> void:

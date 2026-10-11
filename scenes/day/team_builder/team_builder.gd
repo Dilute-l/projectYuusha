@@ -253,8 +253,10 @@ func hired_ids() -> Array[StringName]:
 ##   队伍**没满**   → 先播 team_not_full 提醒，**再点一次**才出发（同主菜单退出按钮）
 ##   当天没有名额数据 → 也直接出发（数据没填是开发期问题，不该变成玩家的疑问）
 ##
-## 注意「没满」那条第二下的实际路径：提醒对话开着时，Dialoguer 会吃掉左键（dialoguer.gd 的 _input），
-## 所以玩家得先把这段对话点完收起来，那一下才会真的落到按钮上 —— 主菜单的退出按钮同理。
+## 「没满」那段提醒用**穿透模式**（play(true)，见 dialoguer.gd）：对话不吃左键，
+## 所以第二次点「组队完成」时，同一次点击既把提醒推完、也照常落到按钮上 ——
+## 不用先点空处把对话收掉再点按钮。超员那段则保持默认的阻挡模式：
+## 它是硬拦，提醒期间不该顺手点到别处。
 func _on_confirm_pressed() -> void:
 	var slots := _today_slots()
 	var team := GameState.get_current_team()
@@ -277,7 +279,7 @@ func _on_confirm_pressed() -> void:
 		return
 
 	_confirming_incomplete = true
-	if not _play_dialogue("team_not_full"):
+	if not _play_dialogue("team_not_full", true):
 		# 提醒文案缺失 / 没有对话框 —— 不能因此把玩家卡在这里
 		push_warning("[TeamBuilder] team_not_full 播不出来，直接出发")
 		_depart()
@@ -301,11 +303,12 @@ func _cancel_incomplete_confirm() -> void:
 
 
 ## 播一段对话。找不到 Dialoguer、或那段 id 不存在，都返回 false 让调用方决定怎么兜。
-func _play_dialogue(id: String) -> bool:
+## pass_through 原样转给 Dialoguer.play()：true = 对话不吃左键（见 dialoguer.gd）。
+func _play_dialogue(id: String, pass_through: bool = false) -> bool:
 	if _dialoguer == null:
 		push_error("[TeamBuilder] 找不到 Dialoguer")
 		return false
 	if not _dialoguer.typer.load_dialogue(id):
 		return false
-	_dialoguer.play()
+	_dialoguer.play(pass_through)
 	return true

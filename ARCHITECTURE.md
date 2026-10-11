@@ -972,6 +972,32 @@ if TeamValidator.is_over(team, slots):   # size > slots，刚好满不算
 > 名额为 0 = 「没有名额限制」，所以那 5 天既不会锁人、也不会触发超员拦截。
 > 要按设计走，得把那 5 天的 `slots` 补上。
 
+### 12.9 提醒对话的穿透模式（`Dialoguer.play(pass_through)`）
+
+对话框默认**吃掉左键**（`dialoguer.gd` 的 `_input` 里 `set_input_as_handled()`）：对话开着时
+点哪儿都只是把对话往下推，底下的按钮收不到 —— 这是「先看完这段话再说」的场合要的。
+
+但有两种提醒恰恰相反：**它只是一句话，界面该照用**。
+
+| 场合 | 调用 | 为什么要穿透 |
+| --- | --- | --- |
+| 主菜单「退出」确认（`main_menu.gd._on_exitgame_pressed`） | `dialoguer.play(true)` | 第二下点退出按钮时，同一次点击既把提醒推完、也照常触发按钮；玩家也可以直接改点「新游戏」反悔 |
+| 队伍没满时的「确定要走吗」（`team_builder.gd._on_confirm_pressed`） | `_play_dialogue("team_not_full", true)` | 第二次点「组队完成」不必先点空处把对话收掉，那一下直接落到按钮上并出发 |
+
+```gdscript
+func play(pass_through: bool = false) -> void:
+	_pass_through = pass_through          # 只对本次播放有效
+	visible = true
+	typer.start_dialogue()
+```
+
+- 实现上只是**不再**调 `set_input_as_handled()`。`_input` 本来就在 GUI 输入**之前**被调用，
+  所以穿透时顺序是「先推进对话 → 按钮的 `pressed` 随后发」，同一次点击两边都响应。
+- 模式是**每次调用现选**的，不写死在场景上：同一份 `dialoguer.tscn`，追问 / 阶段对话 / 提示板
+  仍旧走默认的阻挡模式，一个字都不用改。
+- **超员那条（`team_over`）故意不穿透**：它是硬拦（§12.8），提醒期间不该顺手点到别处。
+- 播完 / 通话结束时 `_pass_through` 复位为 false，下次 `play()` 忘传参数也不会残留穿透。
+
 ### 12.4 圆形头像是怎么拼的
 
 立绘不是一整张图，而是「身体 + 眼睛 / 头发 / 嘴巴」或「身体 + 帽子」按同一个 300×300 的画布坐标
