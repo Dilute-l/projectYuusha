@@ -88,11 +88,21 @@ const DEFAULT_SILENT_CHARS: String = SILENT_WHITESPACE + SILENT_PUNCTUATION + SI
 ## 进入树后自动开始播放（便于单独 F6 运行本场景调试）
 @export var autostart: bool = false
 
-## 默认字体：assets/fonts/Silver.ttf。typer 会在 _ready 时把它设为正文默认字体。
-const DEFAULT_FONT_PATH: String = "res://assets/fonts/Silver.ttf"
+## 默认字体：assets/fonts/youaimoshouheiti-bold.ttf。typer 会在 _ready 时把它设为正文默认字体。
+##
+## 为什么换掉 Silver.ttf：Silver 缺字（实测 1031 个常用汉字里缺「獭」「刘」「舰」等），
+## 而对话里真的会用到 —— 例如 Midu 那段就专门在讲「这个字体里面没有獭这个字」。
+## youaimoshouheiti-bold 实测覆盖 1031 / 1031（100%），是能满足正文的 CJK 字体。
+const DEFAULT_FONT_PATH: String = "res://assets/fonts/youaimoshouheiti-bold.ttf"
 
-## 默认字号。Godot 默认是 16，这里放大到 40 作为对话正文的默认大小。
-const DEFAULT_FONT_SIZE: int = 40
+## 默认字号。
+##
+## 必须是**重绘后对话框实际用的字号**：typer 会在 _ready() 里用它覆盖 Label 上的
+## theme_override_font_sizes（见 apply_default_font()），所以这里不跟着改，
+## 场景里设的字号就是白设 —— 运行期会被这一行顶掉。
+## 重绘底板时把 dialoguer.tscn 的正文设成了 36，这里同步成 36，否则实际是 40、
+## 比设计的更大，长句子会超出底板被截断（Label 的溢出是静默的）。
+const DEFAULT_FONT_SIZE: int = 36
 
 ## 默认字体路径。留空 = 不动现有字体
 @export_file("*.ttf", "*.otf") var default_font_path: String = DEFAULT_FONT_PATH
