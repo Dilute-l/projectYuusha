@@ -13,32 +13,44 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_ui")
 
-[node name="Header" type="Label" parent="."]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 306.0
-offset_right = 424.0
-offset_bottom = 332.0
+[node name="Roster" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.97, 0.95, 0.88, 1)
-theme_override_font_sizes/font_size = 16
-text = "HIRED 0"
-
-[node name="Roster" type="GridContainer" parent="."]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 344.0
-offset_right = 424.0
-offset_bottom = 500.0
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 12
-columns = 3
 
 [node name="CandidateEntry1" parent="Roster" instance=ExtResource("2_entry")]
-layout_mode = 2
+layout_mode = 0
+offset_left = 116.0
+offset_top = 28.0
+offset_right = 276.0
+offset_bottom = 188.0
 
 [node name="CandidateEntry2" parent="Roster" instance=ExtResource("2_entry")]
-layout_mode = 2
+visible = false
+layout_mode = 0
+offset_left = 116.0
+offset_top = 204.0
+offset_right = 276.0
+offset_bottom = 364.0
 
 [node name="CandidateEntry3" parent="Roster" instance=ExtResource("2_entry")]
-layout_mode = 2
+visible = false
+layout_mode = 0
+offset_left = 116.0
+offset_top = 380.0
+offset_right = 276.0
+offset_bottom = 540.0
+
+[node name="Slots" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 0
+offset_left = 988.0
+offset_top = 586.0
+offset_right = 1128.0
+offset_bottom = 646.0
+mouse_filter = 2

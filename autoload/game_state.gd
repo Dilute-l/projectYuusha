@@ -17,6 +17,12 @@ var current_candidates: Array[CandidateResource] = []
 ## 当前队伍（组队阶段挑满名额）
 var current_team: Array[StringName] = []
 
+## 本日**被否掉**的人（组队界面上按了「不进队」的那几位）。
+##
+## 和 current_team 是一对：进队 / 不进队**互斥**，由 team_builder.gd 保证。
+## 也是本日过程量，不入存档（§2）—— 读档后按种子重放即可得到。
+var rejected_ids: Array[StringName] = []
+
 ## 本日通过者（面试阶段累计，组队阶段的候选池）
 var passed_ids: Array[StringName] = []
 
@@ -60,6 +66,7 @@ func start_new_run(seed_value: int = 0) -> RunState:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	rejected_ids = []
 	asked_entries = {}
 	battle_report = null
 	# 当日出场名单来自 data/days/day_XX.tres（§6.1「候选人出场（写死）」）
@@ -78,6 +85,7 @@ func apply_run_state(state: RunState) -> void:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	rejected_ids = []
 	asked_entries = {}
 	battle_report = null
 	# 当日名单不进存档（§7：只存运行时状态），按存档里的天数重新从 data/days/ 取
@@ -91,6 +99,7 @@ func clear_run() -> void:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	rejected_ids = []
 	asked_entries = {}
 	battle_report = null
 
@@ -138,6 +147,7 @@ func advance_day() -> bool:
 	current_candidates = []
 	current_team = []
 	passed_ids = []
+	rejected_ids = []
 	asked_entries = {}
 	battle_report = null
 	# 换天即换名单：新的一天出场哪几个人由 data/days/day_XX.tres 决定
@@ -389,6 +399,19 @@ func set_current_team(member_ids: Array[StringName]) -> void:
 func get_current_team() -> Array[StringName]:
 	var copy: Array[StringName] = []
 	copy.assign(current_team)
+	return copy
+
+
+## 本日被否掉的人（组队界面上按了「不进队」的那几位）
+func set_rejected_ids(ids: Array[StringName]) -> void:
+	var copy: Array[StringName] = []
+	copy.assign(ids)
+	rejected_ids = copy
+
+
+func get_rejected_ids() -> Array[StringName]:
+	var copy: Array[StringName] = []
+	copy.assign(rejected_ids)
 	return copy
 
 # ---------------------------------------------------------------------------

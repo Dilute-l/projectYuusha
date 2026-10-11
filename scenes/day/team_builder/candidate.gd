@@ -1,74 +1,75 @@
 class_name CandidateEntry
 extends Control
 
-## 组队界面左侧的一条「候选人头像」（ARCHITECTURE.md §4 team_builder 一节、§12）。
+## 组队界面左侧的一条「候选人头像框」（ARCHITECTURE.md §12.2）。
 ##
-## 一条 = 圆形头像（**简单黑色纯色圆边框** + 圆形裁切的拼装立绘）+ 底下那一行名字。
-## 它只管三件事：自己长什么样、鼠标记不记得住、左键点没点。其余交给上层：
+## 一条 = 一个方头像框（`FramedAvatar`：底板 + **裁切过的**整身立绘 + 方框）
+##        + 两个**藏在他身后**的按钮：
 ##
-##   hovered(entry)   鼠标移上来 → team_builder.gd 把这位的简历铺到右半边
-##   toggled(entry)   左键点一下 → 上层在「已录用」名单里加上 / 去掉这一位（再点一次撤销）
+##     ApproveButton ── 进队；展开时从「被头像挡住」的位置向**右**滑出来
+##     RejectButton  ── 不进队；展开时向**左**滑出来
 ##
-## ⚠️ 本控件不写 GameState、也不认识简历控件：表现层只做显示与输入（§0 的核心纪律）。
-## ⚠️ 头像的像素来自 PortraitComposer（和面试立绘同一套部件图），名字来自数据
-##   `CandidateResource.display_name` —— 本文件里没有一句候选人相关的文案。
+## ⚠️ 两个按钮排在头像**之前**（CanvasItem 按树序绘制），所以收起来的时候是真的
+##   被头像压住，而不是靠调 alpha 淡出 —— 「从底下滑出来」这件事靠的就是这个顺序，
+##   别把 Avatar 挪到按钮前面。
+##
+## ⚠️ 本控件不写 GameState、也不认识简历控件：左键点头像只报「点了谁」，
+##   进队 / 不进队由上层（team_builder.gd）落状态，再把底色推回来（§0）。
 
-## 鼠标移上本条。参数是**自己**，让上层不必再去反查是哪一条。
-signal hovered(entry: CandidateEntry)
+## 左键点了头像本身（展开 / 收起两个按钮由上层决定谁展开）
+signal selected(entry: CandidateEntry)
 
-## 左键点了本条（录用 ↔ 撤销由上层决定）。
-signal toggled(entry: CandidateEntry)
+## 点了「进队」
+signal approved(entry: CandidateEntry)
 
-## 圆头像直径（像素）。外圈黑边框画在这个直径之内。
-const AVATAR_SIZE := 112
+## 点了「不进队」
+signal rejected(entry: CandidateEntry)
 
-## 黑色纯色圆边框的线宽
-const RING_WIDTH := 3.0
+## 头像框渲染边长（像素）。头像框是正方形，三层美术按 `AvatarFrame` 的换算一起缩放。
+const AVATAR_SIZE := 160
 
-## 已录用的外圈：画在黑边框外面，留一圈空隙（不破坏「黑边框」本身的观感）
-const HIRED_RING_GAP := 4.0
+## 两个按钮渲染出来的**宽度**（高度按美术自己的宽高比跟着算，见 AvatarFrame.size_for_width）
+const BUTTON_WIDTH := 96.0
 
-## 边框颜色：**纯黑**（要求就是「简单黑色纯色圆形边框」，别改成带透明度的灰）
-const RING_COLOR := Color(0, 0, 0, 1)
+## 按钮滑出来之后，仍然压在头像框底下的那一段（像素）。
+## 留一点重叠才有「从框底下滑出来」的感觉；留成 0 就是凭空贴上去。
+const BUTTON_OVERLAP := 14.0
 
-## 已录用的标记色（外圈 + 名字）
-const HIRED_COLOR := Color(0.76, 0.53, 0.13, 1)
+## 滑出 / 收回的时长（秒）
+const SLIDE_TIME := 0.16
 
-## 头像底衬：立绘是白底黑描边的纸片人套色，垫一层浅色底才在夜晚色调下站得住
-const BACKDROP_COLOR := Color(0.93, 0.91, 0.85, 0.9)
-const BACKDROP_HOVER_COLOR := Color(1.0, 0.99, 0.94, 1.0)
-
-## 名字颜色（未录用 / 已录用）
-const NAME_COLOR := Color(0.12, 0.1, 0.09, 1)
-const NAME_HIRED_COLOR := Color(0.99, 0.85, 0.5, 1)
-
-## 锁住时的整体压暗（modulate 是**乘**上去的，所以看起来是"褪色 + 变暗"）。
-## 用 modulate 而不是逐处改颜色：一处生效、头像和名字一起变暗，也不用动 _draw()。
-const LOCKED_MODULATE := Color(0.52, 0.52, 0.58, 0.8)
-
-## 本条目对应的候选人（null = 空条目，什么也不画）
+## 本条目对应的候选人（null = 空位，什么都不画）
 var candidate: CandidateResource = null
 
-## 是否已被标记为录用（标记的**真身**在 GameState.current_team，这里只是显示状态）
-var hired: bool = false
+## 当前判定：还没决定 / 进队（绿）/ 不进队（红）。**只是显示状态**，
+## 真身在 GameState（进队 = current_team，不进队 = rejected_ids），由上层同步下来。
+var decision: FramedAvatar.Tint = FramedAvatar.Tint.NONE
 
-## 是否「现在点不了」（名额已满、且本条又还没被选中）。
-## 判定不是这里做的：上层用 TeamValidator 算完传进来（§0：表现层不写规则）。
-var locked: bool = false
+## 两个按钮有没有滑出来
+var _expanded: bool = false
 
-## 鼠标是否停在本条目上
-var _hovered: bool = false
+## 名额满了没有。满了就把「进队」按钮置灰（「不进队」照旧可点）——
+## 判定是规则，由上层用 TeamValidator 算完传进来（§0）。
+var _team_full: bool = false
 
-@onready var _avatar: TextureRect = $Avatar
-@onready var _name_label: Label = $NameLabel
+## 正在跑的那次滑动。换向时先把上一次杀掉，否则两个 tween 会互相打架
+var _tween: Tween = null
+
+@onready var _avatar: FramedAvatar = $Avatar
+@onready var _approve: TextureButton = $ApproveButton
+@onready var _reject: TextureButton = $RejectButton
 
 
 func _ready() -> void:
-	if not mouse_entered.is_connected(_on_mouse_entered):
-		mouse_entered.connect(_on_mouse_entered)
-	if not mouse_exited.is_connected(_on_mouse_exited):
-		mouse_exited.connect(_on_mouse_exited)
-	_refresh()
+	_setup_buttons()
+	custom_minimum_size = Vector2(AVATAR_SIZE, AVATAR_SIZE)
+	size = custom_minimum_size
+	_avatar.set_pixel_size(AVATAR_SIZE)
+	if not _approve.pressed.is_connected(_on_approve_pressed):
+		_approve.pressed.connect(_on_approve_pressed)
+	if not _reject.pressed.is_connected(_on_reject_pressed):
+		_reject.pressed.connect(_on_reject_pressed)
+	_place_buttons(_collapsed_positions(), false)
 
 
 # ---------------------------------------------------------------------------
@@ -76,70 +77,74 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 
-## 铺一位候选人：头像按 portrait_* 配方拼圆、名字取 display_name。传 null 清空。
+## 铺一位候选人：整身立绘给头像框（不居中、不缩放，超出的部分由取景窗切掉）。
+## 传 null = 空位，只留底板和方框。
 func set_candidate(value: CandidateResource) -> void:
 	candidate = value
-	_refresh()
+	_avatar.set_candidate(value)
 
 
-## 显示层标记「已录用 / 已撤销」。**不写 GameState**（真身在 current_team，由上层同步下来）。
-func set_hired(value: bool) -> void:
-	if hired == value:
+## 换判定：进队绿 / 不进队红 / 还没决定原色。**不写 GameState**。
+func set_decision(value: FramedAvatar.Tint) -> void:
+	decision = value
+	_avatar.set_tint(value)
+	_refresh_approve_enabled()
+
+
+## 名额满了没有（上层用 TeamValidator 判定后传进来）
+func set_team_full(full: bool) -> void:
+	if _team_full == full:
 		return
-	hired = value
-	_refresh_name()
-	queue_redraw()
+	_team_full = full
+	_refresh_approve_enabled()
 
 
-func is_hired() -> bool:
-	return hired
-
-
-## 显示层标记「现在点不了」。**不写 GameState**，也不改变 hired。
-##
-## 锁住时：整块压暗 + 左键不再发 toggled。悬停**照旧有效** ——
-## 玩家还得能把这一位的简历翻出来看，才谈得上决定换谁。
-func set_locked(value: bool) -> void:
-	if locked == value:
+## 展开 / 收起两个按钮（带滑动）。判定过的条目再点一次就能重新展开改主意。
+func set_expanded(value: bool) -> void:
+	if _expanded == value:
 		return
-	locked = value
-	modulate = LOCKED_MODULATE if locked else Color(1, 1, 1, 1)
+	_expanded = value
+	_place_buttons(_expanded_positions() if _expanded else _collapsed_positions(), true)
 
 
-func is_locked() -> bool:
-	return locked
+func is_expanded() -> bool:
+	return _expanded
 
 
-## 当前头像贴图（没有候选人时为 null）。测试与调试用。
-func avatar_texture() -> Texture2D:
-	return _avatar.texture if _avatar != null else null
+func is_approved() -> bool:
+	return decision == FramedAvatar.Tint.APPROVED
+
+
+func is_rejected() -> bool:
+	return decision == FramedAvatar.Tint.REJECTED
 
 
 # ---------------------------------------------------------------------------
-# 刷新
+# 查询（上层与自检用）
 # ---------------------------------------------------------------------------
 
 
-func _refresh() -> void:
-	_refresh_avatar()
-	_refresh_name()
-	queue_redraw()
+## 头像框控件本身（要看底色 / 取景窗 / 立绘就找它）
+func framed_avatar() -> FramedAvatar:
+	return _avatar
 
 
-func _refresh_avatar() -> void:
-	if _avatar == null:
-		return
-	# 头像 = 拼装立绘 + 圆形裁切，size 就是圆的直径
-	_avatar.texture = PortraitComposer.avatar_texture(candidate, AVATAR_SIZE)
+func approve_button() -> TextureButton:
+	return _approve
 
 
-func _refresh_name() -> void:
-	if _name_label == null:
-		return
-	_name_label.text = "" if candidate == null else candidate.display_name
-	_name_label.add_theme_color_override(
-		"font_color", NAME_HIRED_COLOR if hired else NAME_COLOR
-	)
+func reject_button() -> TextureButton:
+	return _reject
+
+
+## 按钮「滑出来」之后应该在的位置（上层与自检拿来比对动画终点）
+func expanded_positions() -> Dictionary:
+	return _expanded_positions()
+
+
+## 按钮「收进头像底下」时的位置
+func collapsed_positions() -> Dictionary:
+	return _collapsed_positions()
 
 
 # ---------------------------------------------------------------------------
@@ -147,56 +152,103 @@ func _refresh_name() -> void:
 # ---------------------------------------------------------------------------
 
 
-## 左键点一下 = 标记录用 / 再点一下撤销。
-## 只认左键：右键、滚轮一概不响应（否则误触会把人选上又撤掉）。
+## 左键点头像本身 = 展开 / 收起两个按钮。只认左键（右键、滚轮一律不响应）。
 ##
-## 锁住时直接不给出去：规则层（TeamValidator）也会拦住同一次点击，
-## 但"点不动"应该在这儿就表达出来，而不是让玩家点了没反应。
+## 按钮是子控件，点它们不会走到这里 —— 这里收到的只可能是头像那一块。
 func _gui_input(event: InputEvent) -> void:
-	if locked:
-		return
 	if event is InputEventMouseButton:
 		var button := event as InputEventMouseButton
 		if button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
 			accept_event()
-			toggled.emit(self)
+			selected.emit(self)
 
 
-func _on_mouse_entered() -> void:
-	_hovered = true
-	queue_redraw()
-	hovered.emit(self)
+func _on_approve_pressed() -> void:
+	approved.emit(self)
 
 
-func _on_mouse_exited() -> void:
-	_hovered = false
-	queue_redraw()
+func _on_reject_pressed() -> void:
+	rejected.emit(self)
 
 
 # ---------------------------------------------------------------------------
-# 画：底衬 + 圆边框（+ 已录用外圈）
+# 按钮：贴图 / 位置 / 滑动
 # ---------------------------------------------------------------------------
 
 
-## 头像所占的矩形。布局还没跑过时退回常量，保证第一帧就画得出来。
-func _avatar_rect() -> Rect2:
-	if _avatar != null and _avatar.size.x > 0.0 and _avatar.size.y > 0.0:
-		return Rect2(_avatar.position, _avatar.size)
-	return Rect2(
-		Vector2(size.x * 0.5 - AVATAR_SIZE * 0.5, 0.0),
-		Vector2(AVATAR_SIZE, AVATAR_SIZE)
-	)
+## 按钮贴图从 `AvatarFrame` 来：整张 300x300 里**真的有画**的那一块裁出来
+## （透明留白不裁掉的话，按钮会带着一圈空白，既摆不准也点不到）。
+func _setup_buttons() -> void:
+	var button_size := AvatarFrame.size_for_width(AvatarFrame.APPROVE_ART, BUTTON_WIDTH)
+	for spec in [
+		{ "button": _approve, "path": AvatarFrame.APPROVE_BUTTON_PATH, "art": AvatarFrame.APPROVE_ART },
+		{ "button": _reject, "path": AvatarFrame.REJECT_BUTTON_PATH, "art": AvatarFrame.REJECT_ART },
+	]:
+		var button: TextureButton = spec["button"]
+		var art: Rect2 = spec["art"]
+		var atlas := AtlasTexture.new()
+		atlas.atlas = load(spec["path"])
+		atlas.region = art
+		button.texture_normal = atlas
+		button.ignore_texture_size = true
+		button.stretch_mode = TextureButton.STRETCH_SCALE
+		button.size = AvatarFrame.size_for_width(art, BUTTON_WIDTH)
+	# 两个按钮共用同一个高度（两张美术裁出来都是 222x144），竖着居中压在头像腰上
+	for button in [_approve, _reject]:
+		button.position = Vector2(button.position.x, (AVATAR_SIZE - button_size.y) * 0.5)
 
 
-func _draw() -> void:
-	var rect := _avatar_rect()
-	var center := rect.position + rect.size * 0.5
-	var radius := minf(rect.size.x, rect.size.y) * 0.5
+## 收起来：两个按钮都躲进头像框中间（整个矩形都在头像底下 → 一点都看不见）
+func _collapsed_positions() -> Dictionary:
+	var x := (AVATAR_SIZE - BUTTON_WIDTH) * 0.5
+	var y := _approve.position.y
+	return { "approve": Vector2(x, y), "reject": Vector2(x, y) }
 
-	draw_circle(center, radius, BACKDROP_HOVER_COLOR if _hovered else BACKDROP_COLOR)
 
-	if hired:
-		draw_arc(center, radius + HIRED_RING_GAP, 0.0, TAU, 64, HIRED_COLOR, RING_WIDTH, true)
+## 展开：approve 向右滑到头像框右边、reject 向左滑到左边，各留 BUTTON_OVERLAP 压着
+func _expanded_positions() -> Dictionary:
+	var y := _approve.position.y
+	return {
+		"approve": Vector2(AVATAR_SIZE - BUTTON_OVERLAP, y),
+		"reject": Vector2(-BUTTON_WIDTH + BUTTON_OVERLAP, y),
+	}
 
-	# 黑边框画在直径之内（半径收半个线宽），否则会盖住头像的圆形边
-	draw_arc(center, radius - RING_WIDTH * 0.5, 0.0, TAU, 64, RING_COLOR, RING_WIDTH, true)
+
+func _place_buttons(targets: Dictionary, animate: bool) -> void:
+	if _approve == null or _reject == null:
+		return
+	_apply_button_input()
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	if not animate:
+		_approve.position = targets["approve"]
+		_reject.position = targets["reject"]
+		return
+	_tween = create_tween().set_parallel(true)
+	_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(_approve, "position", targets["approve"], SLIDE_TIME)
+	_tween.tween_property(_reject, "position", targets["reject"], SLIDE_TIME)
+
+
+## 谁能吃到鼠标。
+##
+## ⚠️ 收起来的时候必须把按钮从鼠标拾取里摘掉：它们此刻正躺在头像底下（绘制顺序在头像
+##   之前），虽然看不见，但 GUI 拾取是**从树尾往树头**找的 —— 留着 STOP 的话，
+##   玩家点头像那一下会打到那颗看不见的按钮上（一点就把人进队了）。绘制顺序管「看不看得见」，
+##   这个管「点不点得到」，两件事要一起对。
+## 置灰的「进队」同理：按不动就别拦着，让这一下落到头像上去（展开 / 收起）。
+func _apply_button_input() -> void:
+	if _approve == null or _reject == null:
+		return
+	var approve_live := _expanded and not _approve.disabled
+	_approve.mouse_filter = Control.MOUSE_FILTER_STOP if approve_live else Control.MOUSE_FILTER_IGNORE
+	_reject.mouse_filter = Control.MOUSE_FILTER_STOP if _expanded else Control.MOUSE_FILTER_IGNORE
+
+
+## 名额满了、且这一位又还没进队 → 「进队」按不动（免得点了没反应）。
+## 「不进队」永远可点：撤销从来不该被名额挡住（同 TeamValidator 的约定）。
+func _refresh_approve_enabled() -> void:
+	if _approve == null:
+		return
+	_approve.disabled = _team_full and not is_approved()
+	_apply_button_input()
