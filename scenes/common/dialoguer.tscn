@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://ctmyyt3n6ch2r"]
 
 [ext_resource type="Script" uid="uid://du8la2bxrncmc" path="res://scenes/common/dialoguer.gd" id="1_ldmwg"]
-[ext_resource type="Texture2D" uid="uid://njafjhfq4aa2" path="res://assets/art/Textbox_PhdER.png" id="2_7imos"]
+[ext_resource type="Texture2D" uid="uid://db2aopqnetank" path="res://assets/art/Textbox_used.png" id="2_ldmwg"]
 [ext_resource type="Script" uid="uid://crqvd255t7whm" path="res://scenes/common/typer.gd" id="3_uy3cm"]
-[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="4_silver"]
+[ext_resource type="FontFile" uid="uid://b8u6a2faqsh1d" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="4_silver"]
 
 [node name="Dialoguer" type="Control" unique_id=408599518]
 layout_mode = 3
@@ -11,26 +11,28 @@ anchors_preset = 0
 script = ExtResource("1_ldmwg")
 
 [node name="TextboxPhd" type="Sprite2D" parent="." unique_id=1211659339]
-position = Vector2(581.24817, 151.75)
-scale = Vector2(1.8614143, 1.2252748)
-texture = ExtResource("2_7imos")
+position = Vector2(580, 212)
+scale = Vector2(1.0195311, 0.6225807)
+texture = ExtResource("2_ldmwg")
 
 [node name="Dialogue" type="Label" parent="." unique_id=344175443]
 layout_mode = 0
-offset_left = 31.0
-offset_top = 30.0
-offset_right = 1118.0
-offset_bottom = 197.0
+offset_left = 114.0
+offset_top = 43.0
+offset_right = 1044.0
+offset_bottom = 173.0
+theme_override_colors/font_color = Color(0.27453688, 0.088310726, 0, 1)
 theme_override_fonts/font = ExtResource("4_silver")
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 36
 autowrap_mode = 1
 script = ExtResource("3_uy3cm")
 
 [node name="Name" type="Label" parent="." unique_id=1242747217]
 layout_mode = 0
-offset_left = 26.0
-offset_top = 219.0
-offset_right = 340.0
-offset_bottom = 281.0
+offset_left = 120.0
+offset_top = 189.0
+offset_right = 254.0
+offset_bottom = 235.0
+theme_override_colors/font_color = Color(0.27450982, 0.09019608, 0, 1)
 theme_override_fonts/font = ExtResource("4_silver")
 theme_override_font_sizes/font_size = 40
