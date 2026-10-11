@@ -76,13 +76,22 @@ func set_option_text(text: String) -> void:
 	_ask_button.text = text
 
 
+## 菜单优先摆在哪一边。默认右边；调用方要左边时传 true（见 open_for）。
+var _prefer_left: bool = false
+
+
 ## 打开菜单并摆到 anchor（被点的那条词条）旁边。
 ##
 ## `enabled = false` 时选项变灰且点不动 —— 用于「这一条当时根本没问过，没什么可回忆的」。
 ## 菜单**照常弹出来**（而不是干脆不弹）：玩家至少能看到「哦，这条我没问」。
-func open_for(anchor: Control, index: int, enabled: bool = true) -> void:
+##
+## `prefer_left` = 优先摆到左边。简历右半边那几栏（状态区、专长）右边就是别的栏目，
+## 菜单糊上去会盖住内容，所以它们要反过来摆；放不下时仍然会自动翻回右边。
+func open_for(anchor: Control, index: int, enabled: bool = true,
+		prefer_left: bool = false) -> void:
 	_anchor = anchor
 	entry_index = index
+	_prefer_left = prefer_left
 	if _ask_button != null:
 		_ask_button.disabled = not enabled
 	visible = true
@@ -98,8 +107,8 @@ func is_open() -> bool:
 	return visible
 
 
-## 摆位规则：默认贴在词条右边、与词条顶对齐；
-## 右边放不下就翻到词条左边；最后整体夹进当前画布。
+## 摆位规则：按 _prefer_left 决定**先试**哪一边（默认右边、与词条顶对齐）；
+## 那一边放不下就翻到另一边；最后整体夹进当前画布。
 func _reposition() -> void:
 	if not visible or _anchor == null or not is_instance_valid(_anchor):
 		return
@@ -109,9 +118,14 @@ func _reposition() -> void:
 	var canvas := get_viewport_rect().size
 	var anchor_rect := _anchor.get_global_rect()
 
-	var pos := Vector2(anchor_rect.end.x + GAP, anchor_rect.position.y)
-	if pos.x + size.x > canvas.x:
-		pos.x = anchor_rect.position.x - GAP - size.x
+	var right_x := anchor_rect.end.x + GAP
+	var left_x := anchor_rect.position.x - GAP - size.x
+	var pos_x := left_x if _prefer_left else right_x
+	# 首选那一边放不下（出画布）就翻到另一边
+	if pos_x < 0.0 or pos_x + size.x > canvas.x:
+		pos_x = right_x if _prefer_left else left_x
+
+	var pos := Vector2(pos_x, anchor_rect.position.y)
 	pos.x = clampf(pos.x, 0.0, maxf(0.0, canvas.x - size.x))
 	pos.y = clampf(pos.y, 0.0, maxf(0.0, canvas.y - size.y))
 	global_position = pos

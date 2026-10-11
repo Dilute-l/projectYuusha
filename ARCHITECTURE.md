@@ -108,7 +108,7 @@ res://
 │   │   │   ├─ interviewee.tscn        面试者立绘、表情差分、对话框
 │   │   │   ├─ resume/                  resume.tscn（候选人完整简历）
 │   │   │   │   └─ resume_token.tscn    单条简历词条（复用控件）
-│   │   │   └─ handbook_overlay.tscn   随时可呼出的手册浮层，按关键词检索
+│   │   │   └─ handbook.tscn           手册浮层（模态）：翻页浏览已解锁条目
 │   │   ├─ team_builder/       team_builder.tscn（组队容器）
 │   │   │   ├─ team_builder_ui.tscn     组队 UI：今日候选人头像列表、已录用 / 名额（§12）
 │   │   │   └─ candidate.tscn          左侧单条候选人：圆头像 + 名字（悬停 / 左键，§12）
@@ -167,12 +167,15 @@ class_name CandidateResource extends Resource
 @export var display_name: String
 @export var strength: int = 0                   # 力量
 @export var intelligence: int = 0               # 智力
-@export var wisdom: int = 0                 # 感知
-@export var level: int = 1                      # 等级
-@export var job: JobDef                         # 职业
+@export var wisdom: int = 0                     # 感知
+@export var race: RaceDef                       # 种族（见 §3.3）
+@export var job: JobDef                         # 职业（见 §3.3）
+@export var gender: StringName = &"男"          # 性别：单个值
+@export var age: int = 2                        # 年龄
 @export var traits: Array[TraitDef] = []        # 特质（list，可含多项，也可为空）
-@export var resume: Array[ResumeEntry] = []     # 简历（见 §3.2）
-@export_multiline var resume_header: String     # 简历抬头：整段字，见 §10.6
+@export var experience: Array[ResumeEntry] = [] # 个人履历与奖项（见 §3.2）
+@export var skill: Array[ResumeEntry] = []      # 专长（见 §3.2）
+@export_multiline var team_declaration: String  # 组队宣言：一整段自由文本，不挂追问
 @export var portrait: Texture2D                 # 整张立绘（可选；当前用拼装立绘，见下）
 
 # 拼装立绘的「配方」（见 §10.7）。取值直接对应 assets/art/portrait/ 的文件名。
@@ -188,14 +191,17 @@ class_name CandidateResource extends Resource
 | 字段 | 含义 | 备注 |
 | --- | --- | --- |
 | `strength` / `intelligence` / `wisdom` | 力量 / 智力 / 感知 | 玩家可见；对照简历描述的判断依据 |
-| `level` | 等级 | 与职业共同构成「常理上限」，是手册常识的锚点 |
+| `race` | 种族 | `RaceDef`，见 §3.3；`data/races/{human,elf,dwarf}.tres` |
 | `job` | 职业 | `JobDef`，见 §3.3 |
+| `gender` | 性别 | **单个 `StringName`**（`&"男"` / `&"女"`）。曾写成 `Array[StringName]`，那是笔误 —— 那会让所有候选人这一栏长得一模一样 |
+| `age` | 年龄 | 简历上那一栏。旧的 `level` 字段已删除，「常理上限」现在由属性 + 职业 + 手册常识共同承担 |
 | `traits` | 特质 | `Array[TraitDef]`，可含多项；相性计算输入（§6.4） |
-| `resume` | 简历 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
-| `resume_header` | 简历抬头 | **一整段字**，原样铺在纸面上半；运行时不做任何拼接（§10.6） |
+| `experience` | 个人履历与奖项 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
+| `skill` | 专长 | 同上。**与 `experience` 共用一套扁平序号**，见 §10.6 |
+| `team_declaration` | 组队宣言 | **一整段自由文本**，原样铺在纸面右下；不挂追问（它是「他自己喊的口号」，不是「可被质疑的履历」） |
 | `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号；面试者的长相也是数据，不是代码里摇的（§10.7） |
 
-> 真假不再由隐藏字段承载：玩家看到的 `strength / intelligence / wisdom / level / job / traits`
+> 真假不再由隐藏字段承载：玩家看到的 `strength / intelligence / wisdom / race / job / traits`
 > 就是全部数值，判断依据来自「属性与简历描述的落差」＋「手册常识」，见 §6.2 / §6.3。
 
 ### 3.2 简历条目（ResumeEntry）
@@ -225,7 +231,7 @@ data/asks/c_0001_1.json
 段级 `config` 全部照用，不需要任何额外机制。
 
 面试交互见 §6.2：玩家点击某一条 → 播出该条的 json（先问、后答）；是否可信，由玩家结合
-`strength / intelligence / wisdom / level / job / traits` 与手册常识自行判断。
+`strength / intelligence / wisdom / race / job / traits` 与手册常识自行判断。
 
 
 
@@ -271,13 +277,14 @@ class_name DayConfig extends Resource
 | --- | --- | --- |
 | `boot.tscn` | 加载 `DataDB`，检查存档，跳到主菜单 | — |
 | `main_menu.tscn` | 用于收容所有与开始菜单相关的细分场景，新游戏 / 继续 / 设置 / 图鉴回顾 | `new_run_requested` |
-| `day_loop.tscn` | **每日流程容器**，按 `DayPhase` 状态机切换子场景 | `phase_changed` |
-| `interview.tscn` | 在day_loop下，用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | — |
+| `day_loop.tscn` | **每日流程容器**，按 `DayPhase` 状态机切换子场景 | `day_phase_entered` |
+| `interview.tscn` | 在day_loop下，用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | `phase_finished` |
 | `interview_ui.tscn` | 在 interview 下，用于展示面试中的 UI，包括暂停、设置按钮等系统向 UI 和候选人列表、今日事件等 | — |
 | `interviewee.tscn` | 在 interview 下，管理面试者立绘、管理表情差分、对话框 | — |
-| `resume.tscn` | 在 interview 下，候选者的完整简历：基础信息、三项属性、等级、职业、特质与简历条目 | — |
-| `resume_token.tscn` | 在 resume 下，单个张简历词条以及相关的信息（复用控件） | `selected` |
-| `handbook_overlay.tscn` | 在 interview 下，随时可呼出的手册浮层，按关键词检索 | `entry_bookmarked` |
+| `resume.tscn` | 在 interview 下，候选者的完整简历：姓名 / 种族 / 职业 / 性别 / 年龄、三围属性（Status 区）、个人履历与奖项、专长、组队宣言 | — |
+| `resume_token.tscn` | 在 resume 下，单条简历词条（复用控件）；点它弹出词条菜单 | `selected` |
+| `resume_token_menu.tscn` | 在 resume 下，词条旁的小菜单（面试=「追问」/ 组队=「回忆」） | `ask_requested` |
+| `handbook.tscn` | 在 interview 下，**模态**手册浮层：翻页浏览已解锁条目，开着时挡住本场景其它操作 | `closed` |
 | `team_builder.tscn` | 在 day_loop 下，用于收容从通过者中挑满名额组队这一过程的相关场景 | `team_submitted` |
 | `team_builder_ui.tscn` | 在 team_builder 下，用于展示组队过程中的 UI：**左半边今日面试者的头像列表**、已录用 / 名额表头（§12） | `candidate_hovered` / `candidate_toggled` |
 | `candidate.tscn` | 在 team_builder 下，左侧**单条**候选人：圆形头像（黑色纯色圆边框）+ 名字（§12） | `hovered` / `toggled` |
@@ -336,20 +343,23 @@ signal run_finished(ending_id: StringName)
 `DataDB` 读到当天配置后交给 `GameState`；刷新、读档拿到的都是同一份名单。
 
 ### 6.2 面试与追问
-`interview_session.gd` 管理单个候选人的问答循环：
+`interview.gd` 管理单个候选人的问答循环：
 
-1. 展示简历（逐条 `ResumeEntry.description`）；
+1. 展示简历（`experience` 与 `skill` 逐条 `ResumeEntry.description`，见 §10.6）；
 2. 玩家点击某一条追问，播出该条的 `ResumeEntry.ask_path` 指的那份 json；
-3. 玩家对照候选人的 `strength / intelligence / wisdom / level / job / traits` 与手册常识，
+   序号 → 文件这一层统一走 `Resume.ask_path_of(candidate, entry_index)`（**约定只写在那一处**）；
+3. 玩家对照候选人的 `strength / intelligence / wisdom / race / job / traits` 与手册常识，
    自行判断这条描述与回答是否可信。
 
 > **② 已实现**（`Interview` 阶段内）：点词条 → 菜单「追问」→ `resume.gd` 广播
 > `EventBus.resume_entry_asked(candidate_id, entry_index)` → `interview.gd` 拿到
 > `ask_path`，用 `typer.load_dialogue_from(path)` 装入那份 json，再 `dialoguer.play()`。
-> 追问是临时对话，播完只收起对话框、**不推进阶段**。详见 §10.7。
+> 追问是临时对话，播完只收起对话框、**不推进阶段**。详见 §10.6。
 
 ### 6.3 手册（玩家能力锚点）
-`handbook_overlay` 是全局浮层，任何阶段都能呼出。`data/handbook/` 的条目承担两件事：
+`handbook.tscn` 是 interview 里的**模态浮层**：点手册按钮打开，翻页浏览当前已解锁的条目，点 X 关闭。
+**打开期间本场景其它操作一律停手**（按钮 disabled + 全屏输入挡板 + `_is_judging_allowed()` 返回 false 三层）。
+`data/handbook/` 的条目承担两件事：
 给出魔物弱点、同时给出**常识基线**（例如"初级剑士不可能单人讨伐食人魔"），让撒谎能被推理而不是靠猜。
 
 ### 6.4 相性与组队
@@ -363,7 +373,7 @@ signal run_finished(ending_id: StringName)
 
 ```gdscript
 # data/narrative/claim_exposed.tres（示意）
-when     = "member.level < 3 and member.strength + member.intelligence + member.wisdom < 30"
+when     = "member.strength + member.intelligence + member.wisdom < 30"
 template = "{actor} 在简历上说谎了，是个货真价实的水货，他把大家携带的装备全都搞坏了。"
 weight   = 1.0
 priority = 10
@@ -516,57 +526,80 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 ### 10.6 resume / resume_token（简历版面）
 
 简历版面。编辑器里打开 `resume.tscn` 按 F6 单独跑：看到的是一张**空**纸 ——
-版面里没有任何候选人文案，内容全靠 `set_candidate()` 灌（见 §10.7）。
+版面里没有任何候选人文案，内容全靠 `set_candidate()` 灌。
 
 | 文件 | 职责 |
 | --- | --- |
-| `scenes/day/interview/resume/resume.gd` / `.tscn` | 简历整页。`assets/art/interview/resume_page_phd.png` 让 `Sprite2D(centered=false)` 铺在 (0,0)，右侧纸面（约 624,62 ～ 980,549）上叠一列信息 |
+| `scenes/day/interview/resume/resume.gd` / `.tscn` | 简历整页 |
 | `scenes/day/interview/resume/resume_token.gd` / `.tscn` | 单条词条，根节点是 `Button`（`class_name ResumeToken`），对外信号 `selected(entry_index)` |
-| `ui/styles/resume_token_normal.tres` · `resume_token_hover.tres` | 词条的 normal / hover 两个 StyleBox。独立成资源而不是内联，以后做 `ui/themes/` 时能直接复用 |
+| `scenes/day/interview/resume/resume_token_menu.gd` / `.tscn` | 词条旁的小菜单 |
+| `ui/styles/resume_token_normal.tres` · `resume_token_hover.tres` | 词条的 normal / hover 两个 StyleBox |
 
-版面自上而下：**抬头**（`Paper/Rows/HeaderInfo`，一个 Label）→ `RESUME ENTRIES` 小标题 → 词条列表（`Paper/Rows/TokenList`）。
+#### 版面：一栏一个 Container
 
-- **抬头是一个字符串，不是一个字段一个 Label**：姓名 / 职业 + 等级 / 三项属性 / 特质全部写在
-  `CandidateResource.resume_header` 那**一个**多行字符串里，`resume.gd` 只做一件事 ——
-  `set_info(candidate.resume_header)`，**一个字都不拼**。
-  想调抬头版式（换行、字段间距、字段顺序、要不要写属性、加不加一句花腔）直接在
-  `data/candidates/*.tres` 里改那一段字，代码和场景都不用动。
-  换句话说：**抬头是文案，不是由数值推导出来的**。`display_name` / `level` / `strength` 那些字段
-  是给玩法（判定、相性、战报）用的数值，和抬头故意不联动 —— 抬头里写什么、写不写全，由文案说了算。
-  `RESUME ENTRIES` 那行**没有**并进去 —— 它是词条区的段标题（场景自己的装饰文案），不是候选人信息。
-  代价是所有行共用一个字号（现在 **22**）。若想让姓名单独放大，把这一个节点换成 `RichTextLabel` 走 BBCode
-  即可（`HandbookEntry.body` 已经是这个路子），仍然是一个字符串。
+底纸是 `ResumePagePhd`（`Sprite2D`，`centered = false`，摆在 (8,9)）。
+纸上叠的**不是**「一整段抬头」，而是**一栏一个节点**，由 `resume.gd::_fill_fields()` 逐栏填：
 
-- **字号是照着「换字体前的视觉大小」定的，不是拍的**：`Silver.ttf` 是等宽的 CJK 点阵字体
-  （`unitsPerEm=1900`，拉丁字宽恒为 600、CJK 为 1200），它的**大写高只有 0.474 em**，
-  而原先兜底的默认字体约为 0.714 em —— 同样是 `font_size=15`，Silver 画出来只有 **0.7 倍大**。
-  所以接上字体时必须同步放大字号（4× 超采样量墨迹高对齐）：
+| 栏 | 节点 | 数据源 |
+| --- | --- | --- |
+| 姓名 | `NameContainer` | `display_name` |
+| 种族 | `RaceContainer` | `race.display_name`（`RaceDef`） |
+| 职业 | `ClassContainer` | `job.display_name`（`JobDef`） |
+| 性别 | `GenderContainer` | `gender` |
+| 年龄 | `AgeContainer` | `age` |
+| 力量 / 智力 / 感知 | `Status/Str·Int·WisContainer` | `strength` / `intelligence` / `wisdom` |
+| 组队宣言 | `DeclarationContainer` | `team_declaration` |
 
-  | 位置 | 原字号（默认字体） | 现字号（Silver） | 大写高 前 → 后 |
-  | --- | --- | --- | --- |
-  | 抬头 / 词条 / 菜单按钮 | 15 | **22** | 10.75px → 10.50px |
-  | `RESUME ENTRIES` 段标题 | 12 | **18** | 8.75px → 8.50px |
+栏目标题（「姓名」「种族」…）是场景里另外一批 `*Label` 节点，**不是数据**。
+任一字段为空就把那一栏清空 —— 不写「未知」这种兜底字，免得看不出来数据漏了。
 
-  换字体（或再换一次）时这几个数要跟着重算，别只改 `font` 不改 `font_size`。
-  字号放大后内容仍然装得进纸面：占位数据 199px、三行中文抬头 255px，纸面可用高 448px。
+> ⚠️ **这里没有「抬头」了**。早先的 `CandidateResource.resume_header` 是「上半部分整段字，
+> 一个多行字符串说了算，`resume.gd` 一个字都不拼」。版面拆成一栏一格之后，它变成了重复的第二份文案，
+> 而且没有任何节点能放它 —— 已删除。`team_declaration` 接替了「一整段自由文本」这个位置
+> （但它只占右下角那一栏，不挂追问）。
 
-- **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（**一个淡黄色矩形，没有描边**），
-  normal 是一条细下划线。脚本里没有任何 `_on_mouse_entered`：hover 由 Button 自己驱动，改配色只动 `.tres`。
-- **点击效果 = 在旁边弹出词条菜单**（见下面「词条菜单」与 §10.7）：`pressed` 与 `normal`
-  指向**同一个** `.tres`，按下去的画法和没按一模一样；`focus_mode = 0` 关掉焦点框，点完不会残留高亮。
-  视觉上的「选中」由 `resume.gd` 订阅 `selected` 后弹菜单来表达，不是按钮自己画的。
-- **纸上的字全部来自数据**：`resume.gd` 里没有一句候选人文案，也没有「默认履历」这种兜底。
-  唯一的数据入口是 `set_candidate(candidate: CandidateResource)`：
-  抬头 ← `resume_header`（原样），词条 ← `descriptions_of()`（逐条 `description`）。
-  传 `null` 表示「当前没有候选人」→ 抬头清空、词条全部收起。`get_candidate()` 能把当前这位取回来，
-  追问时就从它身上取 `resume[i].ask_path`（§6.2）。
-- **条目数量自适应**：`set_entries()` 会先复用场景里预摆的 5 个实例（编辑器里直接看到真实版面，
-  但它们**不写死任何正文**，`text` 全是空串），数据比预摆多就现场 `instantiate()`，
+#### 词条：两个列表共用一套「扁平序号」
+
+`experience`（个人履历与奖项）与 `skill`（专长）各自铺进
+`ExperienceContainer` / `SkillContainer`，但**序号是连着往下发的**：
+
+```
+experience[0] → 0      experience[1] → 1      skill[0] → 2   …
+```
+
+于是追问对话、以及「这一条问过没有」的记录（`GameState.record_entry_asked`）**两个列表走同一套流程**，
+不需要给 skill 另开机制。序号 ↔ 数据的换算只有两个入口，都在 `resume.gd`：
+
+```gdscript
+static func entries_of(candidate) -> Array[ResumeEntry]      # 扁平条目表（experience 在前）
+static func ask_path_of(candidate, entry_index) -> String    # 序号 → 追问 json 路径
+```
+
+`interview.gd`（真的去问）与 `team_builder.gd`（重播回忆）都调 `ask_path_of()` ——
+**「序号怎么算」这条约定只写在那一处**，两边不必各自记住它。
+
+#### 状态区也是可追问的（序号 -1）
+
+力量 / 智力 / 感知那一块是**一个 `Button`（`Status`）**，点它弹的是同一个菜单，
+序号发 `Resume.STATUS_ENTRY_INDEX = -1`（一个不会和真条目撞号的虚拟条目）。
+它的对话文件走约定路径 `data/asks/<candidate_id>_status.json`。
+这样「属性值是不是吹的」也能被追问，而菜单 / 对话 / 记录三套机制一行都不用改。
+
+#### 其余
+
+- **条目数量自适应**：`_fill_list()` 先复用容器里预摆的词条实例，数据比预摆多就现场 `instantiate()`，
   少就把富余的 `visible = false`。所以「若干项」都不用回头改场景。
-- 纸上的文案现在是**中文**（和 `data/dialogue.json` 一致）。字体和游戏别处是同一款：
-  抬头 / `RESUME ENTRIES` 段标题 / 词条 / 菜单按钮这四处在各自场景里
-  `theme_override_fonts/font = ExtResource(Silver.ttf)`，不再落到没有中文字形的默认字体上（§10.5）。
-  字体是**场景属性**，`resume.gd` 一个字都没碰 —— 纸上的内容仍然全部来自数据。
+- **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（一个淡黄色矩形、没有描边），
+  normal 是一条细下划线。脚本里没有任何 `_on_mouse_entered`。
+- **点击效果 = 在旁边弹出词条菜单**：`pressed` 与 `normal` 指向**同一个** `.tres`，
+  `focus_mode = 0` 关掉焦点框；「选中」由 `resume.gd` 订阅 `selected` 后弹菜单来表达。
+- **纸上的字全部来自数据**：`resume.gd` 里没有一句候选人文案，也没有「默认履历」这种兜底。
+  唯一的数据入口是 `set_candidate(candidate)`；传 `null` → 整张纸清空。
+- **滑动**：整页（本节点）上下滑，`travel_distance()` 取「画布高」与「底纸底边」里**更大的那个** ——
+  底纸是整画布大的贴图（`position.y + 贴图高` 比画布还高一点点，实测 657 > 648），
+  只滑一个画布高会剩一条边留在画面顶上。什么时候滑、滑到哪儿由 `interview.gd` 的演出调解决定（§13）。
+- 纸上的文案是**中文**：字体和游戏别处是同一款（`assets/fonts/youaimoshouheiti-bold.ttf`），
+  在**场景里**各处 `theme_override_fonts/font` —— `resume.gd` 一个字都没碰字体。
 
 #### 挂载点
 
@@ -785,7 +818,7 @@ var asked_entries: Dictionary = {}
 > | 字段 | 现在长什么样 |
 > | --- | --- |
 > | 候选人 `display_name` | `PLACEHOLDER NAME 01` … `PLACEHOLDER NAME 25` |
-> | 候选人 `resume_header` | `PLACEHOLDER HEADER 01` …（单行） |
+> | 候选人 `team_declaration` | `PLACEHOLDER DECLARATION 01` …（单行） |
 > | 简历条目 | `PLACEHOLDER ENTRY / QUESTION / ANSWER 01-1`（`编号-条目号`） |
 > | 职业 | `PLACEHOLDER JOB 01` … `03`（+ `PLACEHOLDER JOB DESC NN`） |
 > | 特质 | `PLACEHOLDER TRAIT 01` … `10`（+ `PLACEHOLDER TRAIT DESC NN`） |
@@ -795,7 +828,7 @@ var asked_entries: Dictionary = {}
 > 编号只用来对号入座，本身不代表任何含义。
 >
 > **这次只动文案，没动结构**，下面这些原样保留（它们是**键和数值**，不是文案）：
-> `id`（每日名单靠它引用）、`level` / `strength` / `intelligence` / `wisdom`、
+> `id`（每日名单靠它引用）、`strength` / `intelligence` / `wisdom`、`race` / `job`、`gender` / `age`、
 > `job` 与 `traits` 的**引用关系**、`synergy_tags`、`portrait_*` 立绘配方、`data/days/` 全部。
 >
 > 手填时直接把这串 `PLACEHOLDER …` 替换掉就行 —— 全仓 `Ctrl+F "PLACEHOLDER"` 能一次找齐。
@@ -808,7 +841,9 @@ var asked_entries: Dictionary = {}
 
 | 目录 | 粒度 | 装什么 |
 | --- | --- | --- |
-| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、等级、三项属性、职业（引用 `data/jobs/*.tres`）、特质（引用 `data/traits/*.tres`）、**简历抬头**（`resume_header`，一整段字）、**拼装立绘配方**、**逐条简历条目**（描述 + 追问 json 的路径，内联 `sub_resource`，跟着本人走） |
+| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、种族（引用 `data/races/*.tres`）、职业（引用 `data/jobs/*.tres`）、性别、年龄、三项属性、特质（引用 `data/traits/*.tres`）、**个人履历与奖项**（`experience`）、**专长**（`skill`）、**组队宣言**（`team_declaration`）、**拼装立绘配方**；每条履历/专长 = 描述 + 追问 json 的路径（内联 `sub_resource`，跟着本人走） |
+| `data/races/` | **一个种族一个文件**（`human` / `elf` / `dwarf`） | `RaceDef`：`id` / `display_name` / `description`。与立绘配方代号对应：`hu`→human、`el`→elf、`st`→dwarf |
+| `data/asks/` | **一条追问一份 json**（`c_0001_1.json` … `c_0025_3.json`，外加每人的 `<id>_status.json`） | 一份就是「一段对话」，格式与 `data/dialogue.json` 里的一段完全一致，所以 `Typer` 那套逐字显示 / 点击推进照用 |
 | `data/asks/` | **一条追问一个文件**（`c_0001_1.json` … 共 75 份） | 那一条的追问对话本身：行数组，每行 `{ speaker_name, text }`，格式同 `data/dialogue.json` 的一段 |
 | `data/days/` | **一天一个文件**（`day_01.tres` … `day_10.tres`） | `day_index`、`candidates`（当天出场哪几个人，**引用** `data/candidates/*.tres`，数组顺序即出场顺序）、`slots`（当日名额）、`tutorial_step` |
 
@@ -846,7 +881,7 @@ data/days/day_XX.tres
 - **改追问台词** → 点开那一条的 `ask_path` 指的 `data/asks/*.json`。写手可以完全不碰 `.tres`：
   说话人、行数、停顿时长（段级 `config`）都在 json 里。
 - **加一条追问** → `data/asks/` 下新建一份 json，再回候选人档案里把这一条的 `ask_path` 指过去。
-- **改抬头** → 同一个文件里的 `resume_header`，多行文本框，写什么就显示什么。
+- **改组队宣言** → 同一个文件里的 `team_declaration`，多行文本框，写什么就显示什么。
   想让人物的自我介绍更有性格（甚至藏一个后面能被手册戳破的谎言），改这一栏就行。
 - 换某天出场的人 / 调名额 → 点开 `data/days/day_XX.tres`，拖 `candidates` 数组。
 - 加一位新面试者 → `data/candidates/` 下新建一份，再把它拖进某天的 `candidates`。

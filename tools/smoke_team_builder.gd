@@ -151,20 +151,17 @@ func _run() -> void:
 	_check(resume.get_candidate() == candidates[1],
 			"悬停的是名单里的第 2 位（%s）" % candidates[1].id)
 
-	var info: Label = resume.get_node("Paper/Rows/HeaderInfo")
-	_check(info.text == candidates[1].resume_header, "简历抬头 = 这一位数据里的 resume_header")
-	var shown := 0
-	for child in (resume.get_node("Paper/Rows/TokenList") as Node).get_children():
-		if (child as Control).visible:
-			shown += 1
-	_check(shown == candidates[1].resume.size(),
-			"铺出的词条数 = 这一位的简历条数（%d）" % candidates[1].resume.size())
+	var declaration: Label = resume.get_node("DeclarationContainer")
+	_check(declaration.text == candidates[1].team_declaration,
+			"组队宣言 = 这一位数据里的 team_declaration")
+	_check(resume.token_count() == Resume.entries_of(candidates[1]).size(),
+			"铺出的词条数 = 这一位的履历 + 专长（%d）" % Resume.entries_of(candidates[1]).size())
 
 	# 换一位：内容整块跟着换
 	entries[0].mouse_entered.emit()
 	await _settle()
 	_check(resume.get_candidate() == candidates[0], "悬停第 1 条 → 换成第 1 位的简历")
-	_check(info.text == candidates[0].resume_header, "抬头跟着换成第 1 位的")
+	_check(declaration.text == candidates[0].team_declaration, "组队宣言跟着换成第 1 位的")
 
 	# 和面试场景比位置：同一个 resume.tscn、同一个绝对偏移 → 纸面矩形必须一模一样
 	var itv_vp := _make_canvas()
@@ -178,11 +175,13 @@ func _run() -> void:
 	_check(itv_resume != null, "面试场景里也有 Resume")
 	if itv_resume != null:
 		_check(itv_resume.visible, "招人阶段面试的简历是可见的（对照前提成立）")
-		var paper: Control = resume.get_node("Paper")
-		var itv_paper: Control = itv_resume.get_node("Paper")
-		_check(paper.get_global_rect() == itv_paper.get_global_rect(),
-				"简历纸面与面试同一块位置（组队 %s / 面试 %s）" % [
-					paper.get_global_rect(), itv_paper.get_global_rect()])
+		# 新版面没有 Paper 这个中间容器了，各栏直接挂在根节点下 ——
+		# 换成比一栏的真实矩形：两个实例共用同一个 resume.tscn 的绝对偏移，位置必须一模一样。
+		var name_here: Control = resume.get_node("NameContainer")
+		var name_itv: Control = itv_resume.get_node("NameContainer")
+		_check(name_here.get_global_rect() == name_itv.get_global_rect(),
+				"简历各栏与面试同一块位置（组队 %s / 面试 %s）" % [
+					name_here.get_global_rect(), name_itv.get_global_rect()])
 		var page: Sprite2D = resume.get_node("ResumePagePhd")
 		var itv_page: Sprite2D = itv_resume.get_node("ResumePagePhd")
 		_check(page.get_global_position() == itv_page.get_global_position(),
@@ -314,7 +313,6 @@ func _check_recall(
 	entries: Array[CandidateEntry],
 	candidates: Array[CandidateResource]
 ) -> void:
-	var list: VBoxContainer = resume.get_node("Paper/Rows/TokenList")
 	var menu: ResumeTokenMenu = resume.get_node("TokenMenu")
 	var dialoguer: Dialoguer = builder.get_node_or_null("Dialoguer")
 	_check(resume.entry_menu == Resume.EntryMenu.RECALL, "组队里的简历是「回忆」模式")
@@ -327,7 +325,7 @@ func _check_recall(
 	await _settle()
 	_check(resume.get_candidate() == candidates[0], "悬停后简历铺的是这一位")
 
-	var token: Control = list.get_child(0)
+	var token: Control = resume.token_at(0)
 	token.emit_signal("pressed")
 	await _settle()
 	_check(menu.is_open(), "组队里点词条 → 菜单照样打开")
@@ -355,7 +353,7 @@ func _check_recall(
 			"点「回忆」广播了 resume_entry_recalled（实际 %s）" % str(recalled))
 
 	# 播的内容 = 当时那份 json + 一句自言自语
-	var expect := _read_ask(candidates[0].resume[0].ask_path)
+	var expect := _read_ask(Resume.ask_path_of(candidates[0], 0))
 	_check(dialoguer.visible, "回忆把对话框叫起来了")
 	_check(dialoguer.typer.lines.size() == expect.size() + 1,
 			"回忆的行数 = 当时那份 json + 1 句（%d + 1，实际 %d）" % [

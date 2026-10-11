@@ -164,19 +164,20 @@ func _on_resume_entry_recalled(candidate_id: StringName, entry_index: int) -> vo
 		return
 
 	var candidate := GameState.get_candidate(candidate_id)
-	if candidate == null or entry_index >= candidate.resume.size():
-		push_warning("[TeamBuilder] 回忆的条目找不到：%s[%d]" % [candidate_id, entry_index])
+	if candidate == null:
+		push_warning("[TeamBuilder] 回忆的候选人找不到：%s" % candidate_id)
 		return
-	var entry: ResumeEntry = candidate.resume[entry_index]
-	if entry == null or entry.ask_path.strip_edges().is_empty():
-		push_warning("[TeamBuilder] 第 %d 条没有 ask_path，没有可回忆的内容" % entry_index)
+	# 序号 → 对话文件这一层交给 Resume.ask_path_of()（和 interview.gd 同一处约定）
+	var ask_path := Resume.ask_path_of(candidate, entry_index)
+	if ask_path.is_empty():
+		push_warning("[TeamBuilder] %s[%d] 没有可回忆的对话" % [candidate_id, entry_index])
 		return
-	if not FileAccess.file_exists(entry.ask_path):
-		push_error("[TeamBuilder] 追问 json 不存在：%s" % entry.ask_path)
+	if not FileAccess.file_exists(ask_path):
+		push_error("[TeamBuilder] 追问 json 不存在：%s" % ask_path)
 		return
 
 	# 一份 json = 一条追问，所以 id 留空（取文件里的第一段）
-	if not _dialoguer.typer.load_dialogue_from(entry.ask_path):
+	if not _dialoguer.typer.load_dialogue_from(ask_path):
 		return
 	_dialoguer.typer.append_line(RECALL_TAIL_SPEAKER, RECALL_TAIL_TEXT)
 	_dialoguer.play()

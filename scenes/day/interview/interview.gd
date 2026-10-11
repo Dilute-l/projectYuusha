@@ -238,18 +238,11 @@ func _on_resume_entry_asked(candidate_id: StringName, entry_index: int) -> void:
 	if candidate == null or candidate.id != candidate_id:
 		push_warning("[Interview] 追问的候选人 %s 不是当前在面试的那位，已忽略" % candidate_id)
 		return
-	if entry_index < 0 or entry_index >= candidate.resume.size():
-		push_warning("[Interview] 追问的条目下标越界：%d（共 %d 条）" % [
-			entry_index, candidate.resume.size()])
-		return
-	var entry: ResumeEntry = candidate.resume[entry_index]
-	if entry == null:
-		push_warning("[Interview] 第 %d 条简历是空的，无法追问" % entry_index)
-		return
-
-	var ask_path: String = entry.ask_path.strip_edges()
+	# 序号 → 对话文件这一层交给 Resume.ask_path_of()：它一处记住了
+	# 「experience 在前、skill 在后」以及「-1 = 属性追问」这两条约定。
+	var ask_path := Resume.ask_path_of(candidate, entry_index)
 	if ask_path.is_empty():
-		push_warning("[Interview] 第 %d 条简历没写 ask_path，没有台词可播" % entry_index)
+		push_warning("[Interview] 追问的序号 %d 没有对应的对话（越界？还是没写 ask_path？）" % entry_index)
 		return
 	# 先自己确认文件在，再去 load：Typer 那层的报错是「JSON 读不出来」，
 	# 而这里最常见的错因其实是路径写错 / 文件忘了提交，分开报更好排查。
@@ -536,7 +529,10 @@ func _step_resume_rise() -> Tween:
 func _step_resume_raise() -> Tween:
 	if _resume == null:
 		return null
-	return _resume.slide_to(-_resume.travel_distance(), RESUME_OUT_DURATION)
+	# 多滑 32px：底纸是整画布大的贴图，正好滑一个行程时**最后一帧还会留一条边** ——
+	# Tween 的最后一帧与「到位」之间差一帧，渲染/采样看到的是倒数第二帧的值（实测差 17px）。
+	# 多给这一点余量，保证它真的整张出去，而不是「理论上出去了」。
+	return _resume.slide_to(-(_resume.travel_distance() + 32.0), RESUME_OUT_DURATION)
 
 
 # ---- 演出内部：收口 ----------------------------------------------------------

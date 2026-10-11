@@ -3,23 +3,24 @@
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_o3acm"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_hroll"]
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_35ssq"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="3_hroll"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_secq1"]
 [ext_resource type="Resource" path="res://data/traits/chivalry.tres" id="5_nee3j"]
 [ext_resource type="Resource" path="res://data/traits/ego.tres" id="6_fgle7"]
 
-[sub_resource type="Resource" id="Resource_miet0"]
+[sub_resource type="Resource" id="Resource_35ssq"]
 script = ExtResource("2_hroll")
-description = "PLACEHOLDER ENTRY 12-1"
+description = "PLACEHOLDER EXPERIENCE 12-1"
 ask_path = "res://data/asks/c_0012_1.json"
 
-[sub_resource type="Resource" id="Resource_ygrel"]
+[sub_resource type="Resource" id="Resource_secq1"]
 script = ExtResource("2_hroll")
-description = "PLACEHOLDER ENTRY 12-2"
+description = "PLACEHOLDER EXPERIENCE 12-2"
 ask_path = "res://data/asks/c_0012_2.json"
 
-[sub_resource type="Resource" id="Resource_irar6"]
+[sub_resource type="Resource" id="Resource_nee3j"]
 script = ExtResource("2_hroll")
-description = "PLACEHOLDER ENTRY 12-3"
+description = "PLACEHOLDER SKILL 12-1"
 ask_path = "res://data/asks/c_0012_3.json"
 
 [resource]
@@ -29,11 +30,14 @@ display_name = "PLACEHOLDER NAME 12"
 strength = 18
 intelligence = 9
 wisdom = 8
-level = 6
+race = ExtResource("3_hroll")
 job = ExtResource("1_o3acm")
+gender = &"女"
+age = 29
 traits = Array[ExtResource("4_secq1")]([ExtResource("5_nee3j"), ExtResource("6_fgle7")])
-resume = Array[ExtResource("2_hroll")]([SubResource("Resource_miet0"), SubResource("Resource_ygrel"), SubResource("Resource_irar6")])
-resume_header = "PLACEHOLDER HEADER 12"
+experience = Array[ExtResource("2_hroll")]([SubResource("Resource_35ssq"), SubResource("Resource_secq1")])
+skill = Array[ExtResource("2_hroll")]([SubResource("Resource_nee3j")])
+team_declaration = "PLACEHOLDER DECLARATION 12"
 portrait_eye = 3
 portrait_hair = 3
 portrait_mouth = 2

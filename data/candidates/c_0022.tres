@@ -3,23 +3,24 @@
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_xxvtk"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_guygc"]
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_6r1dp"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="3_guygc"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_d0dts"]
 [ext_resource type="Resource" path="res://data/traits/lone_wolf.tres" id="5_okmby"]
 [ext_resource type="Resource" path="res://data/traits/justice.tres" id="6_q08xx"]
 
-[sub_resource type="Resource" id="Resource_igs8m"]
+[sub_resource type="Resource" id="Resource_6r1dp"]
 script = ExtResource("2_guygc")
-description = "PLACEHOLDER ENTRY 22-1"
+description = "PLACEHOLDER EXPERIENCE 22-1"
 ask_path = "res://data/asks/c_0022_1.json"
 
-[sub_resource type="Resource" id="Resource_4cbgw"]
+[sub_resource type="Resource" id="Resource_d0dts"]
 script = ExtResource("2_guygc")
-description = "PLACEHOLDER ENTRY 22-2"
+description = "PLACEHOLDER EXPERIENCE 22-2"
 ask_path = "res://data/asks/c_0022_2.json"
 
-[sub_resource type="Resource" id="Resource_mel35"]
+[sub_resource type="Resource" id="Resource_okmby"]
 script = ExtResource("2_guygc")
-description = "PLACEHOLDER ENTRY 22-3"
+description = "PLACEHOLDER SKILL 22-1"
 ask_path = "res://data/asks/c_0022_3.json"
 
 [resource]
@@ -29,11 +30,14 @@ display_name = "PLACEHOLDER NAME 22"
 strength = 17
 intelligence = 8
 wisdom = 10
-level = 6
+race = ExtResource("3_guygc")
 job = ExtResource("1_xxvtk")
+gender = &"女"
+age = 25
 traits = Array[ExtResource("4_d0dts")]([ExtResource("5_okmby"), ExtResource("6_q08xx")])
-resume = Array[ExtResource("2_guygc")]([SubResource("Resource_igs8m"), SubResource("Resource_4cbgw"), SubResource("Resource_mel35")])
-resume_header = "PLACEHOLDER HEADER 22"
+experience = Array[ExtResource("2_guygc")]([SubResource("Resource_6r1dp"), SubResource("Resource_d0dts")])
+skill = Array[ExtResource("2_guygc")]([SubResource("Resource_okmby")])
+team_declaration = "PLACEHOLDER DECLARATION 22"
 portrait_race = &"el"
 portrait_eye = 3
 portrait_hair = 3

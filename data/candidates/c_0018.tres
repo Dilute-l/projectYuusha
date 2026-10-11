@@ -1,24 +1,25 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://cixjht25jrhi6"]
 
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_lxqbj"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_m7ald"]
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_ljtii"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_6uit7"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="1_lxqbj"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_m7ald"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_ljtii"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="3_m7ald"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_6uit7"]
 [ext_resource type="Resource" path="res://data/traits/collector.tres" id="5_0ir0f"]
 
-[sub_resource type="Resource" id="Resource_4sni0"]
+[sub_resource type="Resource" id="Resource_ljtii"]
 script = ExtResource("2_m7ald")
-description = "PLACEHOLDER ENTRY 18-1"
+description = "PLACEHOLDER EXPERIENCE 18-1"
 ask_path = "res://data/asks/c_0018_1.json"
 
-[sub_resource type="Resource" id="Resource_ymfbi"]
+[sub_resource type="Resource" id="Resource_6uit7"]
 script = ExtResource("2_m7ald")
-description = "PLACEHOLDER ENTRY 18-2"
+description = "PLACEHOLDER EXPERIENCE 18-2"
 ask_path = "res://data/asks/c_0018_2.json"
 
-[sub_resource type="Resource" id="Resource_uamf5"]
+[sub_resource type="Resource" id="Resource_0ir0f"]
 script = ExtResource("2_m7ald")
-description = "PLACEHOLDER ENTRY 18-3"
+description = "PLACEHOLDER SKILL 18-1"
 ask_path = "res://data/asks/c_0018_3.json"
 
 [resource]
@@ -28,10 +29,13 @@ display_name = "PLACEHOLDER NAME 18"
 strength = 13
 intelligence = 6
 wisdom = 9
-level = 4
+race = ExtResource("3_m7ald")
 job = ExtResource("1_lxqbj")
+gender = &"女"
+age = 21
 traits = Array[ExtResource("4_6uit7")]([ExtResource("5_0ir0f")])
-resume = Array[ExtResource("2_m7ald")]([SubResource("Resource_4sni0"), SubResource("Resource_ymfbi"), SubResource("Resource_uamf5")])
-resume_header = "PLACEHOLDER HEADER 18"
+experience = Array[ExtResource("2_m7ald")]([SubResource("Resource_ljtii"), SubResource("Resource_6uit7")])
+skill = Array[ExtResource("2_m7ald")]([SubResource("Resource_0ir0f")])
+team_declaration = "PLACEHOLDER DECLARATION 18"
 portrait_hair = 2
 portrait_mouth = 2
