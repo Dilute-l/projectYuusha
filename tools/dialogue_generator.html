@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>对话生成器 · Yuusha</title>
+<style>
+  :root { --ink:#1c1a17; --line:#d8d2c6; --bg:#f6f3ec; --card:#fffdf8; --accent:#8a6a3b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+         background:var(--bg); color:var(--ink); }
+  header { padding:14px 20px; background:var(--card); border-bottom:1px solid var(--line);
+           display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0 12px 0 0; }
+  main { display:grid; grid-template-columns:minmax(420px,1fr) minmax(360px,1fr); gap:0;
+         height:calc(100vh - 59px); }
+  .pane { overflow:auto; padding:16px 20px; }
+  .pane + .pane { border-left:1px solid var(--line); background:#fbf9f4; }
+  fieldset { border:1px solid var(--line); border-radius:6px; background:var(--card);
+             margin:0 0 14px; padding:10px 12px 12px; }
+  legend { font-weight:700; padding:0 6px; color:var(--accent); }
+  label { display:block; font-size:12px; color:#6b6357; margin:8px 0 2px; }
+  input[type=text], textarea, select { width:100%; padding:6px 8px; border:1px solid var(--line);
+             border-radius:4px; background:#fff; font:inherit; color:inherit; }
+  textarea { resize:vertical; min-height:52px; }
+  button { font:inherit; padding:5px 11px; border:1px solid var(--line); border-radius:4px;
+           background:var(--card); cursor:pointer; }
+  button:hover { background:#f0ebe1; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.primary:hover { filter:brightness(1.08); }
+  button.tiny { padding:2px 7px; font-size:12px; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .row > * { flex:1; }
+  .row > button { flex:0 0 auto; }
+  .seg { border:1px solid var(--line); border-radius:6px; background:var(--card); margin-bottom:12px; }
+  .seg > .head { display:flex; gap:8px; align-items:center; padding:8px 10px;
+                 border-bottom:1px solid var(--line); background:#f3efe6; border-radius:6px 6px 0 0; }
+  .seg > .head input { flex:0 0 220px; font-weight:700; }
+  .line { border-top:1px dashed var(--line); padding:8px 10px; }
+  .line:first-of-type { border-top:0; }
+  .line .meta { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .line .meta input { flex:1 1 120px; }
+  .hint { color:#8b8375; font-size:12px; margin:4px 0 0; }
+  pre { margin:0; padding:12px; background:#2c2a26; color:#f2eee6; border-radius:6px;
+        font:12px/1.55 Consolas,"Cascadia Mono",monospace; white-space:pre; overflow:auto; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .warn { color:#a33; }
+  .ok { color:#3a7a3a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>对话生成器</h1>
+  <label style="margin:0" for="mode">输出形状</label>
+  <select id="mode" style="width:auto">
+    <option value="grouped">整份对话文件（{ "段名": [ … ] }）—— data/dialogue.json</option>
+    <option value="bare">单条追问（裸数组 [ … ]）—— data/asks/xxx.json</option>
+  </select>
+  <button id="addSeg">+ 新增一段</button>
+  <button id="loadFile">载入已有 json…</button>
+  <input id="fileInput" type="file" accept=".json" hidden>
+</header>
+
+<main>
+  <div class="pane">
+    <div id="segs"></div>
+    <p class="hint">
+      每行的可选字段：<b>popup</b>（这一句亮起 Popup 里哪个子节点，例如 <code>AwardPhd</code>；
+      空着=不弹）、<b>sound</b>（行内音效名）、<b>charDuration</b>（这一行的字间隔秒数）。<br>
+      三者留空就<b>不会</b>写进 json —— 和 <code>typer.gd::_normalize_line()</code> 的取舍一致。
+    </p>
+  </div>
+  <div class="pane">
+    <div class="bar">
+      <button class="primary" id="dl">下载 json</button>
+      <button id="copy">复制</button>
+      <button id="saveTo" hidden>直接保存到 data/…</button>
+      <span id="msg"></span>
+    </div>
+    <pre id="out"></pre>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+// ── 数据模型 ────────────────────────────────────────────────────────────────
+// segments: [ { id: "段名", lines: [ {speaker, text, popup, sound, charDuration} ] } ]
+let segments = [];
+
+const $ = (s) => document.querySelector(s);
+const el = (tag, props = {}, kids = []) => {
+  const n = Object.assign(document.createElement(tag), props);
+  for (const k of [].concat(kids)) if (k) n.appendChild(k);
+  return n;
+};
+
+// ── 渲染 ────────────────────────────────────────────────────────────────────
+function render() {
+  const box = $("#segs");
+  box.textContent = "";
+  if (!segments.length) {
+    box.appendChild(el("p", { className: "hint", textContent: "还没有段。点右上「+ 新增一段」开始。" }));
+  }
+  segments.forEach((seg, si) => {
+    const head = el("div", { className: "head" }, [
+      el("input", { type: "text", value: seg.id, placeholder: "段名，例如 day1_briefing",
+        oninput: (e) => { seg.id = e.target.value; update(); } }),
+      el("span", { className: "hint", textContent: seg.lines.length + " 行" }),
+      el("button", { className: "tiny", textContent: "+ 行", onclick: () => {
+        seg.lines.push({ speaker: "", text: "", popup: "", sound: "", charDuration: "" });
+        render();
+      }}),
+      el("button", { className: "tiny", textContent: "删段", onclick: () => {
+        segments.splice(si, 1); render();
+      }}),
+    ]);
+
+    const wrap = el("div", { className: "seg" }, [head]);
+    seg.lines.forEach((ln, li) => {
+      const meta = el("div", { className: "meta" }, [
+        el("input", { type: "text", value: ln.popup, placeholder: "popup（子节点名，可空）",
+          oninput: (e) => { ln.popup = e.target.value; update(); } }),
+        el("input", { type: "text", value: ln.sound, placeholder: "sound（可空）",
+          oninput: (e) => { ln.sound = e.target.value; update(); } }),
+        el("input", { type: "text", value: ln.charDuration, placeholder: "char_duration（可空）",
+          oninput: (e) => { ln.charDuration = e.target.value; update(); } }),
+      ]);
+      wrap.appendChild(el("div", { className: "line" }, [
+        el("div", { className: "row" }, [
+          el("input", { type: "text", value: ln.speaker, placeholder: "说话人（speaker_name）",
+            oninput: (e) => { ln.speaker = e.target.value; update(); } }),
+          el("button", { className: "tiny", textContent: "↑", title: "上移", onclick: () => {
+            if (li > 0) { const t = seg.lines[li - 1]; seg.lines[li - 1] = ln; seg.lines[li] = t; render(); }
+          }}),
+          el("button", { className: "tiny", textContent: "↓", title: "下移", onclick: () => {
+            if (li < seg.lines.length - 1) { const t = seg.lines[li + 1]; seg.lines[li + 1] = ln; seg.lines[li] = t; render(); }
+          }}),
+          el("button", { className: "tiny", textContent: "删", onclick: () => {
+            seg.lines.splice(li, 1); render();
+          }}),
+        ]),
+        el("textarea", { value: ln.text, placeholder: "正文（可多行；换行会被写成 \\n）",
+          oninput: (e) => { ln.text = e.target.value; update(); } }),
+        meta,
+      ]));
+    });
+    box.appendChild(wrap);
+  });
+  update();
+}
+
+// ── 产出 ────────────────────────────────────────────────────────────────────
+function lineObject(ln) {
+  const o = { speaker_name: ln.speaker, text: ln.text };
+  if (ln.popup.trim() !== "") o.popup = ln.popup.trim();
+  if (ln.sound.trim() !== "") o.sound = ln.sound.trim();
+  const d = parseFloat(ln.charDuration);
+  if (!Number.isNaN(d) && d > 0) o.char_duration = d;
+  return o;
+}
+
+function buildValue() {
+  if ($("#mode").value === "bare") {
+    return (segments[0] ? segments[0].lines : []).map(lineObject);
+  }
+  const out = {};
+  for (const seg of segments) {
+    const id = seg.id.trim();
+    if (id === "") continue;
+    out[id] = seg.lines.map(lineObject);
+  }
+  return out;
+}
+
+function buildText() {
+  // 缩进用 Tab —— 和仓库里现有的 data/dialogue.json 一致
+  return JSON.stringify(buildValue(), null, "\t") + "\n";
+}
+
+function update() {
+  const text = buildText();
+  $("#out").textContent = text;
+  const ids = segments.map((s) => s.id.trim()).filter(Boolean);
+  const dup = ids.filter((v, i) => ids.indexOf(v) !== i);
+  const empty = segments.filter((s) => s.id.trim() === "").length;
+  let msg = text.length + " 字节";
+  if (dup.length) msg = "⚠ 段名重复：" + [...new Set(dup)].join("、");
+  else if (empty) msg = "⚠ 有 " + empty + " 段没写段名（不会被写出）";
+  $("#msg").textContent = msg;
+  $("#msg").className = dup.length || empty ? "warn" : "ok";
+}
+
+// ── 动作 ────────────────────────────────────────────────────────────────────
+$("#addSeg").onclick = () => {
+  segments.push({ id: "", lines: [{ speaker: "", text: "", popup: "", sound: "", charDuration: "" }] });
+  render();
+};
+
+$("#mode").onchange = update;
+
+$("#copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(buildText()); $("#msg").textContent = "已复制 ✅"; $("#msg").className = "ok"; }
+  catch (e) { $("#msg").textContent = "复制失败，请手动选中右侧文本"; $("#msg").className = "warn"; }
+};
+
+function fileName() {
+  if ($("#mode").value === "bare") {
+    const id = segments[0] ? segments[0].id.trim() : "";
+    return (id || "ask") + ".json";
+  }
+  return "dialogue.json";
+}
+
+$("#dl").onclick = () => {
+  const blob = new Blob([buildText()], { type: "application/json;charset=utf-8" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: fileName() });
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(a.href);
+};
+
+// Chromium 的 File System Access API：能直接写进项目目录，省掉「下载→再挪过去」
+if (window.showSaveFilePicker) {
+  $("#saveTo").hidden = false;
+  $("#saveTo").onclick = async () => {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName(),
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+      });
+      const w = await handle.createWritable();
+      await w.write(buildText()); await w.close();
+      $("#msg").textContent = "已写入 " + handle.name + " ✅"; $("#msg").className = "ok";
+    } catch (e) {
+      if (e && e.name !== "AbortError") { $("#msg").textContent = "写入失败：" + e.message; $("#msg").className = "warn"; }
+    }
+  };
+}
+
+$("#loadFile").onclick = () => $("#fileInput").click();
+$("#fileInput").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  let data;
+  try { data = JSON.parse(await f.text()); }
+  catch (err) { $("#msg").textContent = "这个 json 读不出来：" + err.message; $("#msg").className = "warn"; return; }
+
+  const toLine = (o) => ({
+    speaker: String(o.speaker_name ?? o.speaker ?? ""),
+    text: String(o.text ?? o.dialogue ?? ""),
+    popup: String(o.popup ?? ""),
+    sound: String(o.sound ?? ""),
+    charDuration: o.char_duration != null ? String(o.char_duration) : "",
+  });
+
+  if (Array.isArray(data)) {
+    $("#mode").value = "bare";
+    segments = [{ id: f.name.replace(/\.json$/i, ""), lines: data.map(toLine) }];
+  } else {
+    $("#mode").value = "grouped";
+    segments = Object.keys(data).map((k) => ({
+      id: k,
+      lines: (Array.isArray(data[k]) ? data[k] : []).map(toLine),
+    }));
+  }
+  render();
+  $("#msg").textContent = "已载入 " + f.name; $("#msg").className = "ok";
+};
+
+// 起手就给一段能跑的示例，省得对着空白发呆
+segments = [{
+  id: "day1_briefing",
+  lines: [
+    { speaker: "面试官", text: "下一位。", popup: "", sound: "", charDuration: "" },
+    { speaker: "棍木", text: "请看这个。", popup: "AwardPhd", sound: "", charDuration: "" },
+  ],
+}];
+render();
+</script>
+</body>
+</html>
