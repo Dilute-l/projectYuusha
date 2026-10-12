@@ -154,39 +154,46 @@ func _check_candidate_data() -> void:
 			first.job != null and not first.job.display_name.strip_edges().is_empty(),
 			"候选人引用的职业带 display_name"
 		)
-		_check(not first.resume.is_empty(), "候选人带简历条目（%d 条）" % first.resume.size())
+		_check(not first.experience.is_empty(),
+				"候选人的「个人履历与奖项」有条目（%d 条）" % first.experience.size())
+		_check(not first.skill.is_empty(),
+				"候选人的「专长」有条目（%d 条）" % first.skill.size())
 		_check(first.portrait_race != &"", "候选人带立绘配方（race=%s）" % first.portrait_race)
-		_check(not first.resume_header.strip_edges().is_empty(), "候选人在数据里填了抬头（resume_header）")
+		_check(first.race != null, "候选人填了种族（RaceDef）")
+		_check(first.job != null, "候选人填了职业（JobDef）")
+		_check(first.gender != &"", "候选人填了性别（%s）" % first.gender)
+		_check(first.age > 0, "候选人填了年龄（%d）" % first.age)
+		_check(not first.team_declaration.strip_edges().is_empty(), "候选人在数据里填了组队宣言")
 
 		var entries_ok := true
-		for entry in first.resume:
-			if entry == null:
-				entries_ok = false
-				continue
+		for entry in Resume.entries_of(first):
 			if entry.description.strip_edges().is_empty() \
 					or entry.ask_path.strip_edges().is_empty():
 				entries_ok = false
-		_check(entries_ok, "每条简历都齐了描述 + 追问 json 路径两样")
+		_check(entries_ok, "每条履历 / 专长都齐了描述 + 追问 json 路径两样")
 
-		# 追问的台词自 §11 起单独成文件（一条追问一份 json）。75 份 json 里最容易错的
-		# 就是「路径写错 / 文件忘了提交 / json 写坏」这三样，所以这里把全部候选人一次过完。
+		# 追问的台词自 §11 起单独成文件（一条追问一份 json）。json 里最容易错的就是
+		# 「路径写错 / 文件忘了提交 / json 写坏」这三样，所以这里把全部候选人一次过完。
+		# 序号 -1（Resume.STATUS_ENTRY_INDEX）是属性追问，走约定路径，同样算一份。
 		var asks_ok := true
 		for candidate_id in DataDB.get_ids(&"candidates"):
 			var candidate := DataDB.get_candidate(candidate_id)
 			if candidate == null:
 				continue
-			for entry in candidate.resume:
-				if entry == null or not _ask_json_ok(entry.ask_path):
+			for i in Resume.entries_of(candidate).size():
+				if not _ask_json_ok(Resume.ask_path_of(candidate, i)):
 					asks_ok = false
-		_check(asks_ok, "每位候选人的每条追问都指到一份存在的、能读的 json")
+			if not _ask_json_ok(Resume.ask_path_of(candidate, Resume.STATUS_ENTRY_INDEX)):
+				asks_ok = false
+		_check(asks_ok, "每位候选人的每条追问（含属性追问）都指到一份存在的、能读的 json")
 
-	# 抬头是写死在数据里的一段字，代码不再按字段拼 —— 所以每个人都得有
-	var headers_ok := true
+	# 组队宣言是写死在数据里的一段字，代码不再按字段拼 —— 所以每个人都得有
+	var declarations_ok := true
 	for id in DataDB.get_ids(&"candidates"):
 		var candidate := DataDB.get_candidate(id)
-		if candidate == null or candidate.resume_header.strip_edges().is_empty():
-			headers_ok = false
-	_check(headers_ok, "每位候选人都自带一段抬头文案")
+		if candidate == null or candidate.team_declaration.strip_edges().is_empty():
+			declarations_ok = false
+	_check(declarations_ok, "每位候选人都自带一段组队宣言")
 
 	# 每天都要有写死的名单，slots 不能超过当天人数，名单里的人必须都在 data/candidates/ 里
 	var days_ok := true

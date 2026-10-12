@@ -5,8 +5,15 @@
 [ext_resource type="Texture2D" uid="uid://byc2u8r2w06dk" path="res://assets/art/battle_report/car_bkg_phd.png" id="2_exidj"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_x4kxj"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_exidj"]
-[ext_resource type="Texture2D" uid="uid://cgl2nkfs5ip6c" path="res://assets/art/interview/resume_token_menu_phd.png" id="4_mf86t"]
+[ext_resource type="Texture2D" uid="uid://d2qtbc8es4shp" path="res://assets/art/paper.png" id="4_tg3lx"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="5_c8nql"]
+[ext_resource type="FontFile" uid="uid://b8u6a2faqsh1d" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="5_hrn5s"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vkqoe"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_gjxql"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_co6qv"]
 
 [node name="BattleReport" type="Control" unique_id=81862534]
 layout_mode = 3
@@ -27,28 +34,64 @@ texture = ExtResource("2_exidj")
 centered = false
 
 [node name="BattleReportPhd" type="Sprite2D" parent="." unique_id=489911544]
-position = Vector2(853.12506, 311)
-scale = Vector2(3.063794, 2.5941706)
-texture = ExtResource("4_mf86t")
+texture = ExtResource("4_tg3lx")
+centered = false
 
 [node name="Confirm" type="Button" parent="BattleReportPhd" unique_id=1501765293]
-offset_left = -11.790947
-offset_top = 54.738106
-offset_right = 19.209053
-offset_bottom = 83.738106
+offset_left = 736.0
+offset_top = 533.0
+offset_right = 839.0
+offset_bottom = 561.0
 theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_fonts/font = ExtResource("5_c8nql")
+theme_override_fonts/font = ExtResource("5_hrn5s")
 theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxEmpty_vkqoe")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_gjxql")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_co6qv")
 text = "确认"
 
 [node name="ReportContent" type="RichTextLabel" parent="BattleReportPhd" unique_id=529514880]
-offset_left = -38.55516
-offset_top = -70.1573
-offset_right = 123.98845
-offset_bottom = 164.21436
+offset_left = 608.0
+offset_top = 82.0
+offset_right = 1337.1104
+offset_bottom = 866.0
 scale = Vector2(0.5, 0.5)
 theme_override_colors/default_color = Color(0, 0, 0, 1)
 theme_override_fonts/normal_font = ExtResource("5_c8nql")
+theme_override_font_sizes/normal_font_size = 60
+theme_override_font_sizes/bold_font_size = 60
+theme_override_font_sizes/bold_italics_font_size = 60
+theme_override_font_sizes/italics_font_size = 60
+theme_override_font_sizes/mono_font_size = 60
+
+[node name="ScoreLable" type="Label" parent="BattleReportPhd" unique_id=430819009]
+offset_left = 732.0
+offset_top = 37.0
+offset_right = 844.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_hrn5s")
+theme_override_font_sizes/font_size = 28
+text = "本日战报"
+
+[node name="ScoreContainer" type="Label" parent="BattleReportPhd" unique_id=732133001]
+offset_left = 762.0
+offset_top = 487.0
+offset_right = 874.0
+offset_bottom = 516.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_hrn5s")
+theme_override_font_sizes/font_size = 28
+
+[node name="Title" type="Label" parent="BattleReportPhd" unique_id=1823405637]
+offset_left = 687.0
+offset_top = 487.0
+offset_right = 765.0
+offset_bottom = 516.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_hrn5s")
+theme_override_font_sizes/font_size = 28
+text = "总分："
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("3_x4kxj")]
 layout_mode = 0

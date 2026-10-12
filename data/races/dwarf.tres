@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="RaceDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/race_def.gd" id="1_6uylo"]
+
+[resource]
+script = ExtResource("1_6uylo")
+id = &"race.st"
+display_name = "矮人"
+description = "身量矮、肩膀宽，爱戴帽子，对矿脉和酒都很执着。"

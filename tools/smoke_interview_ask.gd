@@ -71,20 +71,21 @@ func _run() -> void:
 	_check(candidate != null, "第 1 天名单里有候选人")
 	if candidate == null:
 		return
-	_check(candidate.resume.size() >= 2, "这位候选人至少带 2 条简历（实际 %d）" % candidate.resume.size())
-	if candidate.resume.size() < 2:
+	var entries := Resume.entries_of(candidate)
+	_check(entries.size() >= 2, "这位候选人的履历 + 专长至少 2 条（实际 %d）" % entries.size())
+	if entries.size() < 2:
 		return
 
 	# 档案里只该剩一个路径：追问的正文一个字都不许再存在档案上
-	var entry0 := candidate.resume[0]
-	var entry1 := candidate.resume[1]
-	_check(not entry0.ask_path.strip_edges().is_empty(), "第 1 条简历指向一份追问 json")
-	_check(entry0.ask_path != entry1.ask_path, "两条简历指向**不同**的追问 json（一条一个文件）")
-	_check(not entry0.ask_path.begins_with("res://data/dialogue.json"),
-			"追问 json 不是共用的 dialogue.json：%s" % entry0.ask_path)
+	var ask0 := Resume.ask_path_of(candidate, 0)
+	var ask1 := Resume.ask_path_of(candidate, 1)
+	_check(not ask0.strip_edges().is_empty(), "第 1 条指向一份追问 json")
+	_check(ask0 != ask1, "两条指向**不同**的追问 json（一条一个文件）")
+	_check(not ask0.begins_with("res://data/dialogue.json"),
+			"追问 json 不是共用的 dialogue.json：%s" % ask0)
 
-	var expect0 := _read_ask(entry0.ask_path)
-	var expect1 := _read_ask(entry1.ask_path)
+	var expect0 := _read_ask(ask0)
+	var expect1 := _read_ask(ask1)
 	_check(expect0.size() >= 2, "第 1 条的追问 json 至少有 2 行（实际 %d）" % expect0.size())
 	if expect0.size() < 2:
 		return
@@ -117,8 +118,7 @@ func _run() -> void:
 	interview.phase_finished.connect(func() -> void: advanced.append(1))
 
 	# ---- 点词条 → 开菜单 → 点「追问」----
-	var list: VBoxContainer = resume.get_node("Paper/Rows/TokenList")
-	var token0: Control = list.get_child(0)
+	var token0: Control = resume.token_at(0)
 	var ask: Button = menu.get_node("Options/OptionList/AskButton")
 	token0.emit_signal("pressed")
 	await _settle()
@@ -184,7 +184,7 @@ func _run() -> void:
 	_check(GameState.get_phase() == DayPhase.Phase.INTERVIEW, "阶段仍然是 INTERVIEW")
 
 	# ---- 换一条：播的必须换成那一条自己的 json（换文件要重读）----
-	token0 = list.get_child(1)
+	token0 = resume.token_at(1)
 	token0.emit_signal("pressed")
 	await _settle()
 	ask.emit_signal("pressed")
@@ -230,20 +230,20 @@ func _run() -> void:
 
 	# ---- 档案忘配 ask_path：要拦住，而且不能拿上一份 json 顶包 ----
 	# 同时确认**没播成的追问不算「问过」** —— 否则组队里那条会亮起来，点开却什么也没有。
-	var saved := entry0.ask_path
+	var saved: String = entries[0].ask_path
 	var asked_before := GameState.get_asked_entries(candidate.id)
-	entry0.ask_path = ""
+	entries[0].ask_path = ""
 	dialoguer.visible = false
 	EventBus.resume_entry_asked.emit(candidate.id, 0)
 	await _settle()
 	_check(not dialoguer.visible, "ask_path 为空 → 不播（也不拿上一份顶着）")
-	entry0.ask_path = "res://data/asks/__not_there__.json"
+	entries[0].ask_path = "res://data/asks/__not_there__.json"
 	EventBus.resume_entry_asked.emit(candidate.id, 0)
 	await _settle()
 	_check(not dialoguer.visible, "ask_path 指向不存在的文件 → 不播")
 	_check(GameState.get_asked_entries(candidate.id) == asked_before,
 			"没播成的追问不记「问过」（记录仍是 %s）" % str(asked_before))
-	entry0.ask_path = saved
+	entries[0].ask_path = saved
 
 
 func _report() -> void:

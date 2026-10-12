@@ -65,7 +65,8 @@ func _run() -> void:
 	if candidate == null:
 		_report()
 		return
-	_check(candidate.resume.size() >= 3, "第 1 天第一位至少带 3 条简历（实际 %d）" % candidate.resume.size())
+	var entries := Resume.entries_of(candidate)
+	_check(entries.size() >= 3, "第 1 天第一位至少带 3 条履历/专长（实际 %d）" % entries.size())
 
 	var resume := RESUME_SCENE.instantiate() as Resume
 	vp.add_child(resume)
@@ -76,17 +77,15 @@ func _run() -> void:
 	await _settle()
 
 	_canvas = resume.get_viewport_rect().size
-	print("[smoke_resume_menu] 画布 = %s，候选人 = %s（%d 条简历）" % [
-		_canvas, candidate.display_name, candidate.resume.size()])
+	print("[smoke_resume_menu] 画布 = %s，候选人 = %s（%d 条履历/专长）" % [
+		_canvas, candidate.display_name, entries.size()])
 	_check(_canvas == Vector2(GAME_CANVAS), "画布是自己设定的 1152x648")
 
 	var menu: ResumeTokenMenu = resume.get_node("TokenMenu")
 	var panel: TextureRect = menu.get_node("Panel")
 	var ask: Button = menu.get_node("Options/OptionList/AskButton")
-	var list: VBoxContainer = resume.get_node("Paper/Rows/TokenList")
-	var info: Label = resume.get_node("Paper/Rows/HeaderInfo")
-	var third: Control = list.get_child(2)
-	var last: Control = list.get_child(candidate.resume.size() - 1)
+	var third: Control = resume.token_at(2)
+	var last: Control = resume.token_at(entries.size() - 1)
 
 	# ---- 结构与素材 ----
 	_check(menu != null, "TokenMenu 存在且是 ResumeTokenMenu")
@@ -97,16 +96,15 @@ func _run() -> void:
 	_check(ask.text == "追问", "按钮文案是「追问」")
 
 	# ---- 纸面内容来自数据（不是代码里的占位常量）----
-	var shown := 0
-	for child in list.get_children():
-		if (child as Control).visible:
-			shown += 1
-	_check(shown == candidate.resume.size(),
-			"铺出来的词条数 = 候选人简历条数（%d）" % candidate.resume.size())
-	_check(not candidate.resume_header.strip_edges().is_empty(), "候选人在数据里填了抬头")
-	_check(info.text == candidate.resume_header,
-			"抬头把数据里那一段字原样铺上去（不做拼接）")
-	_check((third as Button).text.contains(candidate.resume[2].description),
+	_check(resume.token_count() == entries.size(),
+			"铺出来的词条数 = 履历 + 专长条数（%d）" % entries.size())
+	_check(not candidate.team_declaration.strip_edges().is_empty(), "候选人在数据里填了组队宣言")
+	var declaration: Label = resume.get_node("DeclarationContainer")
+	_check(declaration.text == candidate.team_declaration,
+			"组队宣言把数据里那一段字原样铺上去（不做拼接）")
+	var name_value: Label = resume.get_node("NameContainer")
+	_check(name_value.text == candidate.display_name, "姓名栏 = 数据里的 display_name")
+	_check((third as Button).text.contains(entries[2].description),
 			"第三条词条正文 = 数据里的 description")
 
 	# 顺带如实报一下按钮能不能画中文（§10.5）。
@@ -124,6 +122,8 @@ func _run() -> void:
 		print("  [note] ⚠ 按钮字体缺字形「%s」—— 按钮会显示成方块" % missing)
 
 	# ---- 点词条 → 开菜单 ----
+	# 序号 2 现在是「专长」那条：它在两个词条列表的后半，菜单被要求摆**左边**
+	# （右边紧挨着纸面别的内容）。履历那栏仍然摆右边，下面单独验。
 	_check(third.selected.get_connections().size() > 0, "词条的 selected 已接到 resume.gd")
 	third.emit_signal("pressed")
 	await _settle()
@@ -132,9 +132,37 @@ func _run() -> void:
 	_check(menu.entry_index == 2, "菜单记住词条序号 = 2")
 	var r := menu.get_global_rect()
 	var a := third.get_global_rect()
-	_check(is_equal_approx(r.position.x, a.end.x + ResumeTokenMenu.GAP), "默认贴在词条右边")
-	_check(is_equal_approx(r.position.y, a.position.y), "与词条顶对齐")
+	_check(is_equal_approx(r.end.x, a.position.x - ResumeTokenMenu.GAP),
+			"专长那条 → 菜单摆左边")
+	# 与词条顶对齐 —— 但贴不下时会被画布底部夹住（_reposition 对 y 只夹取、不翻转）。
+	var expected_top: float = minf(a.position.y, _canvas.y - ResumeTokenMenu.PANEL_SIZE.y)
+	_check(is_equal_approx(r.position.y, expected_top), "与词条顶对齐（贴不下时夹进画布）")
 	_check(_inside(r, _canvas), "菜单整块落在画布内 %s" % r)
+
+	# ---- 履历那条（序号 0）仍然按默认摆右边 ----
+	var first_token: Control = resume.token_at(0)
+	menu.close()
+	first_token.emit_signal("pressed")
+	await _settle()
+	var r0 := menu.get_global_rect()
+	var a0 := first_token.get_global_rect()
+	_check(is_equal_approx(r0.position.x, a0.end.x + ResumeTokenMenu.GAP),
+			"履历那条 → 菜单默认摆右边")
+	_check(menu.entry_index == 0, "菜单记住词条序号 = 0")
+	menu.close()
+
+	# ---- 状态区（力量 / 智力 / 感知）也是可追问的，序号 -1，菜单摆左边 ----
+	var status_btn: Button = resume.get_node("Status")
+	status_btn.pressed.emit()
+	await _settle()
+	_check(menu.is_open(), "点状态区 → 菜单也打开")
+	_check(menu.entry_index == Resume.STATUS_ENTRY_INDEX,
+			"状态区的序号是 -1（实际 %d）" % menu.entry_index)
+	var rs := menu.get_global_rect()
+	var as_rect := status_btn.get_global_rect()
+	_check(is_equal_approx(rs.end.x, as_rect.position.x - ResumeTokenMenu.GAP),
+			"状态区 → 菜单摆左边")
+	menu.close()
 
 	# ---- 底部夹取 ----
 	# 词条条数现在由数据决定，位置不再是个固定值，所以先把画布压到
@@ -236,20 +264,17 @@ func _run() -> void:
 	# ---- 换一位候选人：纸面内容整块跟着换 ----
 	resume.set_candidate(null)
 	await _settle()
-	_check(info.text.is_empty(), "喂 null → 抬头清空")
-	var still_shown := 0
-	for child in list.get_children():
-		if (child as Control).visible:
-			still_shown += 1
-	_check(still_shown == 0, "喂 null → 词条全部收起")
+	_check(name_value.text.is_empty(), "喂 null → 姓名栏清空")
+	_check(declaration.text.is_empty(), "喂 null → 组队宣言清空")
+	_check(resume.token_count() == 0, "喂 null → 词条全部收起")
 	_check(not menu.is_open(), "喂 null → 菜单不会留在半空")
 
-	# ---- 抬头就是一段字：长得再不像「字段拼出来的」也照样原样铺 ----
+	# ---- 组队宣言就是一段字：长得再不像「字段拼出来的」也照样原样铺 ----
 	var odd := CandidateResource.new()
-	odd.resume_header = "—— 江湖人称「一晚上砍死三头魔物」的那个男人 ——"
+	odd.team_declaration = "—— 江湖人称「一晚上砍死三头魔物」的那个男人 ——"
 	resume.set_candidate(odd)
 	await _settle()
-	_check(info.text == odd.resume_header, "抬头原样铺，不做任何拼接 / 加工")
+	_check(declaration.text == odd.team_declaration, "组队宣言原样铺，不做任何拼接 / 加工")
 	_check(resume.get_candidate() == odd, "get_candidate 能把当前这位取回来")
 
 

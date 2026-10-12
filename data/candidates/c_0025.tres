@@ -2,24 +2,25 @@
 
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_f3nr6"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_qe024"]
+[ext_resource type="Resource" path="res://data/races/dwarf.tres" id="3_qe024"]
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_wd4fk"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_pnmki"]
 [ext_resource type="Resource" path="res://data/traits/chivalry.tres" id="5_ab43b"]
 [ext_resource type="Resource" path="res://data/traits/insomnia.tres" id="6_jmr5b"]
 
-[sub_resource type="Resource" id="Resource_qidvh"]
+[sub_resource type="Resource" id="Resource_wd4fk"]
 script = ExtResource("2_qe024")
-description = "PLACEHOLDER ENTRY 25-1"
+description = "PLACEHOLDER EXPERIENCE 25-1"
 ask_path = "res://data/asks/c_0025_1.json"
 
-[sub_resource type="Resource" id="Resource_ga3dn"]
+[sub_resource type="Resource" id="Resource_pnmki"]
 script = ExtResource("2_qe024")
-description = "PLACEHOLDER ENTRY 25-2"
+description = "PLACEHOLDER EXPERIENCE 25-2"
 ask_path = "res://data/asks/c_0025_2.json"
 
-[sub_resource type="Resource" id="Resource_ejg6c"]
+[sub_resource type="Resource" id="Resource_ab43b"]
 script = ExtResource("2_qe024")
-description = "PLACEHOLDER ENTRY 25-3"
+description = "PLACEHOLDER SKILL 25-1"
 ask_path = "res://data/asks/c_0025_3.json"
 
 [resource]
@@ -29,9 +30,12 @@ display_name = "PLACEHOLDER NAME 25"
 strength = 21
 intelligence = 7
 wisdom = 11
-level = 7
+race = ExtResource("3_qe024")
 job = ExtResource("1_f3nr6")
+age = 28
 traits = Array[ExtResource("4_pnmki")]([ExtResource("5_ab43b"), ExtResource("6_jmr5b")])
-resume = Array[ExtResource("2_qe024")]([SubResource("Resource_qidvh"), SubResource("Resource_ga3dn"), SubResource("Resource_ejg6c")])
-resume_header = "PLACEHOLDER HEADER 25"
+experience = Array[ExtResource("2_qe024")]([SubResource("Resource_wd4fk"), SubResource("Resource_pnmki")])
+skill = Array[ExtResource("2_qe024")]([SubResource("Resource_ab43b")])
+team_declaration = "PLACEHOLDER DECLARATION 25"
 portrait_race = &"st"
+judgment = "placeholder judgement （c_0025）"

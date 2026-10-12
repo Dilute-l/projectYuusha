@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="RaceDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/race_def.gd" id="1_05k1s"]
+
+[resource]
+script = ExtResource("1_05k1s")
+id = &"race.el"
+display_name = "精灵"
+description = "耳朵尖、眼力好，活得比人类久，说话也慢一些。"

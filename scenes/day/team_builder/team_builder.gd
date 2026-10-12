@@ -2,20 +2,22 @@ extends Control
 
 ## 组队容器（ARCHITECTURE.md §4「team_builder.tscn」，§12）。
 ##
-##   左半边：**今日出现的面试者的头像**（team_builder_ui.tscn，一条一个 candidate.tscn）
+##   左半边：**今日通过面试的候选人**，一人一个方头像框（team_builder_ui.tscn → candidate.tscn）
 ##   右半边：复用面试那一页简历（resume.tscn）—— 位置和面试里**完全一样**，
 ##          因为用的是同一个场景、同一套绝对偏移，所以没有任何对齐代码。
 ##
 ## 本脚本只做「接线」，不写规则：
 ##
-##   名单   → GameState.current_candidates（data/days/day_XX.tres 写死的当日名单）
-##   悬停   → 把这一位的简历铺到右半边（和面试同一个数据入口 Resume.set_candidate）
-##   左键   → 在 GameState.current_team 里加上这一位；再点一次 = 从名单里去掉（撤销）
-##   名额   → 能不能加由 scripts/core/team/team_validator.gd 判定（§0：规则不在表现层）
+##   名单   → GameState.passed_ids（面试阶段判定通过的人，data/days/day_XX.tres 里今天出场的那几位）
+##   左键   → 头像底下滑出两个按钮 + 把这一位的简历铺到右半边（和面试同一个数据入口）
+##   进队   → GameState.current_team 里加上这一位；不进队 → GameState.rejected_ids
+##   名额   → 能不能再加一位由 scripts/core/team/team_validator.gd 判定（§0：规则不在表现层）
+##
+## 开场**谁都没被选中**：面试的「录用」只是把候选池缩小到今天这几位，
+## 真正挑满名额是玩家在这儿一位一位按出来的（§12.7）。
 ##
 ## 另外两件事（§12 / §10.7）：
 ##
-##   初始名单 → 面试阶段选了「录用」的人**一开始就标好**（见 _seed_team_from_verdicts）
 ##   回忆     → 点简历词条弹「回忆」：重播当时那段追问 + 面试官一句自言自语
 
 var _phase: int = DayPhase.Phase.DAY_BRIEFING
@@ -71,9 +73,6 @@ func _ready() -> void:
 	if not EventBus.resume_entry_recalled.is_connected(_on_resume_entry_recalled):
 		EventBus.resume_entry_recalled.connect(_on_resume_entry_recalled)
 
-	# **先播种再接线**：_wire_ui() 结尾会把队伍推给界面（_push_team_to_ui），
-	# 顺序反了的话界面拿到的还是空名单，玩家会看到一个「没人被录用」的组队界面。
-	_seed_team_from_verdicts()
 	_wire_ui()
 	_refresh()
 
@@ -87,59 +86,54 @@ func _wire_ui() -> void:
 	if _ui == null:
 		push_warning("[TeamBuilder] 找不到 TeamBuilderUI，本日只能看到背景")
 		return
-	if not _ui.candidate_hovered.is_connected(_on_candidate_hovered):
-		_ui.candidate_hovered.connect(_on_candidate_hovered)
-	if not _ui.candidate_toggled.is_connected(_on_candidate_toggled):
-		_ui.candidate_toggled.connect(_on_candidate_toggled)
+	if not _ui.candidate_selected.is_connected(_on_candidate_selected):
+		_ui.candidate_selected.connect(_on_candidate_selected)
+	if not _ui.candidate_approved.is_connected(_on_candidate_approved):
+		_ui.candidate_approved.connect(_on_candidate_approved)
+	if not _ui.candidate_rejected.is_connected(_on_candidate_rejected):
+		_ui.candidate_rejected.connect(_on_candidate_rejected)
 	_ui.set_slots(_today_slots())
-	_ui.set_candidates(GameState.current_candidates)
+	_ui.set_candidates(_passed_candidates())
 	_push_team_to_ui()
 
 
-## 当日名额，来自 data/days/day_XX.tres 的 slots；数据没填就返回 0（表头只报人数）
+## 今天要摆到左半边的候选人：**面试通过了的那几位**，顺序 = passed_ids 的顺序（§12.2）。
+##
+## 还没面试 / 一个都没通过时返回空数组（左半边空着，右下角的空位照样在）。
+## 名单里的 id 在当日名单里查不到（数据写错 / 换了天）时报一声跳过，不硬塞。
+func _passed_candidates() -> Array[CandidateResource]:
+	var list: Array[CandidateResource] = []
+	for id in GameState.get_passed_ids():
+		var candidate := GameState.get_candidate(id)
+		if candidate == null:
+			push_warning("[TeamBuilder] 通过者 %s 不在今天的名单里，跳过" % id)
+			continue
+		list.append(candidate)
+	return list
+
+
+## 当日名额，来自 data/days/day_XX.tres 的 slots；数据没填就返回 0（不摆空位、也不限人）
 func _today_slots() -> int:
 	var config := DataDB.get_day_config(GameState.get_day())
 	return config.slots if config != null else 0
 
 
-## 把队伍状态推给界面：谁被选中 + 名额满了没有。
+## 把队伍状态推给界面：谁进队 / 谁不进队 + 名额满了没有。
 ## 「满没满」交给 TeamValidator 判，界面只负责画（§0）。
 func _push_team_to_ui() -> void:
 	if _ui == null:
 		return
 	var team := GameState.get_current_team()
-	_ui.set_hired_ids(team)
+	_ui.set_decisions(team, GameState.get_rejected_ids())
 	_ui.set_team_full(TeamValidator.is_full(team, _today_slots()))
 
 
-## 一进组队，右半边是空的：还没悬停过任何一位（§12：鼠标移上去才展示）。
+## 一进组队，右半边是空的：还没点过任何一位（§12.3：点头像才展示）。
 func _refresh() -> void:
 	if _resume == null:
 		return
 	_resume.set_candidate(null)
 	_resume.visible = false
-
-
-# ---------------------------------------------------------------------------
-# 初始名单：面试阶段选了「录用」的人
-# ---------------------------------------------------------------------------
-
-
-## 把面试阶段的通过者直接带进今天的队伍（§12）。
-##
-## 组队阶段要做的是「从通过者里调整出最终名额」，而不是让玩家凭记忆再点一遍 ——
-## 面试时按下的那个「录用」就是玩家的第一次筛选，这里把它接着用。
-##
-## 通过者可能**比名额多**：这时界面会把他们全标上，玩家去掉几位才能出发
-## （见 _on_confirm_pressed 的超员拦截）。这是有意的 —— 该由玩家决定留下谁。
-func _seed_team_from_verdicts() -> void:
-	# 已经有队伍就别覆盖：换阶段回来 / F6 重进不该把玩家刚调整好的名单冲掉
-	if not GameState.get_current_team().is_empty():
-		return
-	var passed := GameState.get_passed_ids()
-	if passed.is_empty():
-		return
-	GameState.set_current_team(passed)
 
 
 # ---------------------------------------------------------------------------
@@ -164,19 +158,20 @@ func _on_resume_entry_recalled(candidate_id: StringName, entry_index: int) -> vo
 		return
 
 	var candidate := GameState.get_candidate(candidate_id)
-	if candidate == null or entry_index >= candidate.resume.size():
-		push_warning("[TeamBuilder] 回忆的条目找不到：%s[%d]" % [candidate_id, entry_index])
+	if candidate == null:
+		push_warning("[TeamBuilder] 回忆的候选人找不到：%s" % candidate_id)
 		return
-	var entry: ResumeEntry = candidate.resume[entry_index]
-	if entry == null or entry.ask_path.strip_edges().is_empty():
-		push_warning("[TeamBuilder] 第 %d 条没有 ask_path，没有可回忆的内容" % entry_index)
+	# 序号 → 对话文件这一层交给 Resume.ask_path_of()（和 interview.gd 同一处约定）
+	var ask_path := Resume.ask_path_of(candidate, entry_index)
+	if ask_path.is_empty():
+		push_warning("[TeamBuilder] %s[%d] 没有可回忆的对话" % [candidate_id, entry_index])
 		return
-	if not FileAccess.file_exists(entry.ask_path):
-		push_error("[TeamBuilder] 追问 json 不存在：%s" % entry.ask_path)
+	if not FileAccess.file_exists(ask_path):
+		push_error("[TeamBuilder] 追问 json 不存在：%s" % ask_path)
 		return
 
 	# 一份 json = 一条追问，所以 id 留空（取文件里的第一段）
-	if not _dialoguer.typer.load_dialogue_from(entry.ask_path):
+	if not _dialoguer.typer.load_dialogue_from(ask_path):
 		return
 	_dialoguer.typer.append_line(RECALL_TAIL_SPEAKER, RECALL_TAIL_TEXT)
 	_dialoguer.play()
@@ -187,56 +182,100 @@ func _on_resume_entry_recalled(candidate_id: StringName, entry_index: int) -> vo
 # ---------------------------------------------------------------------------
 
 
-func _on_candidate_hovered(candidate: CandidateResource) -> void:
+# ---------------------------------------------------------------------------
+# 左键点头像 → 右半边铺简历
+# ---------------------------------------------------------------------------
+
+
+## 玩家左键点了某一位的**头像**（两个按钮跟着从头像底下滑出来，那件事在 UI 层）。
+##
+## 这里只负责把这一位的简历铺到右半边：和面试完全同一个数据入口，
+## 抬头 + 逐条词条全部来自 data/candidates/*.tres。
+##
+## 铺过就**留着**：判定完把按钮收起来时简历不动，不然读到一半就白了。
+func _on_candidate_selected(candidate: CandidateResource) -> void:
 	if candidate == null or _resume == null:
 		return
-	# 与面试完全同一个数据入口：抬头 + 逐条词条全部来自 data/candidates/*.tres
 	_resume.set_candidate(candidate)
 	_resume.visible = true
 
 
 # ---------------------------------------------------------------------------
-# 左键 → 标记录用 / 撤销
+# 「进队」/「不进队」
 # ---------------------------------------------------------------------------
 
 
-## 左键点一位：没在队里就加进去（标记为录用），已在队里就拿出来（撤销）。
+## 点了「进队」：这一位进 GameState.current_team（右下角就多填一个格子、底色转绿）。
 ##
 ## 真身是 GameState.current_team（§2：本日过程量，不入存档），这里只是在改它。
 ## 「还能不能再加一位」是规则，问 TeamValidator。
-func _on_candidate_toggled(candidate: CandidateResource) -> void:
+## 进队和不进队**互斥**：进队的人从 rejected_ids 里划掉。
+func _on_candidate_approved(candidate: CandidateResource) -> void:
 	if candidate == null:
 		return
 
 	# 队伍一改，「刚才那份名单确定要走吗」这个问题就作废了
 	_cancel_incomplete_confirm()
 
+	# 点自己也顺手把简历铺上（点头像那一下已经铺过，但脚本直接发信号这条路径也说得通）
+	_on_candidate_selected(candidate)
+
 	var slots := _today_slots()
 	var team := GameState.get_current_team()
-
 	if team.has(candidate.id):
-		# 撤销**永远**允许 —— 否则满员之后玩家就换不了人了
-		team.erase(candidate.id)
-	else:
-		var verdict := TeamValidator.can_add(team, slots, candidate.id)
-		if not bool(verdict.get("ok", false)):
-			var reason := StringName(verdict.get("reason", &""))
-			# 「满了」是玩家看得见的正常状态（头像已经变灰），不必刷警告；
-			# 另外两种说明调用方出了问题 —— 要响，不要吞。
-			if reason != TeamValidator.REASON_FULL:
-				push_warning("[TeamBuilder] %s 加不进队伍：%s" % [candidate.id, reason])
-			return
-		team.append(candidate.id)
+		# 已经在队里：再按一次不改任何东西（想反悔就按「不进队」）
+		_push_team_to_ui()
+		return
 
+	var verdict := TeamValidator.can_add(team, slots, candidate.id)
+	if not bool(verdict.get("ok", false)):
+		var reason := StringName(verdict.get("reason", &""))
+		# 「满了」是玩家看得见的正常状态（进队按钮已经置灰），不必刷警告；
+		# 另外两种说明调用方出了问题 —— 要响，不要吞。
+		if reason != TeamValidator.REASON_FULL:
+			push_warning("[TeamBuilder] %s 加不进队伍：%s" % [candidate.id, reason])
+		_push_team_to_ui()
+		return
+
+	team.append(candidate.id)
 	GameState.set_current_team(team)
+	_forget_rejection(candidate.id)
 	_push_team_to_ui()
 
-	# 点一下也把这位的简历铺上：正常路径下悬停已经铺过了，
-	# 但「没悬停就点到」（键盘 / 脚本 / 手速）这条路径也说得通。
-	_on_candidate_hovered(candidate)
+
+## 点了「不进队」：这一位记进 GameState.rejected_ids（底色转红、不占名额格）。
+##
+## 已经在队里的先拿出来 —— 进队和不进队是**互斥**的两种判定，不能同时成立。
+func _on_candidate_rejected(candidate: CandidateResource) -> void:
+	if candidate == null:
+		return
+
+	_cancel_incomplete_confirm()
+	_on_candidate_selected(candidate)
+
+	var team := GameState.get_current_team()
+	if team.has(candidate.id):
+		team.erase(candidate.id)
+		GameState.set_current_team(team)
+
+	var rejected := GameState.get_rejected_ids()
+	if not rejected.has(candidate.id):
+		rejected.append(candidate.id)
+		GameState.set_rejected_ids(rejected)
+
+	_push_team_to_ui()
 
 
-## 当前被标记为录用的 id（= GameState.current_team 的快照）。调试 / 测试用。
+## 把某位从「不进队」名单里划掉（他刚刚改成进队了）
+func _forget_rejection(candidate_id: StringName) -> void:
+	var rejected := GameState.get_rejected_ids()
+	if not rejected.has(candidate_id):
+		return
+	rejected.erase(candidate_id)
+	GameState.set_rejected_ids(rejected)
+
+
+## 当前进队的 id（= GameState.current_team 的快照）。调试 / 测试用。
 func hired_ids() -> Array[StringName]:
 	return GameState.get_current_team()
 
@@ -262,7 +301,8 @@ func _on_confirm_pressed() -> void:
 	var team := GameState.get_current_team()
 
 	# 超员是**硬拦**：多带的人没有名额，怎么点都出不去。
-	# 为什么会超：面试录用的比名额多时，一进组队就是超员状态（见 _seed_team_from_verdicts）。
+	# 界面上按「进队」是走 TeamValidator 的，正常玩不会超；
+	# 这条兜的是「队伍被别处写成了超员」（调试 / 脚本 / 以后改数据）那条路。
 	if TeamValidator.is_over(team, slots):
 		_cancel_incomplete_confirm()
 		if not _play_dialogue("team_over"):

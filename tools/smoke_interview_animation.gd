@@ -218,11 +218,12 @@ func _run() -> void:
 	var left_out := interviewee.offscreen_left_x()
 	var right_out := interviewee.offscreen_right_x()
 
-	# 简历「完全离开画面」到底要滑多远，由**纸面本身**的位置决定，不是由画布高度决定：
-	# 纸只占 62..542，行程 648 是个保守值（留了余量，换画布尺寸也不会露馅）。
-	var paper: Control = resume.get_node("Paper")
-	var paper_top := paper.position.y
-	var paper_bottom := paper.position.y + paper.size.y
+	# 简历「完全离开画面」到底要滑多远，由**底纸本身**的位置决定，不是由画布高度决定：
+	# 新版面没有 Paper 容器，底纸就是 ResumePagePhd 这张手绘图，按它的原点 + 贴图高度量。
+	var paper_sprite: Sprite2D = resume.get_node("ResumePagePhd")
+	var paper_h := paper_sprite.texture.get_size().y if paper_sprite.texture != null else 0.0
+	var paper_top := paper_sprite.position.y
+	var paper_bottom := paper_sprite.position.y + paper_h
 	var below_out := float(GAME_CANVAS.y) - paper_top   # 纸的顶边被推到画面底边之下
 	var above_out := -paper_bottom                      # 纸的底边被推到画面顶边之上
 	print("[smoke_interview_animation] 站定处 %s；左右画面外 %s / %s；简历行程 %.0f；纸面 %.0f..%.0f" % [

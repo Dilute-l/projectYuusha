@@ -22,6 +22,7 @@ var _report: BattleReport = null
 
 @onready var _confirm: Button = get_node_or_null("BattleReportPhd/Confirm") as Button
 @onready var _content: RichTextLabel = get_node_or_null("BattleReportPhd/ReportContent") as RichTextLabel
+@onready var _score: Label = get_node_or_null("BattleReportPhd/ScoreContainer") as Label
 
 
 func _ready() -> void:
@@ -62,12 +63,22 @@ func set_report(report: BattleReport) -> void:
 	if report == null:
 		# 还没生成时不要静默留空：清掉上一次的内容，并说清原因
 		_content.text = ""
+		_set_score_text("")
 		push_warning("[BattleReport] 当天的战报还没生成（GameState.get_battle_report() 返回 null）")
 		return
 	_content.text = _format_report(report)
+	# 总分**不在正文里** —— 它有自己的显示位（ScoreContainer），位置由场景摆
+	_set_score_text(str(report.day_score))
 
 
-## 战报 → 显示文本。
+func _set_score_text(text: String) -> void:
+	if _score == null:
+		push_error("[BattleReport] 找不到 ScoreContainer，总分显示不出来")
+		return
+	_score.text = text
+
+
+## 战报 → 显示文本（**不含总分**，总分走 ScoreContainer）。
 ##
 ## ★ 想改「文字怎么呈现」就改这一个函数 ★
 ##
@@ -76,13 +87,11 @@ func set_report(report: BattleReport) -> void:
 ## 要上颜色 / 加粗 / 图标，先把 bbcode_enabled 打开，再把这个函数改成拼 BBCode。
 func _format_report(report: BattleReport) -> String:
 	var lines: Array[String] = []
-	lines.append("第 %d 天战报" % report.day_index)
+	lines.append("第 %d 天" % report.day_index)
 	lines.append("出战：%s" % _member_names(report.member_ids))
 	lines.append("")
 	for event in report.events:
 		lines.append("· %s" % _event_text(event))
-	lines.append("")
-	lines.append("当日得分：%d" % report.day_score)
 	return "\n".join(lines)
 
 
@@ -103,7 +112,7 @@ func _event_text(event: Dictionary) -> String:
 ## 目的是显示「阿兰」而不是「c_0001」；查不到就退回 id，绝不显示空。
 func _member_names(member_ids: Array[StringName]) -> String:
 	if member_ids.is_empty():
-		return "（无人出战）"
+		return "今天没有人出战。"
 	var names: Array[String] = []
 	for member_id in member_ids:
 		names.append(_name_of(member_id))

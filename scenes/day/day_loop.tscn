@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://v2yatku7dvif"]
 
 [ext_resource type="Script" uid="uid://4ji78th0o6d8" path="res://scenes/day/day_loop.gd" id="1_yek01"]
+[ext_resource type="PackedScene" path="res://scenes/common/setting_page.tscn" id="2_setpg"]
 
 [node name="DayLoop" type="Node" unique_id=539264072]
 script = ExtResource("1_yek01")
@@ -75,3 +76,5 @@ press Continue to walk the 10-day loop"
 [node name="NextButton" type="Button" parent="FlowHud/Hud/Margin/Layout" unique_id=1311675672]
 layout_mode = 2
 text = "Continue  >"
+
+[node name="SettingPage" parent="." instance=ExtResource("2_setpg")]

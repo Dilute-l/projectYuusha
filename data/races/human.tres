@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="RaceDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/race_def.gd" id="1_hwfdr"]
+
+[resource]
+script = ExtResource("1_hwfdr")
+id = &"race.hu"
+display_name = "人类"
+description = "最常见的那一支。力气不大不小，什么都学得会一点点。"

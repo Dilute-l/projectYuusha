@@ -84,7 +84,7 @@ res://
 │   └─ util/
 │       ├─ weighted_picker.gd
 │       ├─ text_formatter.gd
-│       ├─ portrait_composer.gd     立绘部件命名 + 拼装（面试立绘与组队圆头像共用，见 §12）
+│       ├─ portrait_composer.gd     立绘部件命名 + 拼装（面试立绘与组队头像框共用，见 §12）
 │       └─ enum_utils.gd
 │
 ├─ data/                            ← 静态数据实例（.tres）
@@ -108,13 +108,15 @@ res://
 │   │   │   ├─ interviewee.tscn        面试者立绘、表情差分、对话框
 │   │   │   ├─ resume/                  resume.tscn（候选人完整简历）
 │   │   │   │   └─ resume_token.tscn    单条简历词条（复用控件）
-│   │   │   └─ handbook_overlay.tscn   随时可呼出的手册浮层，按关键词检索
+│   │   │   └─ handbook.tscn           手册浮层（模态）：翻页浏览已解锁条目
 │   │   ├─ team_builder/       team_builder.tscn（组队容器）
-│   │   │   ├─ team_builder_ui.tscn     组队 UI：今日候选人头像列表、已录用 / 名额（§12）
-│   │   │   └─ candidate.tscn          左侧单条候选人：圆头像 + 名字（悬停 / 左键，§12）
+│   │   │   ├─ team_builder_ui.tscn     组队 UI：左边通过者头像列 + 右下角名额空位（§12）
+│   │   │   ├─ candidate.tscn          左侧单条候选人：方头像框 + 滑出来的两个按钮（§12）
+│   │   │   └─ framed_avatar.tscn      方头像框：底板 + 裁切过的整身立绘 + 方框（§12.4）
 │   │   └─ battle_report.tscn          战报演出容器（车夫对话、逐条事件、分数）
 │   ├─ ending/                 ending.tscn（收容结局相关子场景）
 │   └─ common/                 dialogue.tscn / interview_background.tscn / haohan.tscn
+│                                 / setting_page.tscn（设置页浮层，§14）
 │                                 （可在多场景实例化复用的通用场景）
 │
 ├─ ui/
@@ -167,12 +169,15 @@ class_name CandidateResource extends Resource
 @export var display_name: String
 @export var strength: int = 0                   # 力量
 @export var intelligence: int = 0               # 智力
-@export var wisdom: int = 0                 # 感知
-@export var level: int = 1                      # 等级
-@export var job: JobDef                         # 职业
+@export var wisdom: int = 0                     # 感知
+@export var race: RaceDef                       # 种族（见 §3.3）
+@export var job: JobDef                         # 职业（见 §3.3）
+@export var gender: StringName = &"男"          # 性别：单个值
+@export var age: int = 2                        # 年龄
 @export var traits: Array[TraitDef] = []        # 特质（list，可含多项，也可为空）
-@export var resume: Array[ResumeEntry] = []     # 简历（见 §3.2）
-@export_multiline var resume_header: String     # 简历抬头：整段字，见 §10.6
+@export var experience: Array[ResumeEntry] = [] # 个人履历与奖项（见 §3.2）
+@export var skill: Array[ResumeEntry] = []      # 专长（见 §3.2）
+@export_multiline var team_declaration: String  # 组队宣言：一整段自由文本，不挂追问
 @export var portrait: Texture2D                 # 整张立绘（可选；当前用拼装立绘，见下）
 
 # 拼装立绘的「配方」（见 §10.7）。取值直接对应 assets/art/portrait/ 的文件名。
@@ -188,14 +193,17 @@ class_name CandidateResource extends Resource
 | 字段 | 含义 | 备注 |
 | --- | --- | --- |
 | `strength` / `intelligence` / `wisdom` | 力量 / 智力 / 感知 | 玩家可见；对照简历描述的判断依据 |
-| `level` | 等级 | 与职业共同构成「常理上限」，是手册常识的锚点 |
+| `race` | 种族 | `RaceDef`，见 §3.3；`data/races/{human,elf,dwarf}.tres` |
 | `job` | 职业 | `JobDef`，见 §3.3 |
+| `gender` | 性别 | **单个 `StringName`**（`&"男"` / `&"女"`）。曾写成 `Array[StringName]`，那是笔误 —— 那会让所有候选人这一栏长得一模一样 |
+| `age` | 年龄 | 简历上那一栏。旧的 `level` 字段已删除，「常理上限」现在由属性 + 职业 + 手册常识共同承担 |
 | `traits` | 特质 | `Array[TraitDef]`，可含多项；相性计算输入（§6.4） |
-| `resume` | 简历 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
-| `resume_header` | 简历抬头 | **一整段字**，原样铺在纸面上半；运行时不做任何拼接（§10.6） |
+| `experience` | 个人履历与奖项 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
+| `skill` | 专长 | 同上。**与 `experience` 共用一套扁平序号**，见 §10.6 |
+| `team_declaration` | 组队宣言 | **一整段自由文本**，原样铺在纸面右下；不挂追问（它是「他自己喊的口号」，不是「可被质疑的履历」） |
 | `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号；面试者的长相也是数据，不是代码里摇的（§10.7） |
 
-> 真假不再由隐藏字段承载：玩家看到的 `strength / intelligence / wisdom / level / job / traits`
+> 真假不再由隐藏字段承载：玩家看到的 `strength / intelligence / wisdom / race / job / traits`
 > 就是全部数值，判断依据来自「属性与简历描述的落差」＋「手册常识」，见 §6.2 / §6.3。
 
 ### 3.2 简历条目（ResumeEntry）
@@ -225,7 +233,7 @@ data/asks/c_0001_1.json
 段级 `config` 全部照用，不需要任何额外机制。
 
 面试交互见 §6.2：玩家点击某一条 → 播出该条的 json（先问、后答）；是否可信，由玩家结合
-`strength / intelligence / wisdom / level / job / traits` 与手册常识自行判断。
+`strength / intelligence / wisdom / race / job / traits` 与手册常识自行判断。
 
 
 
@@ -271,21 +279,24 @@ class_name DayConfig extends Resource
 | --- | --- | --- |
 | `boot.tscn` | 加载 `DataDB`，检查存档，跳到主菜单 | — |
 | `main_menu.tscn` | 用于收容所有与开始菜单相关的细分场景，新游戏 / 继续 / 设置 / 图鉴回顾 | `new_run_requested` |
-| `day_loop.tscn` | **每日流程容器**，按 `DayPhase` 状态机切换子场景 | `phase_changed` |
-| `interview.tscn` | 在day_loop下，用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | — |
+| `day_loop.tscn` | **每日流程容器**，按 `DayPhase` 状态机切换子场景 | `day_phase_entered` |
+| `interview.tscn` | 在day_loop下，用于收容所有与面试流程相关的细分场景，作为实际游戏过程中呈现出的面试场景 | `phase_finished` |
 | `interview_ui.tscn` | 在 interview 下，用于展示面试中的 UI，包括暂停、设置按钮等系统向 UI 和候选人列表、今日事件等 | — |
 | `interviewee.tscn` | 在 interview 下，管理面试者立绘、管理表情差分、对话框 | — |
-| `resume.tscn` | 在 interview 下，候选者的完整简历：基础信息、三项属性、等级、职业、特质与简历条目 | — |
-| `resume_token.tscn` | 在 resume 下，单个张简历词条以及相关的信息（复用控件） | `selected` |
-| `handbook_overlay.tscn` | 在 interview 下，随时可呼出的手册浮层，按关键词检索 | `entry_bookmarked` |
+| `resume.tscn` | 在 interview 下，候选者的完整简历：姓名 / 种族 / 职业 / 性别 / 年龄、三围属性（Status 区）、个人履历与奖项、专长、组队宣言 | — |
+| `resume_token.tscn` | 在 resume 下，单条简历词条（复用控件）；点它弹出词条菜单 | `selected` |
+| `resume_token_menu.tscn` | 在 resume 下，词条旁的小菜单（面试=「追问」/ 组队=「回忆」） | `ask_requested` |
+| `handbook.tscn` | 在 interview 下，**模态**手册浮层：翻页浏览已解锁条目，开着时挡住本场景其它操作 | `closed` |
 | `team_builder.tscn` | 在 day_loop 下，用于收容从通过者中挑满名额组队这一过程的相关场景 | `team_submitted` |
-| `team_builder_ui.tscn` | 在 team_builder 下，用于展示组队过程中的 UI：**左半边今日面试者的头像列表**、已录用 / 名额表头（§12） | `candidate_hovered` / `candidate_toggled` |
-| `candidate.tscn` | 在 team_builder 下，左侧**单条**候选人：圆形头像（黑色纯色圆边框）+ 名字（§12） | `hovered` / `toggled` |
+| `team_builder_ui.tscn` | 在 team_builder 下，用于展示组队过程中的 UI：**左半边今日通过者的头像列** + **右下角的名额空位**（§12） | `candidate_selected` / `candidate_approved` / `candidate_rejected` |
+| `candidate.tscn` | 在 team_builder 下，左侧**单条**候选人：方头像框 + 两个从他身后滑出来的按钮（进队 / 不进队，§12） | `selected` / `approved` / `rejected` |
+| `framed_avatar.tscn` | 在 team_builder 下，**方头像框**：底板 + 裁切过的整身立绘 + 方框（右下角的名额空位也用它，§12.4） | — |
 | `battle_report.tscn` | 在 day_loop 下，用于收容下班马车上看战报演出，车夫对话，逐条事件播报，以及分数这一过程的场景 | `report_finished` |
 | `ending.tscn` | 用于收容所有与结局场景相关的细分场景，十天后按总分与 flag 判定结局 | `restart_requested` |
 | `dialogue.tscn` | 用于在多个场景下创建实例化的对话框 |  |
 | `interview_background.tscn` | 用于在多个场景下实现背景相关动画 | 多种（动画种类） |
 | `haohan.tscn` | 用于在剧情等地方创建实例化的主角的手 |  |
+| `setting_page.tscn` | **设置页浮层**（§14）：常规只有左上角那颗设置按钮，点它或按 Esc 就把整页盖在最上层；页面上有「继续游戏」「退出游戏」两颗按钮，手（光标）也画在这一层里 | `opened` / `closed` |
 
 每日流程由 `day_loop.tscn` 持有状态机驱动：
 
@@ -336,21 +347,30 @@ signal run_finished(ending_id: StringName)
 `DataDB` 读到当天配置后交给 `GameState`；刷新、读档拿到的都是同一份名单。
 
 ### 6.2 面试与追问
-`interview_session.gd` 管理单个候选人的问答循环：
+`interview.gd` 管理单个候选人的问答循环：
 
-1. 展示简历（逐条 `ResumeEntry.description`）；
+1. 展示简历（`experience` 与 `skill` 逐条 `ResumeEntry.description`，见 §10.6）；
 2. 玩家点击某一条追问，播出该条的 `ResumeEntry.ask_path` 指的那份 json；
-3. 玩家对照候选人的 `strength / intelligence / wisdom / level / job / traits` 与手册常识，
+   序号 → 文件这一层统一走 `Resume.ask_path_of(candidate, entry_index)`（**约定只写在那一处**）；
+3. 玩家对照候选人的 `strength / intelligence / wisdom / race / job / traits` 与手册常识，
    自行判断这条描述与回答是否可信。
 
 > **② 已实现**（`Interview` 阶段内）：点词条 → 菜单「追问」→ `resume.gd` 广播
 > `EventBus.resume_entry_asked(candidate_id, entry_index)` → `interview.gd` 拿到
 > `ask_path`，用 `typer.load_dialogue_from(path)` 装入那份 json，再 `dialoguer.play()`。
-> 追问是临时对话，播完只收起对话框、**不推进阶段**。详见 §10.7。
+> 追问是临时对话，播完只收起对话框、**不推进阶段**。详见 §10.6。
 
 ### 6.3 手册（玩家能力锚点）
-`handbook_overlay` 是全局浮层，任何阶段都能呼出。`data/handbook/` 的条目承担两件事：
+`handbook.tscn` 是 interview 里的**模态浮层**：点手册按钮打开，翻页浏览当前已解锁的条目，点 X 关闭。
+**打开期间本场景其它操作一律停手**（按钮 disabled + 全屏输入挡板 + `_is_judging_allowed()` 返回 false 三层）。
+`data/handbook/` 的条目承担两件事：
 给出魔物弱点、同时给出**常识基线**（例如"初级剑士不可能单人讨伐食人魔"），让撒谎能被推理而不是靠猜。
+
+**翻页按钮的可点区域比图形大**（`handbook.gd` 的 `PAGE_HITBOX_SIDE`）：`nextpage` / `lastpage`
+两个 `TextureButton` 的 rect 都是整块 1152×648 画布（贴图就是整张图），判定完全由
+`texture_click_mask` 决定。美术切好的那张 mask 精确到笔画本身（next 65×52、last 66×39），
+鼠标偏几个像素就点不中，手感很差 —— 所以 `_ready()` 里把两张 mask 换成
+**贴下角的 200×200 正方形**：图形一个字没动，变的只有「能点到哪儿」。
 
 ### 6.4 相性与组队
 `synergy_calculator.gd` 读取 `TraitInteractionTable`，对队伍做两两配对：
@@ -363,7 +383,7 @@ signal run_finished(ending_id: StringName)
 
 ```gdscript
 # data/narrative/claim_exposed.tres（示意）
-when     = "member.level < 3 and member.strength + member.intelligence + member.wisdom < 30"
+when     = "member.strength + member.intelligence + member.wisdom < 30"
 template = "{actor} 在简历上说谎了，是个货真价实的水货，他把大家携带的装备全都搞坏了。"
 weight   = 1.0
 priority = 10
@@ -516,57 +536,80 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 ### 10.6 resume / resume_token（简历版面）
 
 简历版面。编辑器里打开 `resume.tscn` 按 F6 单独跑：看到的是一张**空**纸 ——
-版面里没有任何候选人文案，内容全靠 `set_candidate()` 灌（见 §10.7）。
+版面里没有任何候选人文案，内容全靠 `set_candidate()` 灌。
 
 | 文件 | 职责 |
 | --- | --- |
-| `scenes/day/interview/resume/resume.gd` / `.tscn` | 简历整页。`assets/art/interview/resume_page_phd.png` 让 `Sprite2D(centered=false)` 铺在 (0,0)，右侧纸面（约 624,62 ～ 980,549）上叠一列信息 |
+| `scenes/day/interview/resume/resume.gd` / `.tscn` | 简历整页 |
 | `scenes/day/interview/resume/resume_token.gd` / `.tscn` | 单条词条，根节点是 `Button`（`class_name ResumeToken`），对外信号 `selected(entry_index)` |
-| `ui/styles/resume_token_normal.tres` · `resume_token_hover.tres` | 词条的 normal / hover 两个 StyleBox。独立成资源而不是内联，以后做 `ui/themes/` 时能直接复用 |
+| `scenes/day/interview/resume/resume_token_menu.gd` / `.tscn` | 词条旁的小菜单 |
+| `ui/styles/resume_token_normal.tres` · `resume_token_hover.tres` | 词条的 normal / hover 两个 StyleBox |
 
-版面自上而下：**抬头**（`Paper/Rows/HeaderInfo`，一个 Label）→ `RESUME ENTRIES` 小标题 → 词条列表（`Paper/Rows/TokenList`）。
+#### 版面：一栏一个 Container
 
-- **抬头是一个字符串，不是一个字段一个 Label**：姓名 / 职业 + 等级 / 三项属性 / 特质全部写在
-  `CandidateResource.resume_header` 那**一个**多行字符串里，`resume.gd` 只做一件事 ——
-  `set_info(candidate.resume_header)`，**一个字都不拼**。
-  想调抬头版式（换行、字段间距、字段顺序、要不要写属性、加不加一句花腔）直接在
-  `data/candidates/*.tres` 里改那一段字，代码和场景都不用动。
-  换句话说：**抬头是文案，不是由数值推导出来的**。`display_name` / `level` / `strength` 那些字段
-  是给玩法（判定、相性、战报）用的数值，和抬头故意不联动 —— 抬头里写什么、写不写全，由文案说了算。
-  `RESUME ENTRIES` 那行**没有**并进去 —— 它是词条区的段标题（场景自己的装饰文案），不是候选人信息。
-  代价是所有行共用一个字号（现在 **22**）。若想让姓名单独放大，把这一个节点换成 `RichTextLabel` 走 BBCode
-  即可（`HandbookEntry.body` 已经是这个路子），仍然是一个字符串。
+底纸是 `ResumePagePhd`（`Sprite2D`，`centered = false`，摆在 (8,9)）。
+纸上叠的**不是**「一整段抬头」，而是**一栏一个节点**，由 `resume.gd::_fill_fields()` 逐栏填：
 
-- **字号是照着「换字体前的视觉大小」定的，不是拍的**：`Silver.ttf` 是等宽的 CJK 点阵字体
-  （`unitsPerEm=1900`，拉丁字宽恒为 600、CJK 为 1200），它的**大写高只有 0.474 em**，
-  而原先兜底的默认字体约为 0.714 em —— 同样是 `font_size=15`，Silver 画出来只有 **0.7 倍大**。
-  所以接上字体时必须同步放大字号（4× 超采样量墨迹高对齐）：
+| 栏 | 节点 | 数据源 |
+| --- | --- | --- |
+| 姓名 | `NameContainer` | `display_name` |
+| 种族 | `RaceContainer` | `race.display_name`（`RaceDef`） |
+| 职业 | `ClassContainer` | `job.display_name`（`JobDef`） |
+| 性别 | `GenderContainer` | `gender` |
+| 年龄 | `AgeContainer` | `age` |
+| 力量 / 智力 / 感知 | `Status/Str·Int·WisContainer` | `strength` / `intelligence` / `wisdom` |
+| 组队宣言 | `DeclarationContainer` | `team_declaration` |
 
-  | 位置 | 原字号（默认字体） | 现字号（Silver） | 大写高 前 → 后 |
-  | --- | --- | --- | --- |
-  | 抬头 / 词条 / 菜单按钮 | 15 | **22** | 10.75px → 10.50px |
-  | `RESUME ENTRIES` 段标题 | 12 | **18** | 8.75px → 8.50px |
+栏目标题（「姓名」「种族」…）是场景里另外一批 `*Label` 节点，**不是数据**。
+任一字段为空就把那一栏清空 —— 不写「未知」这种兜底字，免得看不出来数据漏了。
 
-  换字体（或再换一次）时这几个数要跟着重算，别只改 `font` 不改 `font_size`。
-  字号放大后内容仍然装得进纸面：占位数据 199px、三行中文抬头 255px，纸面可用高 448px。
+> ⚠️ **这里没有「抬头」了**。早先的 `CandidateResource.resume_header` 是「上半部分整段字，
+> 一个多行字符串说了算，`resume.gd` 一个字都不拼」。版面拆成一栏一格之后，它变成了重复的第二份文案，
+> 而且没有任何节点能放它 —— 已删除。`team_declaration` 接替了「一整段自由文本」这个位置
+> （但它只占右下角那一栏，不挂追问）。
 
-- **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（**一个淡黄色矩形，没有描边**），
-  normal 是一条细下划线。脚本里没有任何 `_on_mouse_entered`：hover 由 Button 自己驱动，改配色只动 `.tres`。
-- **点击效果 = 在旁边弹出词条菜单**（见下面「词条菜单」与 §10.7）：`pressed` 与 `normal`
-  指向**同一个** `.tres`，按下去的画法和没按一模一样；`focus_mode = 0` 关掉焦点框，点完不会残留高亮。
-  视觉上的「选中」由 `resume.gd` 订阅 `selected` 后弹菜单来表达，不是按钮自己画的。
-- **纸上的字全部来自数据**：`resume.gd` 里没有一句候选人文案，也没有「默认履历」这种兜底。
-  唯一的数据入口是 `set_candidate(candidate: CandidateResource)`：
-  抬头 ← `resume_header`（原样），词条 ← `descriptions_of()`（逐条 `description`）。
-  传 `null` 表示「当前没有候选人」→ 抬头清空、词条全部收起。`get_candidate()` 能把当前这位取回来，
-  追问时就从它身上取 `resume[i].ask_path`（§6.2）。
-- **条目数量自适应**：`set_entries()` 会先复用场景里预摆的 5 个实例（编辑器里直接看到真实版面，
-  但它们**不写死任何正文**，`text` 全是空串），数据比预摆多就现场 `instantiate()`，
+#### 词条：两个列表共用一套「扁平序号」
+
+`experience`（个人履历与奖项）与 `skill`（专长）各自铺进
+`ExperienceContainer` / `SkillContainer`，但**序号是连着往下发的**：
+
+```
+experience[0] → 0      experience[1] → 1      skill[0] → 2   …
+```
+
+于是追问对话、以及「这一条问过没有」的记录（`GameState.record_entry_asked`）**两个列表走同一套流程**，
+不需要给 skill 另开机制。序号 ↔ 数据的换算只有两个入口，都在 `resume.gd`：
+
+```gdscript
+static func entries_of(candidate) -> Array[ResumeEntry]      # 扁平条目表（experience 在前）
+static func ask_path_of(candidate, entry_index) -> String    # 序号 → 追问 json 路径
+```
+
+`interview.gd`（真的去问）与 `team_builder.gd`（重播回忆）都调 `ask_path_of()` ——
+**「序号怎么算」这条约定只写在那一处**，两边不必各自记住它。
+
+#### 状态区也是可追问的（序号 -1）
+
+力量 / 智力 / 感知那一块是**一个 `Button`（`Status`）**，点它弹的是同一个菜单，
+序号发 `Resume.STATUS_ENTRY_INDEX = -1`（一个不会和真条目撞号的虚拟条目）。
+它的对话文件走约定路径 `data/asks/<candidate_id>_status.json`。
+这样「属性值是不是吹的」也能被追问，而菜单 / 对话 / 记录三套机制一行都不用改。
+
+#### 其余
+
+- **条目数量自适应**：`_fill_list()` 先复用容器里预摆的词条实例，数据比预摆多就现场 `instantiate()`，
   少就把富余的 `visible = false`。所以「若干项」都不用回头改场景。
-- 纸上的文案现在是**中文**（和 `data/dialogue.json` 一致）。字体和游戏别处是同一款：
-  抬头 / `RESUME ENTRIES` 段标题 / 词条 / 菜单按钮这四处在各自场景里
-  `theme_override_fonts/font = ExtResource(Silver.ttf)`，不再落到没有中文字形的默认字体上（§10.5）。
-  字体是**场景属性**，`resume.gd` 一个字都没碰 —— 纸上的内容仍然全部来自数据。
+- **悬停高亮**只靠 Button 的 `theme_override_styles/hover`（一个淡黄色矩形、没有描边），
+  normal 是一条细下划线。脚本里没有任何 `_on_mouse_entered`。
+- **点击效果 = 在旁边弹出词条菜单**：`pressed` 与 `normal` 指向**同一个** `.tres`，
+  `focus_mode = 0` 关掉焦点框；「选中」由 `resume.gd` 订阅 `selected` 后弹菜单来表达。
+- **纸上的字全部来自数据**：`resume.gd` 里没有一句候选人文案，也没有「默认履历」这种兜底。
+  唯一的数据入口是 `set_candidate(candidate)`；传 `null` → 整张纸清空。
+- **滑动**：整页（本节点）上下滑，`travel_distance()` 取「画布高」与「底纸底边」里**更大的那个** ——
+  底纸是整画布大的贴图（`position.y + 贴图高` 比画布还高一点点，实测 657 > 648），
+  只滑一个画布高会剩一条边留在画面顶上。什么时候滑、滑到哪儿由 `interview.gd` 的演出调解决定（§13）。
+- 纸上的文案是**中文**：字体和游戏别处是同一款（`assets/fonts/youaimoshouheiti-bold.ttf`），
+  在**场景里**各处 `theme_override_fonts/font` —— `resume.gd` 一个字都没碰字体。
 
 #### 挂载点
 
@@ -785,7 +828,7 @@ var asked_entries: Dictionary = {}
 > | 字段 | 现在长什么样 |
 > | --- | --- |
 > | 候选人 `display_name` | `PLACEHOLDER NAME 01` … `PLACEHOLDER NAME 25` |
-> | 候选人 `resume_header` | `PLACEHOLDER HEADER 01` …（单行） |
+> | 候选人 `team_declaration` | `PLACEHOLDER DECLARATION 01` …（单行） |
 > | 简历条目 | `PLACEHOLDER ENTRY / QUESTION / ANSWER 01-1`（`编号-条目号`） |
 > | 职业 | `PLACEHOLDER JOB 01` … `03`（+ `PLACEHOLDER JOB DESC NN`） |
 > | 特质 | `PLACEHOLDER TRAIT 01` … `10`（+ `PLACEHOLDER TRAIT DESC NN`） |
@@ -795,7 +838,7 @@ var asked_entries: Dictionary = {}
 > 编号只用来对号入座，本身不代表任何含义。
 >
 > **这次只动文案，没动结构**，下面这些原样保留（它们是**键和数值**，不是文案）：
-> `id`（每日名单靠它引用）、`level` / `strength` / `intelligence` / `wisdom`、
+> `id`（每日名单靠它引用）、`strength` / `intelligence` / `wisdom`、`race` / `job`、`gender` / `age`、
 > `job` 与 `traits` 的**引用关系**、`synergy_tags`、`portrait_*` 立绘配方、`data/days/` 全部。
 >
 > 手填时直接把这串 `PLACEHOLDER …` 替换掉就行 —— 全仓 `Ctrl+F "PLACEHOLDER"` 能一次找齐。
@@ -808,7 +851,9 @@ var asked_entries: Dictionary = {}
 
 | 目录 | 粒度 | 装什么 |
 | --- | --- | --- |
-| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、等级、三项属性、职业（引用 `data/jobs/*.tres`）、特质（引用 `data/traits/*.tres`）、**简历抬头**（`resume_header`，一整段字）、**拼装立绘配方**、**逐条简历条目**（描述 + 追问 json 的路径，内联 `sub_resource`，跟着本人走） |
+| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、种族（引用 `data/races/*.tres`）、职业（引用 `data/jobs/*.tres`）、性别、年龄、三项属性、特质（引用 `data/traits/*.tres`）、**个人履历与奖项**（`experience`）、**专长**（`skill`）、**组队宣言**（`team_declaration`）、**拼装立绘配方**；每条履历/专长 = 描述 + 追问 json 的路径（内联 `sub_resource`，跟着本人走） |
+| `data/races/` | **一个种族一个文件**（`human` / `elf` / `dwarf`） | `RaceDef`：`id` / `display_name` / `description`。与立绘配方代号对应：`hu`→human、`el`→elf、`st`→dwarf |
+| `data/asks/` | **一条追问一份 json**（`c_0001_1.json` … `c_0025_3.json`，外加每人的 `<id>_status.json`） | 一份就是「一段对话」，格式与 `data/dialogue.json` 里的一段完全一致，所以 `Typer` 那套逐字显示 / 点击推进照用 |
 | `data/asks/` | **一条追问一个文件**（`c_0001_1.json` … 共 75 份） | 那一条的追问对话本身：行数组，每行 `{ speaker_name, text }`，格式同 `data/dialogue.json` 的一段 |
 | `data/days/` | **一天一个文件**（`day_01.tres` … `day_10.tres`） | `day_index`、`candidates`（当天出场哪几个人，**引用** `data/candidates/*.tres`，数组顺序即出场顺序）、`slots`（当日名额）、`tutorial_step` |
 
@@ -846,7 +891,7 @@ data/days/day_XX.tres
 - **改追问台词** → 点开那一条的 `ask_path` 指的 `data/asks/*.json`。写手可以完全不碰 `.tres`：
   说话人、行数、停顿时长（段级 `config`）都在 json 里。
 - **加一条追问** → `data/asks/` 下新建一份 json，再回候选人档案里把这一条的 `ask_path` 指过去。
-- **改抬头** → 同一个文件里的 `resume_header`，多行文本框，写什么就显示什么。
+- **改组队宣言** → 同一个文件里的 `team_declaration`，多行文本框，写什么就显示什么。
   想让人物的自我介绍更有性格（甚至藏一个后面能被手册戳破的谎言），改这一栏就行。
 - 换某天出场的人 / 调名额 → 点开 `data/days/day_XX.tres`，拖 `candidates` 数组。
 - 加一位新面试者 → `data/candidates/` 下新建一份，再把它拖进某天的 `candidates`。
@@ -861,19 +906,23 @@ data/days/day_XX.tres
 
 ---
 
-## 12. 组队界面（M3 前置：候选人头像 + 简历联动）
+## 12. 组队界面（从通过者里挑满今天这一队）
 
-> 这一节记的是 §4 里 `team_builder` 那三个空壳里**左半边**最先落地的内容：
-> **今日出现的面试者，一人一个圆头像；鼠标移上去，右半边铺出他的简历；左键点一下标记录用，再点一下撤销。**
+> 这一节记的是 §4 里 `team_builder` 那三个场景落地后的样子：
+> **左边是今天通过面试的那几个人，一人一个方头像框；左键点一位的头像，两个按钮从他身后
+> 滑出来（进队向右 / 不进队向左），右半边铺出他的简历，右下角同时露出今天的名额空位；
+> 进队的人底色转绿并占掉一个空格，不进队的人转红、不占格。**
 
 ### 12.1 文件
 
 | 文件 | 职责 |
 | --- | --- |
-| `scenes/day/team_builder/team_builder.gd` / `.tscn` | **组队容器**。只做接线：名单 → UI、悬停 → 简历、左键 → `GameState.current_team` |
-| `scenes/day/team_builder/team_builder_ui.gd` / `.tscn` | UI 容器：`Header`（HIRED n / 名额）+ `Roster`（`GridContainer`，一格一条候选人） |
-| `scenes/day/team_builder/candidate.gd` / `.tscn` | 单条候选人：`class_name CandidateEntry`，圆头像（`_draw()` 画底衬 + 黑圆边框）+ 名字；对外 `hovered` / `toggled` |
-| `scripts/util/portrait_composer.gd` | `class_name PortraitComposer`：立绘**部件命名**的唯一出处 + 把部件拼成**圆形头像** |
+| `scenes/day/team_builder/team_builder.gd` / `.tscn` | **组队容器**。只做接线：通过者 → UI、点头像 → 简历、进队 / 不进队 → `GameState` |
+| `scenes/day/team_builder/team_builder_ui.gd` / `.tscn` | UI 容器：`Roster`（左边头像列）+ `Slots`（右下角名额空位） |
+| `scenes/day/team_builder/candidate.gd` / `.tscn` | 单条候选人：`class_name CandidateEntry`，方头像框 + 两个藏在它身后的按钮；对外 `selected` / `approved` / `rejected` |
+| `scenes/day/team_builder/framed_avatar.gd` / `.tscn` | `class_name FramedAvatar`：**方头像框**（底板 + 裁切过的整身立绘 + 方框）；右下角的空位也用它 |
+| `scripts/util/avatar_frame.gd` | `class_name AvatarFrame`：头像框三张美术的出处 + 取景窗 / 按钮美术的几何常量 |
+| `scripts/util/portrait_composer.gd` | `class_name PortraitComposer`：立绘**部件命名**的唯一出处、整身立绘贴图（`portrait_texture`） |
 | `scenes/day/interview/resume/resume.tscn` | **原样复用**：右半边那页简历就是面试那一页（§10.6） |
 
 场景树（`team_builder.tscn`）：
@@ -881,78 +930,139 @@ data/days/day_XX.tres
 ```
 TeamBuilder (Control) [team_builder.gd]
 ├─ ItvBkgPhd / TablePhd       背景、桌子
-├─ TeamBuilderUI (1)          左半边：头像列表 + 表头
+├─ TeamBuilderUI (1)          左半边：头像列（Roster）；右下角：名额空位（Slots）
 ├─ Resume (2)                 右半边：resume.tscn 实例（默认 visible=false）
+├─ Confirm                     「组队完成」
 ├─ Haohan (3)                 主角的手 = 光标，压在 UI 之上
 ├─ ColorNight                 夜晚色调（CanvasModulate，整块画布一起变色）
 └─ Dialoguer
 ```
 
-> `Haohan` 从「UI 之前」挪到了「UI 之后」：它是个跟着鼠标走的 1024×1024 手形贴图，
-> 排在 UI 前面的话，悬停头像时手会被头像盖住 —— 这一条和 `interview.tscn` 的层序对齐（手在最上）。
+> `Haohan` 排在 UI 之后：它是个跟着鼠标走的 1024×1024 手形贴图，排在 UI 前面的话
+> 点头像时手会被头像盖住 —— 这一条和 `interview.tscn` 的层序对齐（手在最上）。
 
 ### 12.2 数据怎么流到画面上
 
 ```
 data/days/day_XX.tres
-   └─ candidates ──► GameState.current_candidates        （本日过程量，§7 不进存档）
-						└─ team_builder.gd
-							 ├─ TeamBuilderUI.set_candidates()  → 一人一条 CandidateEntry
-							 │     └─ CandidateEntry.set_candidate()
-							 │          ├─ 头像 ← PortraitComposer.avatar_texture(candidate, 112)
-							 │          └─ 名字 ← candidate.display_name
-							 └─ TeamBuilderUI.set_hired_ids()   → 画「已录用」标记
+   └─ candidates ──► GameState.current_candidates
+						  └─ 面试判定 ──► GameState.passed_ids   （本日过程量，§7 不进存档）
+											  └─ team_builder.gd
+												   ├─ _passed_candidates()  只留今天通过了的那几位
+												   ├─ TeamBuilderUI.set_candidates()
+												   │     └─ CandidateEntry.set_candidate()
+												   │          └─ 头像 ← FramedAvatar ← PortraitComposer.portrait_texture()
+												   └─ TeamBuilderUI.set_decisions(进队, 不进队)
 ```
 
-- **名单就是「今日出现的面试者」**：和面试同一个来源（`GameState.current_candidates`）。
-  左半边列的是当天**全部**出场者（不是只列通过者），玩家想改主意时还能把别人点进来；
-  §12.7 的初始名单会把面试录用的人先标上。
-- **右半边复用 `resume.tscn`，位置靠「同一个场景」而不是靠对齐代码**：`Resume` 是整屏 Control，
-  纸面 `Paper` 用的是绝对偏移（624,62 ～ 980,542），所以把它实例化到组队场景里，
-  位置与面试**逐像素相同**。`smoke_team_builder` 会把两边的 `Paper` 全局矩形拿来比，
-  以后谁动了偏移都会当场红。
-- 组队场景**一进来右半边是空的**（`Resume.visible = false`）：要求是「鼠标移上去才展示」。
-  悬停过之后内容就留着不撤 —— 移开鼠标只是不再换人，不然读简历读到一半手一抖就白了。
+- **左边列的是「今天通过面试的人」**（`GameState.passed_ids` 的顺序），不是当天全部出场者：
+  面试的「录用」就是玩家的第一次筛选，组队是在**通过者里**挑满今天这一队（§12.7）。
+- **立绘不取景、不居中**：`PortraitComposer.portrait_texture()` 给的是 300×300 的整张画布，
+  头像框按自己的坐标系原位铺上去，露出来多少由取景窗决定（§12.4）。
+- **右半边复用 `resume.tscn`，位置靠「同一个场景」而不是靠对齐代码**：纸面用的是绝对偏移，
+  所以把它实例化到组队场景里，位置与面试**逐像素相同**。`smoke_team_builder` 会把两边的
+  栏目矩形与底纸位置拿来比，以后谁动了偏移都会当场红。
+- 组队场景**一进来右半边是空的**（`Resume.visible = false`）：要求是「点过头像才展示」。
+  点过之后内容就留着不撤 —— 判定完把按钮收起来时简历不动，不然读到一半就白了。
 
-### 12.3 交互与「录用」的真身
+### 12.3 交互与两种判定的真身
 
 | 操作 | 结果 |
 | --- | --- |
-| 鼠标移上某条头像 | `CandidateEntry.hovered` → `TeamBuilderUI.candidate_hovered` → `Resume.set_candidate(这一位)` + `visible = true` |
-| **左键**点某条头像 | `toggled` → 在 `GameState.current_team` 里**加上**这一位的 id |
-| 再点一次同一条 | 已经在队里 → 从 `current_team` 里**去掉**（撤销），标记随之消失 |
+| **左键**点某位的头像 | `selected` → 两个按钮滑出来（approve 向右、reject 向左）+ 右半边铺他的简历 + 右下角露出名额空位 |
+| 再点一次同一条 | 两个按钮收回去（简历不动）；点别人则把上一条收掉、这条打开 —— 同时只展开一条 |
+| 点 approve | 这一位进 `GameState.current_team`：底色转绿 + 占掉右下角一个空格 |
+| 点 reject | 这一位进 `GameState.rejected_ids`：底色转红 + 不占格；**已经在队里的先拿出来** |
 | 右键 / 滚轮 / 中键 | 一概不响应（`_gui_input` 只认 `MOUSE_BUTTON_LEFT`） |
 | 点简历词条 | 菜单里那一项是「**回忆**」：重播面试时问过的那一段（§10.7）。没问过的置灰 |
 | 「组队完成」 | 超员 → **拦住**；刚好满 → 出发；没满 → 提醒一次、再点一次出发 |
-| 表头 | `HIRED 已录用数 / 当日名额`，名额来自 `DayConfig.slots` |
 
-- 「已录用」的**真身是 `GameState.current_team`**（§2：本日过程量，不入存档），
-  条目上的 `hired` 只是显示状态，由 `TeamBuilderUI.set_hired_ids()` 同步下来。
-  这样没有新增任何 GameState API，也没有把状态塞进 UI。
-- **`GameState.roster`（全季已录用名单）不动**：那个由面试的判定（`issue_verdict` / `hire`）负责，
-  组队阶段挑的是「今天这一队」。提交队伍（`team_submitted` → `BattleReport`）留到接战报时再做。
-- 表头文案是英文（`HIRED`）：`assets/fonts` 还没接入中文字体，中文会变方块（§10.5），
-  和简历页的 `RESUME ENTRIES` 一致。
+- 「进队」的**真身是 `GameState.current_team`**，「不进队」的**真身是 `GameState.rejected_ids`**
+  （§2：都是本日过程量，不入存档）。两个数组互斥，由 `team_builder.gd` 保证；
+  条目上的 `decision`（`FramedAvatar.Tint`）只是显示状态，由 `set_decisions()` 同步下来。
+- **能不能再收一位**是规则，问 `TeamValidator.can_add()`（§0：规则不在表现层）。
+  名额满了就把还没进队那些条目的 approve 按钮置灰；**reject 永远可点** —— 撤销 / 否决
+  从来不该被名额挡住，否则满员之后玩家就换不了人了。
+- 右键不响应不是洁癖：误触一下就把人「进队 ↔ 不进队」翻一遍，比没反应难查得多。
 
-### 12.7 初始名单：面试录用了谁，就先标上谁
+> ⚠️ **两个按钮「看不见」和「点不到」是两件事，要一起对**：GUI 拾取是**从树尾往树头**找的，
+> 而两个按钮排在头像**之前**（所以藏起来时被头像盖住）。收起来时若不把它们从鼠标拾取里摘掉
+> （`mouse_filter = IGNORE`），玩家点头像那一下会打到那颗**看不见的按钮**上 —— 一点就把人进队了。
+> 同一个道理，置灰的「进队」也要摘掉：按不动就别拦着，让这一下落到头像上（展开 / 收起照旧）。
+> `CandidateEntry._apply_button_input()` 就是管这件事的，`smoke_team_builder` 两边都盯着。
 
-一进组队，`_ready()` 里先播种再接线：
+### 12.4 方头像框是怎么叠的
 
-```gdscript
-_seed_team_from_verdicts()   # GameState.current_team = GameState.get_passed_ids()
-_wire_ui()                   # 结尾 _push_team_to_ui() 把队伍画到界面上
+一套三张同坐标系的 300×300 图（`AvatarFrame` 是它们的唯一出处）：
+
+| 层 | 美术 | 作用 |
+| --- | --- | --- |
+| `Background` | `avatar_frame_background_phd.png` | 底板，**头像的底色**就是它；进队染绿 / 不进队染红（`self_modulate`） |
+| `Clip` → `Portrait` | `PortraitComposer.portrait_texture()` | 取景窗（`clip_contents`）+ 整身立绘，300×300 **原位**贴上去 |
+| `Frame` | `avatar_frame_phd.png` | 方框，压在最上 |
+
+- **不需要自动居中**：立绘按自己的坐标系铺满整个头像框（腿、矮人的帽檐都还在），
+  只有取景窗里那一块露出来 —— 人物在框里的位置只由**立绘本身**决定，
+  所以整个控件里没有一句取景 / 居中计算。
+- **超出边框的部分自动截掉**是 `Clip.clip_contents` 干的：窗口摆在 `AvatarFrame.WINDOW`
+  （方框内沿围出来的透明区，实测量出来的），立绘按 `-窗口原点` 垫进去，
+  于是「画布上的 (26,23)」正好落在窗口左上角；窗口外的像素一律不画。
+- 三张图是**同一个坐标系**的，所以换尺寸只走 `FramedAvatar.set_pixel_size()`：
+  控件边长换成 px，三层按 `px / 300` 一起缩放，立绘与窗口的相对位置不动。
+- 右下角的名额空位**就是同一个 `FramedAvatar`**：`set_candidate(null)` 只留底板和方框
+  （空位），填进去的人用同一套配色（绿）。
+
+### 12.5 版面
+
+- **左边头像列**：`ENTRY_LEFT = 116`、`ENTRY_TOP = 28`、行距 `176`，一条 160×160。
+  三条正好排到 540，避开下面那颗「组队完成」（y 572 起）。
+- **两个按钮展开后的横向跨度**：reject 左缘 34 ～ approve 右缘 358，全部落在左半边
+  （简历纸从 x 579 起）—— 展开时不会压到右边的简历。
+- **右下角的名额空位**：贴屏幕右下角（右缘 1152−24、下缘 648−2），一个 60px、间隔 10px。
+  这个尺寸是被逼出来的：简历纸占 y 29〜585，纸下只剩 63px —— 空位必须整块躲在纸下缘之下
+  （这一条由 `smoke_team_builder` 的版面自检守着）。
+- 整套版面是照 **1152×648 的画布摆绝对偏移**的（这几个阶段场景的根 Control 都是 0 尺寸，
+  和 `interview.tscn` 一致）。所以右下角的空位是用 `get_viewport_rect()` 算画布尺寸的，
+  不是拿控件尺寸做锚定 —— 拿 0 尺寸的父控件做锚定会算到屏幕外面去。
+
+### 12.6 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_team_builder.tscn
 ```
 
-- **为什么**：面试时按下的那个「录用」就是玩家的第一次筛选，组队要做的是**在此基础上调整**，
-  而不是让玩家凭记忆再点一遍。所以 `passed_ids` 直接变成开场队伍。
-- **顺序不能反**：`_wire_ui()` 结尾才把队伍推给界面。先接线再播种，界面拿到的还是空名单 ——
-  玩家会看到一个「明明录用了却没人被标上」的组队界面（这个坑 `smoke_team_builder` 抓过一次）。
-- **已经有队伍就不覆盖**：换阶段回来 / F6 重进时不该把玩家刚调整好的名单冲掉。
+124 项：左半边只列通过者（被否掉的不出现）、头像框三张美术的来源与取景窗几何、
+**立绘按 −窗口原点 原位贴（不居中）且比窗口大**（= 超出的部分真的会被裁掉）、
+**头像框与空位确实按 `AVATAR_SIZE` / `SLOT_SIZE` 渲染**、
+一进来右半边是空的、点头像才铺简历、**按钮的树序在头像之前**（藏起来时真被压住）、
+**收起来时按钮矩形完全落在头像矩形内 / 展开后各留 14px 压着框边**、
+**收起来时按钮不吃鼠标（否则一点头像就点到那颗看不见的按钮上）**、
+approve 的绿底与 reject 的红底、进队的人占掉第几个空格、两种判定互斥（改主意的来回）、
+右键无反应、**版面自检**（头像列位置、最右不压简历纸、空位贴右下角且在纸下缘之下）、
+简历各栏与底纸和面试逐像素同位置、**「回忆」的整条链路**、
+**超员点多少次都出不去而减到名额以内一下就走**、
+**悬停样式只剩底色矩形、四边线宽合计为 0**，以及
+**`data/candidates/` 里 25 位候选人逐个拼得出「有内容」的整身立绘**。
+另外还比对了 `Interviewee` 与 `PortraitComposer` 取的是同一套部件图（防两边走偏）。
+全绿退出码 0。
+
+画布同样是塞进 1152×648 的 `SubViewport` 里测的（理由见 §10.6）。
+
+### 12.7 开场谁都没被选中
+
+一进组队，`current_team` 是空的：**面试的「录用」只是把候选池缩小到今天这几位，
+不等于「已经进队」** —— 谁进队是玩家在这页一位一位按出来的。
+
+- 换天 / 开新局时 `GameState` 会把 `current_team` / `rejected_ids` 一起清空（本日过程量）；
+  换阶段回来 / F6 重进时它们还在，玩家刚挑好的队伍不会被冲掉。
+- 通过者可能**比名额多**：`TeamValidator.can_add()` 会在名额满时挡住下一份 approve，
+  界面上那颗按钮也会随之置灰（§12.3）。要换人得先 reject 掉一位。
+- 「队伍没满」仍然只是提醒一次（再点一次出发）；「超员」才是硬拦（§12.8）。
 
 ### 12.8 超员：硬拦，不是提醒
 
-`passed_ids` 可能**比当天名额多**（面试录用了 3 位，今天只能带 2 位）。这时开场就处于超员状态，
-界面把他们全标上、其余条目锁住，玩家去掉几位才能出发 —— 该由玩家决定留下谁。
+> 原本超员来自「面试录用的比名额多，一进组队就全标上」；现在进队都走 `TeamValidator`，
+> 正常玩不会超 —— 这条兜的是「队伍被别处写成了超员」（调试 / 脚本 / 以后改数据）。
 
 ```gdscript
 if TeamValidator.is_over(team, slots):   # size > slots，刚好满不算
@@ -969,7 +1079,7 @@ if TeamValidator.is_over(team, slots):   # size > slots，刚好满不算
 
 > ⚠️ **数据现状**：`data/days/day_XX.tres` 里只有 day 01/02/04/06/08 填了 `slots`，
 > day 03/05/07/09/10 **没填**（`slots = 0`）。按 `TeamValidator.has_quota()` 的约定，
-> 名额为 0 = 「没有名额限制」，所以那 5 天既不会锁人、也不会触发超员拦截。
+> 名额为 0 = 「没有名额限制」，所以那 5 天既不摆右下角的空位、也不会锁人。
 > 要按设计走，得把那 5 天的 `slots` 补上。
 
 ### 12.9 提醒对话的穿透模式（`Dialoguer.play(pass_through)`）
@@ -997,58 +1107,6 @@ func play(pass_through: bool = false) -> void:
   仍旧走默认的阻挡模式，一个字都不用改。
 - **超员那条（`team_over`）故意不穿透**：它是硬拦（§12.8），提醒期间不该顺手点到别处。
 - 播完 / 通话结束时 `_pass_through` 复位为 false，下次 `play()` 忘传参数也不会残留穿透。
-
-### 12.4 圆形头像是怎么拼的
-
-立绘不是一整张图，而是「身体 + 眼睛 / 头发 / 嘴巴」或「身体 + 帽子」按同一个 300×300 的画布坐标
-叠出来的（§11.2）。头像就是把这套部件**拼成一张图再裁成圆**：
-
-1. `PortraitComposer.compose()`：按 `stems_for()` 的顺序把部件 `blend_rect` 到一张 300×300 的透明图上。
-   **部件文件名与「哪个种族用哪几个部件」只有这一处**（`interviewee.gd` 也读它，不再各写一份）。
-2. `framing_for_image()`：量出这张图的 alpha 包围盒，**自动**取一个居中、四周留 12% 余量的正方形取景框。
-   取景是自动的而不是一组写死的常量 —— 矮人三顶帽子（宽檐 / 小圆帽 / 高帽）身量差一倍，
-   以后换立绘、加种族也不用回来调数字。
-3. `_frame()`：按「取景框 ∩ 部件画布」拷贝（框可以伸到画布外，越界处留透明），再缩到 `size × size`。
-4. `_apply_circle_mask()`：圆外 alpha 清零，圆边留 1 像素渐变（不然锯齿很难看）。
-5. 结果存进 `avatar_texture()` 的静态缓存（key = 配方 + 尺寸），悬停换人时不再重拼。
-
-**黑圆边框是画出来的，不是贴图**：`CandidateEntry._draw()` 里
-`draw_circle()` 垫一层浅色底衬（立绘是白底黑描边的纸片人，得有底才在夜晚色调下站得住），
-再用 `draw_arc(..., RING_COLOR, RING_WIDTH)` 描一圈**纯黑**；「已录用」是黑圈**外面**再加一圈暖色，
-不动黑圈本身。
-
-> 实测数据（量 alpha 轮廓的临时探针，用完已删）：`hu / el` 整身占 y 17..300，
-> `st` 三顶帽子分别让整身落在 y 170..300 / 220..300 / 16..300 —— 正因为跨度差这么多，
-> 取景才做成自动的；这套数据现在由 §12.6 的「25 位候选人逐个体检」守着。
-
-### 12.5 版面与「别踩 M0 占位 HUD」
-
-- 头像列表在**左半边下半部**：`Header` 在 (24,306)，`Roster` 在 (24,344)，3 列，每条 120×148
-  （头像直径 112 + 名字一行）。今日 2〜3 位时正好一行；多了自动换到第二行（两行放 6 条）。
-- 往左下角挪的原因是 `day_loop` 的 **M0 占位 HUD 占着左上 303×297**（`layer = 10`，
-  `MOUSE_FILTER_STOP`）：压在那里的话既看不见、也点不到。占位 HUD 删掉之后，这里可以再往上摆。
-- 右半边的简历纸面在 x 624 起，两半不重叠。
-
-### 12.6 自检
-
-```
-& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_team_builder.tscn
-```
-
-82 项：左半边条数 = 今日名单人数、每条的候选人与名字来自数据、头像尺寸 = `AVATAR_SIZE`、
-**圆外一个像素都没有 / 圆内有内容 / 填得够满 / 包围盒中心落在圆心**（±2px）、
-悬停换人后右半边抬头与词条都跟着换、**组队页的 `Paper` 全局矩形与面试页逐像素相同**、
-左键标记与撤销、右键无反应、表头计数、空名单不炸、
-**面试录用的人一进组队就已经标好**（被拒的没有）、
-**「回忆」的整条链路**（菜单文案是「回忆」、没问过的置灰且点了没反应、问过的广播
-`resume_entry_recalled`、播出的行 = 当时那份 json + 最后那句自言自语）、
-**超员点多少次都出不去而减到名额以内一下就走**、
-**悬停样式只剩底色矩形、四边线宽合计为 0**，以及
-**`data/candidates/` 里 25 位候选人逐个拼得出「有内容且居中」的头像**。
-另外还比对了 `Interviewee` 与 `PortraitComposer` 取的是同一套部件图（防两边走偏）。
-全绿退出码 0。
-
-画布同样是塞进 1152×648 的 `SubViewport` 里测的（理由见 §10.6）。
 
 ---
 
@@ -1190,3 +1248,137 @@ func play(pass_through: bool = false) -> void:
 > 因为加了这个演出，另外两个自检在实例化 `interview.tscn` 之后各加了一句 `skip_animation()`：
 > `smoke_team_builder` 要比的是**站定之后**的纸面矩形（§12.2），`smoke_interview_ask`
 > 则是要立刻开始点词条（演出期间追问是被**故意**挡住的）。
+
+---
+
+## 14. 设置页（`setting_page.tscn`）
+
+> 游戏里随时能叫出来的那一页：**平时画面上只多一颗小按钮，
+> 点它或者按 Esc，一整页设置纸就盖在当前场景最上面**；
+> 纸上现在是「继续游戏」和「退出游戏」两颗按钮，
+> 而**跟着鼠标的那只手仍然画在这一页之上**（手是光标，被盖住就等于没光标）。
+
+### 14.1 文件与挂载点
+
+| 文件 | 职责 |
+| --- | --- |
+| `scenes/common/setting_page.gd` / `.tscn` | `class_name SettingPage`：**开关**（按钮 / Esc）、**整页盖上来**、**继续游戏 / 退出游戏**、**手（`haohan.tscn`）也在这一层** |
+| `assets/art/setting/setting_button_phd.png` | 设置按钮，原生 50×50 |
+| `assets/art/setting/setting_page_phd.png` | 设置整页，原生 1152×648（= 整块画布） |
+| `scenes/day/day_loop.tscn` | 把 `SettingPage` **实例化在最后**（和 FlowHud 平级） |
+
+场景树：
+
+```
+SettingPage (CanvasLayer, layer = 100) [setting_page.gd]
+├─ Page (Control, 全屏 = 画布大小, mouse_filter = STOP)   ← 默认 visible = false
+│   ├─ PagePhd (TextureRect)     setting_page_phd.png，铺满整块画布
+│   ├─ ContinueButton (Button)   「继续游戏」，画布正中偏上
+│   └─ ExitButton (Button)       「退出游戏」，画布正中
+├─ SettingButton (TextureButton)   setting_button_phd.png，贴在画布左上角 (0,0)
+├─ Haohan (haohan.tscn)            手（光标），z_index = 1 → 画在设置页**之上**
+└─ Dialoguer                       退出确认那段提醒（和主菜单同一个 dialoguer.tscn，z_index = 2）
+```
+
+### 14.2 为什么必须是 CanvasLayer
+
+「盖在当前场景之上（图层最高）」**不能靠树序**：`day_loop` 的阶段界面是普通 `Control`
+（默认画布 layer 0），而占位 HUD 是 `CanvasLayer(layer 10)`；CanvasLayer 的绘制顺序
+**只由 `layer` 决定**，跟它在树里排第几无关（§10.6 那条「FlowHud 留在 layer 10」是同一个道理）。
+
+所以本浮层自己就是一层，`LAYER = 100` —— 比 FlowHud 的 10 大，就必然在最上面。
+层号在 `_ready()` 里再赋一次（不是只在 `.tscn` 里填）：**「最高」这条由代码保证**，
+别人手滑改了场景里的数字也不会把设置页压到 HUD 底下去。
+
+**挡鼠标 = 挡住底下场景**：`Page` 铺满画布且 `mouse_filter = STOP`，于是页面上任何一处点击
+都被它吃掉，穿不到下面的按钮上。**不需要**再去 `disabled` 底下的场景 —— 点不到就已经等于点不动。
+
+### 14.2.1 手（光标）也要在设置页之上
+
+手是光标，被设置页盖住就等于「没有光标」—— 所以 `haohan.tscn` **实例化在本层里**
+（`SettingPage/Haohan`），而不是让底下那个场景的手露出来。
+
+- **凭什么它在上面**：同一块画布里，绘制顺序只由 `z_index` 决定（其次才是树序）。
+  `haohan.tscn` 的根节点自带 `z_index = 1`，`Page` 是 0 —— 手必然画在设置页之上，
+  跟它在树里排第几无关。
+- **底下那只手怎么办**：不用管。它在 layer 0，被本层整块盖住；而且它和本层这只手
+  读的是**同一个鼠标位置**、用的是**同一张贴图**，所以看上去仍然只有「一只跟着鼠标的手」。
+  好处是本层这只手**不依赖底下的场景有没有手**（`battle_report` / 阶段切换的空档都不会没光标）。
+- **它和退出提醒的先后**：`Dialoguer` 的根节点是 `z_index = 2`，所以在它之上 ——
+  和主菜单的退出确认是同一个观感（§12.9 那套）。想把手提到提醒之上，只要给
+  `SettingPage/Haohan` 填一个 `z_index = 3`。
+
+### 14.3 开与关是同一个开关
+
+| 入口 | 行为 |
+| --- | --- |
+| 左键点设置按钮 | `toggle()` |
+| 按 **Esc** | `toggle()` |
+
+- **两个入口走同一个 `toggle()`**，所以「关着就开、开着就收」的手感必然一致。
+- 设置按钮**一直画在 `Page` 之上**（它是 `Page` 的兄弟、且排在它后面），所以页面开着时那颗按钮
+  仍然点得到、看得见。
+- Esc 走 **`_unhandled_input`** 而不是 `_input`：场景里已经有控件在 `_input` 里处理 `ui_cancel`
+  （简历词条菜单 `resume.gd`），它在该吃的时候会 `set_input_as_handled()` ——
+  那一下是「收菜单」，不该被抢来开设置页。**设置页永远排在它们后面。**
+- 页面的显隐**只**由 `open()` / `close()` 管，两个方法各自幂等，并对外发 `opened` / `closed`。
+
+### 14.4 两颗按钮：继续游戏 / 退出游戏
+
+| 按钮 | 位置 | 干什么 |
+| --- | --- | --- |
+| **继续游戏** | 退出按钮的**正上方**（同宽、左缘对齐、间隔 20px） | 就是 `close()` —— 收起设置页接着玩 |
+| **退出游戏** | 画布正中 | 见下：第一下弹提醒，第二下才退出 |
+
+两颗按钮都是同一套观感（`Silver.ttf` + 三个 `StyleBoxEmpty`，和主菜单那几个文字按钮一致），
+都 `focus_mode = 0`：不然点过一次之后按空格 / 回车会把它再触发一遍。
+
+> 「继续游戏」和 Esc、和再点一次设置按钮走的是**同一个 `close()`**（§14.3），
+> 顺手也会把退出确认作废 —— 三条退路的行为完全一致。
+
+### 14.4.1 退出按钮：与主菜单那颗**功能一样**（§12.9）
+
+```gdscript
+func _on_exit_pressed() -> void:
+	if _exit_confirming:
+		SceneRouter.quit_game()          # 第二下：真的退出
+		return
+	if not _dialoguer.typer.load_dialogue(EXIT_CONFIRM_DIALOGUE):
+		return
+	_exit_confirming = true
+	_dialoguer.play(true)                # 第一下：弹提醒，走**穿透模式**
+```
+
+- 文案用的就是主菜单那段（`data/dialogue.json` 的 `test1`），一点新文案都没有。
+- `play(true)`（穿透）的理由和主菜单完全一样：第二下点退出按钮时，同一次点击**既把提醒推完、
+  也照常触发按钮**；玩家也可以完全不理会它。
+- **反悔**：鼠标移出退出按钮、移出窗口、或者收掉设置页 —— 三种都会 `_cancel_exit_confirm()`，
+  把「已确认」抹掉、把提醒收起来。所以不会出现「上次留下的确认 + 这次点一下 = 直接退出」。
+
+> ⚠️ 与主菜单的一处**细微差别**（故意的）：`main_menu.gd` 是先把 `_exit_confirming = true`
+> 再 `load_dialogue()`，文案读不出来就会留下一个「已经确认过」的状态。
+> 这里把标志位放在**读盘成功之后** —— 文案读不出来时这一下就是什么都没发生，
+> 而不是变成「一按就退」。正常路径下两者表现完全一致。
+
+### 14.5 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_setting_page.tscn
+```
+
+74 项：两张美术的来源与尺寸、**常规状态只有那颗按钮可见**、按钮贴在左上角且不缩放、
+**层号压过 FlowHud 且是容器里最高的一层**、**手实例化在本层、可见、z_index 高于设置页**、
+点按钮 / 按 Esc 都能开、**再点 / 再按一次都能收**、`ui_accept` 不会误开、
+**整页铺满画布且 `MOUSE_FILTER_STOP`（底下的场景点不到）**、
+按钮排在整页之后（真的压在页面上）、**继续游戏按钮在退出按钮正上方且两颗一样宽**、
+**点「继续游戏」会收起设置页并作废退出确认**、退出按钮在画布正中、
+**第一下只弹提醒不退出（播的就是 `data/dialogue.json` 里那一段，逐字比对）**、
+移出按钮 / 移出窗口 / 收页面三种反悔都作废、
+以及 **`day_loop.tscn` 里确实实例化了它、挂上去的层号是最高的一层、默认是收起的**。
+全绿退出码 0。
+
+> 「第二下真的退出」**故意不测**：那一下会 `get_tree().quit()`，把自检自己终结掉 ——
+> 绿着退出，什么都验不到。它和第一下走的是同一个函数，与主菜单那颗按钮是同一条路。
+
+> 画布同样塞进 1152×648 的 `SubViewport` 里测（理由见 §10.6）；`day_loop` 那几条是
+> **真的把 `day_loop.tscn` 实例化出来**再查的，不是查 `.tscn` 文本。

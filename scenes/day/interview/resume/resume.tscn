@@ -1,82 +1,273 @@
 [gd_scene format=3 uid="uid://btulexr2cglap"]
 
 [ext_resource type="Script" uid="uid://7phbtsuitjkn" path="res://scenes/day/interview/resume/resume.gd" id="1_w6vme"]
-[ext_resource type="Texture2D" uid="uid://dhmx2jff8wa2f" path="res://assets/art/interview/resume_page_phd.png" id="2_vnthk"]
+[ext_resource type="Texture2D" uid="uid://d2ogm2x4vmht" path="res://assets/art/interview/resume/resume_phder.png" id="2_yu2w1"]
 [ext_resource type="PackedScene" uid="uid://c30g1ll4c2ch5" path="res://scenes/day/interview/resume/resume_token.tscn" id="3_yu2w1"]
 [ext_resource type="PackedScene" path="res://scenes/day/interview/resume/resume_token_menu.tscn" id="4_menu"]
-[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="5_silver"]
+[ext_resource type="FontFile" uid="uid://b8u6a2faqsh1d" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="5_yu2w1"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/resume_stamp_phd.png" id="6_ltjbd"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vkqoe"]
 
 [node name="Resume" type="Control" unique_id=429165533]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_w6vme")
 
 [node name="ResumePagePhd" type="Sprite2D" parent="." unique_id=408166664]
-texture = ExtResource("2_vnthk")
+position = Vector2(8, 9)
+texture = ExtResource("2_yu2w1")
 centered = false
 
-[node name="Paper" type="MarginContainer" parent="." unique_id=1772566327]
-layout_mode = 0
-offset_left = 624.0
-offset_top = 62.0
-offset_right = 980.0
-offset_bottom = 542.0
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
-
-[node name="Rows" type="VBoxContainer" parent="Paper" unique_id=1053778975]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="HeaderInfo" type="Label" parent="Paper/Rows" unique_id=1467143720]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.09, 0.06, 0.07, 1)
-theme_override_fonts/font = ExtResource("5_silver")
-theme_override_font_sizes/font_size = 22
-text = ""
-
-[node name="Spacer" type="Control" parent="Paper/Rows" unique_id=2141977583]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-
-[node name="EntriesCaption" type="Label" parent="Paper/Rows" unique_id=502821112]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 0.37, 0.3, 1)
-theme_override_fonts/font = ExtResource("5_silver")
-theme_override_font_sizes/font_size = 18
-text = "RESUME ENTRIES"
-
-[node name="TokenList" type="VBoxContainer" parent="Paper/Rows" unique_id=1833902498]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="ResumeToken1" parent="Paper/Rows/TokenList" unique_id=1212916358 instance=ExtResource("3_yu2w1")]
-layout_mode = 2
-text = ""
-
-[node name="ResumeToken2" parent="Paper/Rows/TokenList" unique_id=2054330971 instance=ExtResource("3_yu2w1")]
-layout_mode = 2
-text = ""
-
-[node name="ResumeToken3" parent="Paper/Rows/TokenList" unique_id=1083534431 instance=ExtResource("3_yu2w1")]
-layout_mode = 2
-text = ""
-
-[node name="ResumeToken4" parent="Paper/Rows/TokenList" unique_id=283527975 instance=ExtResource("3_yu2w1")]
-layout_mode = 2
-text = ""
-
-[node name="ResumeToken5" parent="Paper/Rows/TokenList" unique_id=793925309 instance=ExtResource("3_yu2w1")]
-layout_mode = 2
-text = ""
-
-[node name="TokenMenu" parent="." instance=ExtResource("4_menu")]
+[node name="TokenMenu" parent="." unique_id=336728073 instance=ExtResource("4_menu")]
 visible = false
+
+[node name="ExperienceContainer" type="VBoxContainer" parent="." unique_id=1728211313]
 layout_mode = 0
-offset_right = 145.0
-offset_bottom = 223.0
+offset_left = 744.0
+offset_top = 200.0
+offset_right = 959.0
+offset_bottom = 415.0
+
+[node name="ResumeToken" parent="ExperienceContainer" unique_id=793925309 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+
+[node name="SkillContainer" type="VBoxContainer" parent="." unique_id=223296492]
+layout_mode = 0
+offset_left = 631.0
+offset_top = 466.0
+offset_right = 782.0
+offset_bottom = 556.0
+
+[node name="ResumeToken" parent="SkillContainer" unique_id=1212916358 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="." unique_id=199047638]
+layout_mode = 0
+offset_left = 642.0
+offset_top = 86.0
+offset_right = 674.0
+offset_bottom = 103.0
+scale = Vector2(0.57, 0.57)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "姓名"
+
+[node name="NameContainer" type="Label" parent="." unique_id=1616981766]
+layout_mode = 0
+offset_left = 646.0
+offset_top = 102.00001
+offset_right = 742.0
+offset_bottom = 123.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+
+[node name="RaceLabel" type="Label" parent="." unique_id=326067245]
+layout_mode = 0
+offset_left = 764.0
+offset_top = 78.0
+offset_right = 796.0
+offset_bottom = 95.0
+scale = Vector2(0.57, 0.57)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "种族"
+
+[node name="RaceContainer" type="Label" parent="." unique_id=2051510241]
+layout_mode = 0
+offset_left = 764.0
+offset_top = 88.0
+offset_right = 824.0
+offset_bottom = 108.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+
+[node name="ClassLabel" type="Label" parent="." unique_id=1283278313]
+layout_mode = 0
+offset_left = 833.0
+offset_top = 78.0
+offset_right = 865.0
+offset_bottom = 95.0
+scale = Vector2(0.57, 0.57)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "职业"
+
+[node name="ClassContainer" type="Label" parent="." unique_id=2076132352]
+layout_mode = 0
+offset_left = 833.0
+offset_top = 88.0
+offset_right = 893.0
+offset_bottom = 108.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+
+[node name="GenderLabel" type="Label" parent="." unique_id=190610248]
+layout_mode = 0
+offset_left = 764.0
+offset_top = 116.0
+offset_right = 796.0
+offset_bottom = 133.0
+scale = Vector2(0.57, 0.57)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "性别"
+
+[node name="GenderContainer" type="Label" parent="." unique_id=1796712070]
+layout_mode = 0
+offset_left = 764.0
+offset_top = 126.0
+offset_right = 824.0
+offset_bottom = 146.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+
+[node name="AgeLabel" type="Label" parent="." unique_id=37907108]
+layout_mode = 0
+offset_left = 833.0
+offset_top = 116.0
+offset_right = 865.0
+offset_bottom = 133.0
+scale = Vector2(0.57, 0.57)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "年龄"
+
+[node name="AgeContainer" type="Label" parent="." unique_id=321767943]
+layout_mode = 0
+offset_left = 833.0
+offset_top = 126.0
+offset_right = 893.0
+offset_bottom = 146.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+
+[node name="ExperienceLabel" type="Label" parent="." unique_id=1303469847]
+layout_mode = 0
+offset_left = 734.0
+offset_top = 175.0
+offset_right = 794.0
+offset_bottom = 194.0
+scale = Vector2(0.775, 0.775)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "个人履历与奖项"
+
+[node name="SkillLabel" type="Label" parent="." unique_id=1460832661]
+layout_mode = 0
+offset_left = 631.0
+offset_top = 445.99997
+offset_right = 663.0
+offset_bottom = 464.99997
+scale = Vector2(0.775, 0.775)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "专长"
+
+[node name="DeclarationLabel" type="Label" parent="." unique_id=1859713228]
+layout_mode = 0
+offset_left = 808.00006
+offset_top = 450.0
+offset_right = 840.00006
+offset_bottom = 469.0
+scale = Vector2(0.775, 0.775)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "组队宣言"
+
+[node name="DeclarationContainer" type="Label" parent="." unique_id=881726501]
+layout_mode = 0
+offset_left = 808.0
+offset_top = 470.0
+offset_right = 964.0
+offset_bottom = 557.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+autowrap_mode = 3
+
+[node name="Status" type="Button" parent="." unique_id=1861720150]
+layout_mode = 0
+offset_left = 620.0
+offset_top = 155.0
+offset_right = 720.0
+offset_bottom = 435.0
+theme_override_colors/font_disabled_color = Color(0.8750814, 0.8750814, 0.8750814, 0)
+theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBoxEmpty_vkqoe")
+
+[node name="StrLabel" type="Label" parent="Status" unique_id=558376721]
+layout_mode = 0
+offset_left = 39.0
+offset_top = 73.0
+offset_right = 71.0
+offset_bottom = 96.0
+scale = Vector2(0.745, 0.745)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "力量"
+
+[node name="IntLabel" type="Label" parent="Status" unique_id=1486876749]
+layout_mode = 0
+offset_left = 38.0
+offset_top = 163.0
+offset_right = 70.0
+offset_bottom = 186.0
+scale = Vector2(0.745, 0.745)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "智力"
+
+[node name="WisLabel" type="Label" parent="Status" unique_id=2129285022]
+layout_mode = 0
+offset_left = 37.0
+offset_top = 254.0
+offset_right = 69.0
+offset_bottom = 277.0
+scale = Vector2(0.745, 0.745)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+text = "感知"
+
+[node name="StrContainer" type="Label" parent="Status" unique_id=83224285]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 19.999996
+offset_right = 73.0
+offset_bottom = 59.99998
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IntContainer" type="Label" parent="Status" unique_id=1857319806]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 111.0
+offset_right = 73.0
+offset_bottom = 150.99998
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="WisContainer" type="Label" parent="Status" unique_id=1797559141]
+layout_mode = 0
+offset_left = 26.0
+offset_top = 202.0
+offset_right = 71.0
+offset_bottom = 241.99998
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResumeStampPhd" type="Sprite2D" parent="." unique_id=601284995]
+texture = ExtResource("6_ltjbd")
+centered = false
+
+[connection signal="pressed" from="Status" to="." method="_on_status_pressed"]

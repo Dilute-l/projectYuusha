@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://buwlnjanig468"]
+
+[ext_resource type="Texture2D" uid="uid://cyj35b1dtruid" path="res://assets/art/interview/award_phd.png" id="1_n7tw7"]
+[ext_resource type="Script" uid="uid://d05dniwtgijxl" path="res://scenes/common/popup.gd" id="1_u18sk"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/resume_stamp_phd.png" id="2_sv1ow"]
+[ext_resource type="FontFile" uid="uid://b8u6a2faqsh1d" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="3_rudfj"]
+
+[node name="Popup" type="Control" unique_id=250912622]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_u18sk")
+
+[node name="AwardPhd" type="Sprite2D" parent="." unique_id=1742555280]
+visible = false
+texture = ExtResource("1_n7tw7")
+centered = false
+
+[node name="ResumeStampPhd" type="Sprite2D" parent="AwardPhd" unique_id=2046651968]
+position = Vector2(541, 410)
+texture = ExtResource("2_sv1ow")
+
+[node name="Name" type="Label" parent="AwardPhd" unique_id=439488423]
+offset_left = 440.0
+offset_top = 356.0
+offset_right = 683.0
+offset_bottom = 431.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("3_rudfj")
+theme_override_font_sizes/font_size = 48

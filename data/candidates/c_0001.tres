@@ -1,25 +1,26 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://bxefm6k8tg5mj"]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://bi0gh17kquu8g"]
 
 [ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="1_t5hr5"]
 [ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_03i2x"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="3_03i2x"]
 [ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_uhahd"]
 [ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_c5buv"]
 [ext_resource type="Resource" path="res://data/traits/hot_blooded.tres" id="5_jqw4j"]
 [ext_resource type="Resource" path="res://data/traits/greedy.tres" id="6_6pftd"]
 
-[sub_resource type="Resource" id="Resource_rb60i"]
+[sub_resource type="Resource" id="Resource_uhahd"]
 script = ExtResource("2_03i2x")
-description = "PLACEHOLDER ENTRY 01-1"
+description = "PLACEHOLDER EXPERIENCE 01-1"
 ask_path = "res://data/asks/c_0001_1.json"
 
-[sub_resource type="Resource" id="Resource_vjlst"]
+[sub_resource type="Resource" id="Resource_c5buv"]
 script = ExtResource("2_03i2x")
-description = "PLACEHOLDER ENTRY 01-2"
+description = "PLACEHOLDER EXPERIENCE 01-2"
 ask_path = "res://data/asks/c_0001_2.json"
 
-[sub_resource type="Resource" id="Resource_lo4u7"]
+[sub_resource type="Resource" id="Resource_jqw4j"]
 script = ExtResource("2_03i2x")
-description = "PLACEHOLDER ENTRY 01-3"
+description = "PLACEHOLDER SKILL 01-1"
 ask_path = "res://data/asks/c_0001_3.json"
 
 [resource]
@@ -29,10 +30,13 @@ display_name = "PLACEHOLDER NAME 01"
 strength = 12
 intelligence = 4
 wisdom = 7
-level = 3
+race = ExtResource("3_03i2x")
 job = ExtResource("1_t5hr5")
+age = 18
 traits = Array[ExtResource("4_c5buv")]([ExtResource("5_jqw4j"), ExtResource("6_6pftd")])
-resume = Array[ExtResource("2_03i2x")]([SubResource("Resource_rb60i"), SubResource("Resource_vjlst"), SubResource("Resource_lo4u7")])
-resume_header = "PLACEHOLDER HEADER 01"
+experience = Array[ExtResource("2_03i2x")]([SubResource("Resource_uhahd"), SubResource("Resource_c5buv")])
+skill = Array[ExtResource("2_03i2x")]([SubResource("Resource_jqw4j")])
+team_declaration = "PLACEHOLDER DECLARATION 01"
 portrait_eye = 2
 portrait_mouth = 3
+judgment = "placeholder judgement （c_0001）"

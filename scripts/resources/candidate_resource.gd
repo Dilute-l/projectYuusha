@@ -16,25 +16,36 @@ extends Resource
 @export var intelligence: int = 0    # 智力
 @export var wisdom: int = 0          # 感知
 
-## 等级，与职业共同构成「常理上限」（手册常识的锚点）
-@export var level: int = 1
+##种族
+@export var race: RaceDef
 
 ## 职业
 @export var job: JobDef
 
+## 性别。**单个值**（"男" / "女"）—— 简历上那一栏显示的就是它。
+## （曾经写成 Array[StringName] = ["男","女"]，那是笔误：所有候选人显示出来会一模一样。）
+@export var gender: StringName = &"男"
+
+## 年龄
+@export var age: int = 2
+
 ## 特质（list，可含多项，也可为空）；相性计算的输入
 @export var traits: Array[TraitDef] = []
 
-## 简历：若干条目，每条 = 一句描述 + 追问问题 + 追问回答（见 ResumeEntry）
-@export var resume: Array[ResumeEntry] = []
+## 个人履历与奖项（简历左下的「个人履历与奖项」那一栏）。每条一个词条、可追问。
+@export var experience: Array[ResumeEntry] = []
 
-## 简历抬头：纸面上半那一段字，**整段就是一个字符串**，直接写在这里。
+## 专长（简历左下的「专长」那一栏）。每条一个词条、可追问。
+@export var skill: Array[ResumeEntry] = []
+
+## 组队宣言：简历右下那一栏，写一句他想跟队伍说的话。
 ##
-## 版面（怎么分行、字段顺序、要不要带属性、加不加一句花腔）全由这段字自己说了算，
-## 运行时**不做任何拼接**，也不从 strength / job / traits 那些字段生成 ——
-## 那些字段是给玩法用的数值，抬头是给人看的文案，两者故意不联动。
-## 想让人物写得更随意一点（比如藏一个谎言），改这一栏就行。
-@export_multiline var resume_header: String = ""
+## 和 experience / skill 不同，它是**一整段自由文本**，不挂追问 ——
+## 那两栏是「可以被质疑的履历」，这一栏是「他自己喊的口号」，性质不一样。
+@export_multiline var team_declaration: String = ""
+
+##作为最终在战报上呈现出的对这个人的评价
+@export var judgment: String = ""
 
 ## 立绘（可选，UI 用）
 @export var portrait: Texture2D

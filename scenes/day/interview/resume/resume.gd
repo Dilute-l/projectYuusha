@@ -3,32 +3,63 @@ extends Control
 
 ## 候选人的完整简历（ARCHITECTURE.md §4「resume.tscn」、§3.1、§6.2）。
 ##
-## 版面 = assets/art/interview/resume_page_phd.png 这张纸 + 贴在纸上的文字：
-## 上半是抬头（`CandidateResource.resume_header` 那一整段字），
-## 下半是若干条简历词条，每条一个 resume_token.tscn 实例（复用控件）。
+## 版面 = assets/art/interview/resume/resume_phder.png 这张纸，上面分几块：
+##
+##   姓名 / 种族 / 职业 / 性别 / 年龄   → 各自的 *Container（Label）
+##   力量 / 智力 / 感知                 → Status 按钮里的 *Container
+##   个人履历与奖项                     → ExperienceContainer 里一串 ResumeToken
+##   专长                              → SkillContainer 里一串 ResumeToken
+##   组队宣言                           → DeclarationContainer（一整段自由文本）
 ##
 ## ⚠️ 数据来源：**全部来自 CandidateResource**（data/candidates/*.tres）。
-##   本脚本里没有一句候选人文案，也没有"默认履历"这种兜底 ——
+##   本脚本里没有一句候选人文案，也没有「默认履历」这种兜底 ——
 ##   谁把候选人喂进来就显示谁（`set_candidate()`），喂 null 就把纸清空。
 ##   调用方是 interview.gd，它拿的是 GameState 当日名单（data/days/day_XX.tres）里的那一位。
-##   抬头是候选人数据里那一段 `resume_header` 字符串，**原样铺上去，本脚本一个字都不拼**：
-##   姓名 / 职业 / 等级 / 属性 / 特质要不要写、怎么分行、什么顺序，全由那段字自己决定。
-##   词条同理，逐条取 `resume[i].description`。
 ##
-## ⚠️ 字体：纸上的字和游戏别处用的是同一款 —— `assets/fonts/Silver.ttf`。
-##   抬头 / 段标题 / 词条 / 菜单按钮四处在**场景里**各自 `theme_override_fonts/font`，
-##   所以中文能正常显示（Silver 带中文字形）。本脚本不碰字体，改字体去改 .tscn。
+## ⚠️ 字体：纸上的字全在**场景里**各自 `theme_override_fonts/font`（assets/fonts/youaimoshouheiti-bold.ttf），
+##   所以中文能正常显示。本脚本不碰字体，改字体去改 .tscn。
 
 const TOKEN_SCENE := preload("res://scenes/day/interview/resume/resume_token.tscn")
 
+## 「属性追问」的条目序号。
+##
+## 简历上的栏目分两类：
+##   · experience / skill 是**条目列表**，每条一个词条、各占一个序号（从 0 开始往上发）；
+##   · 姓名 / 种族 / 职业 / 性别 / 年龄 / 三围属性是**一整块状态区**（Status 按钮那块），
+##     不占条目序号 —— 但玩家点它也该能追问「你这身板是真的吗」。
+##
+## 所以给状态区发一个不会和真条目撞号的负数序号；它的对话文件走约定路径
+## <id>_status.json（见 STATUS_ASK_FORMAT 与 ask_path_of()）。
+const STATUS_ENTRY_INDEX := -1
+
+## 约定：属性追问的对话文件。一条追问一份 json，属性这条由 id 拼出来。
+const STATUS_ASK_FORMAT := "res://data/asks/%s_status.json"
+
 # ---- 节点 -------------------------------------------------------------------
 
-@onready var _info_label: Label = $Paper/Rows/HeaderInfo
-@onready var _token_list: VBoxContainer = $Paper/Rows/TokenList
-@onready var _token_menu: ResumeTokenMenu = $TokenMenu
+@onready var _token_menu: ResumeTokenMenu = get_node_or_null("TokenMenu") as ResumeTokenMenu
+@onready var _page: Sprite2D = get_node_or_null("ResumePagePhd") as Sprite2D
+@onready var _status: Button = get_node_or_null("Status") as Button
+@onready var _experience_list: VBoxContainer = get_node_or_null("ExperienceContainer") as VBoxContainer
+@onready var _skill_list: VBoxContainer = get_node_or_null("SkillContainer") as VBoxContainer
+
+## 各栏的「值」显示位。名字带 _value 是为了和场景里那批 *Label（栏目标题）区分开。
+@onready var _name_value: Label = get_node_or_null("NameContainer") as Label
+@onready var _race_value: Label = get_node_or_null("RaceContainer") as Label
+@onready var _class_value: Label = get_node_or_null("ClassContainer") as Label
+@onready var _gender_value: Label = get_node_or_null("GenderContainer") as Label
+@onready var _age_value: Label = get_node_or_null("AgeContainer") as Label
+@onready var _declaration_value: Label = get_node_or_null("DeclarationContainer") as Label
+@onready var _str_value: Label = get_node_or_null("Status/StrContainer") as Label
+@onready var _int_value: Label = get_node_or_null("Status/IntContainer") as Label
+@onready var _wis_value: Label = get_node_or_null("Status/WisContainer") as Label
 
 ## 当前铺在纸上的那位候选人；null = 纸是空的
 var _candidate: CandidateResource = null
+
+## 扁平序号 → 词条控件。experience 在前、skill 在后，两个列表共用一套序号。
+## 菜单要锚在「被点的那一条」上，所以得能由序号反查控件。
+var _tokens: Array[ResumeToken] = []
 
 ## 点词条时弹出的菜单形态。
 ##
@@ -45,7 +76,7 @@ enum EntryMenu {
 @export var entry_menu: EntryMenu = EntryMenu.ASK
 
 ## 站定的位置：_ready() 时记下来。整页的进出动画都是**相对它**算的纵向偏移，
-## 偏移归零 = 回到场景里摆的那一处（和组队页共用的绝对偏移，§12.2）。
+## 偏移重置零 = 回到场景里摆的那一处（和组队页共用的绝对偏移，§12.2）。
 var _rest_position: Vector2 = Vector2.ZERO
 
 ## 当前纵向偏移（正 = 往下，负 = 往上，0 = 站定）
@@ -68,11 +99,14 @@ func _ready() -> void:
 	if _token_menu != null and not _token_menu.ask_requested.is_connected(_on_ask_requested):
 		_token_menu.ask_requested.connect(_on_ask_requested)
 
+	# 状态区（力量 / 智力 / 感知 那一块）也是可追问的：点它弹同一个菜单
+	if _status != null and not _status.pressed.is_connected(_on_status_pressed):
+		_status.pressed.connect(_on_status_pressed)
+
 	# 没人喂数据时保持空纸：场景里预摆的词条只是版面占位，不该有内容。
 	# （F6 单独跑本场景看到的就是一张空简历，这是预期行为。）
 	if _candidate == null:
-		set_entries([])
-		set_info("")
+		_clear()
 
 
 func _on_visibility_changed() -> void:
@@ -85,15 +119,14 @@ func _on_visibility_changed() -> void:
 
 
 ## 铺一整份简历。传 null 表示「当前没有候选人」→ 清空。
-## 这是本控件唯一的业务数据入口：抬头 + 词条都从 candidate 里取。
+## 这是本控件唯一的业务数据入口：每一栏都从 candidate 里取，本脚本一个字都不拼。
 func set_candidate(candidate: CandidateResource) -> void:
 	_candidate = candidate
 	if candidate == null:
-		set_info("")
-		set_entries([])
+		_clear()
 		return
-	set_info(candidate.resume_header)
-	set_entries(descriptions_of(candidate))
+	_fill_fields(candidate)
+	_fill_tokens(candidate)
 
 
 ## 当前铺在纸上的候选人；没有则 null
@@ -101,50 +134,153 @@ func get_candidate() -> CandidateResource:
 	return _candidate
 
 
-## 候选人的简历条目正文（逐条 description）。喂给 set_entries()。
-static func descriptions_of(candidate: CandidateResource) -> Array[String]:
-	var lines: Array[String] = []
+## 扁平序号 → 词条控件；越界返回 null。测试 / 调试用。
+func token_at(entry_index: int) -> ResumeToken:
+	if entry_index < 0 or entry_index >= _tokens.size():
+		return null
+	return _tokens[entry_index]
+
+
+## 两个列表里实际铺出来的词条总数（= 可追问的条目数）。
+func token_count() -> int:
+	return _tokens.size()
+
+
+## 两位候选人各自的**扁平条目表**：experience 在前、skill 在后。
+##
+## 追问对话、以及「这一条问过没有」的记录（GameState.record_entry_asked）都按这一套序号走，
+## 所以两个列表共用同一套流程，不需要给 skill 另开一套机制。
+## 空条目（null）在这里就被滤掉 —— 序号必须和铺出来的词条一一对应。
+static func entries_of(candidate: CandidateResource) -> Array[ResumeEntry]:
+	var all: Array[ResumeEntry] = []
 	if candidate == null:
-		return lines
-	for entry in candidate.resume:
+		return all
+	for entry in candidate.experience:
 		if entry != null:
-			lines.append(entry.description)
-	return lines
+			all.append(entry)
+	for entry in candidate.skill:
+		if entry != null:
+			all.append(entry)
+	return all
 
 
-# ---- 版面 -------------------------------------------------------------------
+## 某个扁平序号对应的追问对话文件路径。
+##
+## **约定只写在这一处** —— interview.gd（真的去问）与 team_builder.gd（重播回忆）
+## 都调它，两边不必各自记住「-1 表示属性」这件事。
+## 序号越界 / 该条没写 ask_path 时返回空串。
+static func ask_path_of(candidate: CandidateResource, entry_index: int) -> String:
+	if candidate == null:
+		return ""
+	if entry_index == STATUS_ENTRY_INDEX:
+		return STATUS_ASK_FORMAT % candidate.id
+	var all := entries_of(candidate)
+	if entry_index < 0 or entry_index >= all.size():
+		return ""
+	return all[entry_index].ask_path.strip_edges()
 
 
-## 换抬头。整段就是**一个**字符串 —— 从 CandidateResource.resume_header 原样搬过来，
-## 怎么分行、写哪些字段都在那段字里排好了，这里不做任何拼接。
-func set_info(text: String) -> void:
-	_info_label.text = text
+# ---- 各栏的值 ---------------------------------------------------------------
 
 
-## 铺一整列词条。descriptions 里每一条 = 一条 ResumeEntry.description（§3.2）。
-func set_entries(descriptions: Array) -> void:
+## 把姓名 / 种族 / 职业 / 性别 / 年龄 / 三围 / 组队宣言铺到各自的显示位上。
+##
+## race 与 job 都是资源（RaceDef / JobDef），取它们的 display_name；
+## 任一为空就把那一栏清空 —— 不写「未知」这种兜底字，宁可空着，免得看不出来数据漏了。
+func _fill_fields(candidate: CandidateResource) -> void:
+	_set_label(_name_value, candidate.display_name)
+	_set_label(_race_value, candidate.race.display_name if candidate.race != null else "")
+	_set_label(_class_value, candidate.job.display_name if candidate.job != null else "")
+	_set_label(_gender_value, String(candidate.gender))
+	_set_label(_age_value, str(candidate.age))
+	_set_label(_str_value, str(candidate.strength))
+	_set_label(_int_value, str(candidate.intelligence))
+	_set_label(_wis_value, str(candidate.wisdom))
+	_set_label(_declaration_value, candidate.team_declaration)
+
+
+func _set_label(label: Label, text: String) -> void:
+	if label != null:
+		label.text = text
+
+
+func _clear() -> void:
+	_set_label(_name_value, "")
+	_set_label(_race_value, "")
+	_set_label(_class_value, "")
+	_set_label(_gender_value, "")
+	_set_label(_age_value, "")
+	_set_label(_str_value, "")
+	_set_label(_int_value, "")
+	_set_label(_wis_value, "")
+	_set_label(_declaration_value, "")
+	_fill_lists([], [])
+
+
+# ---- 词条 -------------------------------------------------------------------
+
+
+## 按候选人铺两个列表。experience 拿序号 0..E-1，skill 接着拿 E..E+S-1。
+func _fill_tokens(candidate: CandidateResource) -> void:
+	_fill_lists(_non_null(candidate.experience), _non_null(candidate.skill))
+
+
+## 滤掉空条目。序号必须和铺出来的词条一一对应，所以两个列表走同一条过滤。
+func _non_null(entries: Array[ResumeEntry]) -> Array[ResumeEntry]:
+	var kept: Array[ResumeEntry] = []
+	for entry in entries:
+		if entry != null:
+			kept.append(entry)
+	return kept
+
+
+func _fill_lists(experience: Array[ResumeEntry], skill: Array[ResumeEntry]) -> void:
 	# 换一批词条时先把菜单收起来：它正锚着的那条可能马上就被隐藏/换内容了
 	if _token_menu != null:
 		_token_menu.close()
+	_tokens.clear()
+	_fill_list(_experience_list, experience)
+	_fill_list(_skill_list, skill)
 
-	# 场景里预摆了 5 个 ResumeToken 实例：编辑器一打开就能看到真实版面。
-	# 数据条数和预摆数对不上时按数据走 —— 多的现场新建，富余的隐藏，
-	# 所以「若干项」都能撑住，不用改场景。
-	var placed := _token_list.get_children()
-	for i in descriptions.size():
+
+## 往一个容器里铺词条，序号接着 _tokens 的长度往下发。
+##
+## 场景里每个容器预摆了 1 个 ResumeToken（编辑器一打开就能看到真实版面）。
+## 数据条数和预摆数对不上时按数据走 —— 多的现场建、富余的藏起来，所以「若干项」都撑得住。
+func _fill_list(list: VBoxContainer, entries: Array[ResumeEntry]) -> void:
+	if list == null:
+		return
+	# ⚠️ 两个下标不是一回事，别混：
+	#   local —— 在本容器**预摆实例**里的位置（每个容器各自从 0 开始）
+	#   index —— 扁平序号（experience 与 skill 连着往下发），喂给词条、菜单与存档记录
+	# 早先这里把 index 当成 local 用：skill 容器会去找 placed[2]（它只有 1 个预摆），
+	# 于是那个空实例留在原地、真词条另加一个 —— 看起来就像「专长栏是空的」。
+	var placed := list.get_children()
+	var local := 0
+	for entry in entries:
+		var index := _tokens.size()
 		var token: ResumeToken
-		if i < placed.size():
-			token = placed[i] as ResumeToken
-			token.visible = true
+		if local < placed.size():
+			token = placed[local] as ResumeToken
 		else:
 			token = TOKEN_SCENE.instantiate() as ResumeToken
-			token.name = "ResumeToken%d" % (i + 1)
-			_token_list.add_child(token)
-		token.set_entry(i, String(descriptions[i]))
+			token.name = "%sToken%d" % [list.name, local + 1]
+			list.add_child(token)
+			# 加了新节点，重新取一次，保持 placed 与真实 children 对齐
+			placed = list.get_children()
+		local += 1
+		if token == null:
+			continue
+		token.visible = true
+		token.set_entry(index, entry.description)
 		_connect_token(token)
+		_tokens.append(token)
 
-	for i in range(descriptions.size(), placed.size()):
-		(placed[i] as Control).visible = false
+	# 这个容器里富余的预摆词条：藏起来（不是删掉，编辑器里还要看版面）
+	for i in range(local, placed.size()):
+		var extra := placed[i] as Control
+		if extra != null and extra.get_parent() == list:
+			extra.visible = false
 
 
 # ---- 整页的进出（§13：站定之后从下方升起 / 判定之后往上方移走）-----------------
@@ -152,8 +288,7 @@ func set_entries(descriptions: Array) -> void:
 # 和 interviewee.gd 的走路一样，这里只提供「怎么滑」这一个动作，
 # **什么时候滑、滑到哪儿**由 interview.gd 的演出调解决定。
 #
-# 动的是一整页（本节点），不是只动 Paper：纸、纸上的字、词条、以及贴在最底下的
-# ResumePagePhd 是同一张纸的组成部分，拆开动会散架。
+# 动的是一整页（本节点），不是只动纸：纸、纸上的字、词条是同一张纸的组成部分，拆开动会散架。
 
 
 ## 当前纵向偏移：正 = 被推到画面下方，负 = 被推到画面上方，0 = 站定
@@ -161,12 +296,17 @@ func slide_offset() -> float:
 	return _slide_offset
 
 
-## 一整页的滑动行程：一个画布高度。
+## 一整页的滑动行程。
 ##
-## 用 viewport 的高度而不是写死 648：纸面本身只占 62..542，一个画布高度足够
-## 把它**完全**推出画面（进、出都够），而画布尺寸本来就该由 viewport 说了算。
+## 取「一个画布高度」与「底纸底边」里**更大的那个**：
+## 用 viewport 的高度而不是写死 648 —— 画布尺寸本来就该由 viewport 说了算；
+## 但底纸 ResumePagePhd 是整张手绘图，`position.y + 贴图高` 可能比画布还大一点点
+## （实测 9 + 648 = 657），只滑一个画布高会剩一条边留在画面顶上。
 func travel_distance() -> float:
-	return get_viewport_rect().size.y
+	var canvas := get_viewport_rect().size.y
+	if _page == null or _page.texture == null:
+		return canvas
+	return maxf(canvas, _page.position.y + _page.texture.get_size().y)
 
 
 ## 滑到某个纵向偏移（正 = 往下，负 = 往上），duration 秒内匀速走完。返回这个 Tween。
@@ -175,6 +315,10 @@ func slide_to(offset_y: float, duration: float) -> Tween:
 	_slide_tween = create_tween()
 	_slide_tween.tween_method(
 		_apply_slide, _slide_offset, offset_y, duration)
+	# 收尾时把最终值补上：Tween 走完最后一帧、到 is_running() 变假之间还差一帧，
+	# 而演出调度是照 is_sliding()（= is_running()）判断「到位了没有」的，会在这之前就往下走 ——
+	# 于是纸停在离目标差一帧的地方（实测差 18px；一张整画布大的底纸就会留一条边在画面里）。
+	_slide_tween.finished.connect(func() -> void: _apply_slide(offset_y))
 	return _slide_tween
 
 
@@ -212,7 +356,7 @@ func _apply_slide(offset_y: float) -> void:
 
 # ---- 词条菜单 ---------------------------------------------------------------
 
-## 每条词条都要接上 —— 新现场 instantiate() 出来的那些也要，所以放在 set_entries 里逐条接。
+## 每条词条都要接上 —— 新现场 instantiate() 出来的那些也要，所以放在 _fill_list 里逐条接。
 func _connect_token(token: ResumeToken) -> void:
 	if not token.selected.is_connected(_on_token_selected):
 		token.selected.connect(_on_token_selected)
@@ -230,12 +374,35 @@ func close_token_menu() -> void:
 func _on_token_selected(entry_index: int) -> void:
 	if entry_menu == EntryMenu.HIDDEN:
 		return
-	var token := _token_list.get_child(entry_index) as Control
+	if entry_index < 0 or entry_index >= _tokens.size():
+		return
+	var token := _tokens[entry_index]
 	if token == null or not token.visible:
+		return
+	# 「专长」那一栏在纸的右下，菜单摆它右边会盖住纸面别的内容 —— 翻到左边去。
+	# 履历那栏位置更靠上，没这个问题，仍然按默认摆右边。
+	_open_menu_for(token, entry_index, token.get_parent() == _skill_list)
+
+
+## 点了状态区（力量 / 智力 / 感知 那一块）→ 弹同一个菜单，序号是 STATUS_ENTRY_INDEX。
+##
+## 状态区不是一个词条，但它同样值得被追问一句「你这身板是真的吗」，
+## 所以把它当成一个**虚拟条目**接到同一套流程上 —— 菜单、对话、记录都不用改。
+##
+## 菜单摆**左边**：状态区右边紧挨着「个人履历与奖项」那一列，摆右边会把它盖住。
+func _on_status_pressed() -> void:
+	if entry_menu == EntryMenu.HIDDEN or _status == null:
+		return
+	_open_menu_for(_status, STATUS_ENTRY_INDEX, true)
+
+
+func _open_menu_for(anchor: Control, entry_index: int, prefer_left: bool = false) -> void:
+	if _token_menu == null:
+		push_error("[Resume] 找不到 TokenMenu，弹不出菜单")
 		return
 	# 文案与可用性都在这里定：菜单自己不知道现在是哪个阶段（它只是个控件）。
 	_token_menu.set_option_text(_option_text())
-	_token_menu.open_for(token, entry_index, _option_enabled(entry_index))
+	_token_menu.open_for(anchor, entry_index, _option_enabled(entry_index), prefer_left)
 
 
 ## 菜单里那个选项当前该显示什么字
@@ -273,10 +440,11 @@ func _on_ask_requested(entry_index: int) -> void:
 	if _candidate == null:
 		push_warning("[Resume] 纸上没有候选人，这条无从问起")
 		return
-	if entry_index < 0 or entry_index >= _candidate.resume.size():
-		push_warning("[Resume] 条目下标越界：%d（共 %d 条）" % [
-			entry_index, _candidate.resume.size()])
+	# 序号合不合法由 ask_path_of 一处统一判：属性那条是负数，真条目是 0..N-1
+	if ask_path_of(_candidate, entry_index).is_empty():
+		push_warning("[Resume] 条目下标越界或没写 ask_path：%d" % entry_index)
 		return
+
 	# 同一个按钮，两个阶段发两个信号：收信号的人不必再自己判断现在是哪个阶段。
 	if entry_menu == EntryMenu.RECALL:
 		EventBus.resume_entry_recalled.emit(_candidate.id, entry_index)

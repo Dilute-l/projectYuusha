@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://bk8dttnke8gec" path="res://assets/art/hand_black_notuse.png" id="3_cq08r"]
 
 [node name="Haohan" type="Control" unique_id=1395832866]
+z_index = 1
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_06vbl")

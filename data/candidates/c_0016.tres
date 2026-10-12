@@ -2,23 +2,24 @@
 
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_tu337"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_3hr5m"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="3_3hr5m"]
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_gt31m"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_8yv2a"]
 [ext_resource type="Resource" path="res://data/traits/greedy.tres" id="5_3dwxy"]
 
-[sub_resource type="Resource" id="Resource_y0cjq"]
+[sub_resource type="Resource" id="Resource_gt31m"]
 script = ExtResource("2_3hr5m")
-description = "PLACEHOLDER ENTRY 16-1"
+description = "PLACEHOLDER EXPERIENCE 16-1"
 ask_path = "res://data/asks/c_0016_1.json"
 
-[sub_resource type="Resource" id="Resource_2dh37"]
+[sub_resource type="Resource" id="Resource_8yv2a"]
 script = ExtResource("2_3hr5m")
-description = "PLACEHOLDER ENTRY 16-2"
+description = "PLACEHOLDER EXPERIENCE 16-2"
 ask_path = "res://data/asks/c_0016_2.json"
 
-[sub_resource type="Resource" id="Resource_wkrhq"]
+[sub_resource type="Resource" id="Resource_3dwxy"]
 script = ExtResource("2_3hr5m")
-description = "PLACEHOLDER ENTRY 16-3"
+description = "PLACEHOLDER SKILL 16-1"
 ask_path = "res://data/asks/c_0016_3.json"
 
 [resource]
@@ -28,11 +29,15 @@ display_name = "PLACEHOLDER NAME 16"
 strength = 9
 intelligence = 3
 wisdom = 4
-level = 2
+race = ExtResource("3_3hr5m")
 job = ExtResource("1_tu337")
+gender = &"女"
+age = 19
 traits = Array[ExtResource("4_8yv2a")]([ExtResource("5_3dwxy")])
-resume = Array[ExtResource("2_3hr5m")]([SubResource("Resource_y0cjq"), SubResource("Resource_2dh37"), SubResource("Resource_wkrhq")])
-resume_header = "PLACEHOLDER HEADER 16"
+experience = Array[ExtResource("2_3hr5m")]([SubResource("Resource_gt31m"), SubResource("Resource_8yv2a")])
+skill = Array[ExtResource("2_3hr5m")]([SubResource("Resource_3dwxy")])
+team_declaration = "PLACEHOLDER DECLARATION 16"
 portrait_eye = 2
 portrait_hair = 3
 portrait_mouth = 3
+judgment = "placeholder judgement （c_0016）"

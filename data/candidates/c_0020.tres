@@ -3,22 +3,23 @@
 [ext_resource type="Resource" path="res://data/jobs/mage.tres" id="1_bu5hy"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_8y1ss"]
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_5vdh1"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="3_8y1ss"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_qeog4"]
 [ext_resource type="Resource" path="res://data/traits/hot_blooded.tres" id="5_5ukfp"]
 
-[sub_resource type="Resource" id="Resource_qqmjx"]
+[sub_resource type="Resource" id="Resource_5vdh1"]
 script = ExtResource("2_8y1ss")
-description = "PLACEHOLDER ENTRY 20-1"
+description = "PLACEHOLDER EXPERIENCE 20-1"
 ask_path = "res://data/asks/c_0020_1.json"
 
-[sub_resource type="Resource" id="Resource_heaad"]
+[sub_resource type="Resource" id="Resource_qeog4"]
 script = ExtResource("2_8y1ss")
-description = "PLACEHOLDER ENTRY 20-2"
+description = "PLACEHOLDER EXPERIENCE 20-2"
 ask_path = "res://data/asks/c_0020_2.json"
 
-[sub_resource type="Resource" id="Resource_e3ktv"]
+[sub_resource type="Resource" id="Resource_5ukfp"]
 script = ExtResource("2_8y1ss")
-description = "PLACEHOLDER ENTRY 20-3"
+description = "PLACEHOLDER SKILL 20-1"
 ask_path = "res://data/asks/c_0020_3.json"
 
 [resource]
@@ -28,10 +29,14 @@ display_name = "PLACEHOLDER NAME 20"
 strength = 3
 intelligence = 11
 wisdom = 12
-level = 2
+race = ExtResource("3_8y1ss")
 job = ExtResource("1_bu5hy")
+gender = &"女"
+age = 23
 traits = Array[ExtResource("4_qeog4")]([ExtResource("5_5ukfp")])
-resume = Array[ExtResource("2_8y1ss")]([SubResource("Resource_qqmjx"), SubResource("Resource_heaad"), SubResource("Resource_e3ktv")])
-resume_header = "PLACEHOLDER HEADER 20"
+experience = Array[ExtResource("2_8y1ss")]([SubResource("Resource_5vdh1"), SubResource("Resource_qeog4")])
+skill = Array[ExtResource("2_8y1ss")]([SubResource("Resource_5ukfp")])
+team_declaration = "PLACEHOLDER DECLARATION 20"
 portrait_race = &"el"
 portrait_mouth = 2
+judgment = "placeholder judgement （c_0020）"

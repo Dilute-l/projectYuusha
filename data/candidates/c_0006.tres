@@ -3,22 +3,23 @@
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_x32fm"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_gymjy"]
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_e0t55"]
+[ext_resource type="Resource" path="res://data/races/dwarf.tres" id="3_gymjy"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_qw8e4"]
 [ext_resource type="Resource" path="res://data/traits/drunkard.tres" id="5_ck5xg"]
 
-[sub_resource type="Resource" id="Resource_dflko"]
+[sub_resource type="Resource" id="Resource_e0t55"]
 script = ExtResource("2_gymjy")
-description = "PLACEHOLDER ENTRY 06-1"
+description = "PLACEHOLDER EXPERIENCE 06-1"
 ask_path = "res://data/asks/c_0006_1.json"
 
-[sub_resource type="Resource" id="Resource_lo35y"]
+[sub_resource type="Resource" id="Resource_qw8e4"]
 script = ExtResource("2_gymjy")
-description = "PLACEHOLDER ENTRY 06-2"
+description = "PLACEHOLDER EXPERIENCE 06-2"
 ask_path = "res://data/asks/c_0006_2.json"
 
-[sub_resource type="Resource" id="Resource_2rr6d"]
+[sub_resource type="Resource" id="Resource_ck5xg"]
 script = ExtResource("2_gymjy")
-description = "PLACEHOLDER ENTRY 06-3"
+description = "PLACEHOLDER SKILL 06-1"
 ask_path = "res://data/asks/c_0006_3.json"
 
 [resource]
@@ -28,10 +29,14 @@ display_name = "PLACEHOLDER NAME 06"
 strength = 15
 intelligence = 3
 wisdom = 5
-level = 4
+race = ExtResource("3_gymjy")
 job = ExtResource("1_x32fm")
+gender = &"女"
+age = 23
 traits = Array[ExtResource("4_qw8e4")]([ExtResource("5_ck5xg")])
-resume = Array[ExtResource("2_gymjy")]([SubResource("Resource_dflko"), SubResource("Resource_lo35y"), SubResource("Resource_2rr6d")])
-resume_header = "PLACEHOLDER HEADER 06"
+experience = Array[ExtResource("2_gymjy")]([SubResource("Resource_e0t55"), SubResource("Resource_qw8e4")])
+skill = Array[ExtResource("2_gymjy")]([SubResource("Resource_ck5xg")])
+team_declaration = "PLACEHOLDER DECLARATION 06"
 portrait_race = &"st"
 portrait_hat = 3
+judgment = "placeholder judgement （c_0006）"

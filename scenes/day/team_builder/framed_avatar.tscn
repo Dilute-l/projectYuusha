@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/day/team_builder/framed_avatar.gd" id="1_framed"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/avatar_frame_background_phd.png" id="2_bkg"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/avatar_frame_phd.png" id="3_frame"]
+
+[node name="FramedAvatar" type="Control"]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 128.0
+offset_bottom = 128.0
+mouse_filter = 2
+script = ExtResource("1_framed")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 128.0
+offset_bottom = 128.0
+mouse_filter = 2
+texture = ExtResource("2_bkg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Clip" type="Control" parent="."]
+clip_contents = true
+layout_mode = 0
+offset_left = 11.0
+offset_top = 10.0
+offset_right = 119.0
+offset_bottom = 116.0
+mouse_filter = 2
+
+[node name="Portrait" type="TextureRect" parent="Clip"]
+layout_mode = 0
+offset_left = -11.0
+offset_top = -10.0
+offset_right = 117.0
+offset_bottom = 118.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 128.0
+offset_bottom = 128.0
+mouse_filter = 2
+texture = ExtResource("3_frame")
+expand_mode = 1
+stretch_mode = 5

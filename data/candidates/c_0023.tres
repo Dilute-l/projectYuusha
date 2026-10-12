@@ -1,25 +1,26 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://6oo5djyng3tk"]
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
 
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_jnxpl"]
-[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_lghhw"]
-[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_1d337"]
-[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_2fu6d"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_lghhw"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_1d337"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="3_lghhw"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_2fu6d"]
 [ext_resource type="Resource" path="res://data/traits/hot_blooded.tres" id="5_g2idq"]
 [ext_resource type="Resource" path="res://data/traits/drunkard.tres" id="6_3nu1y"]
 
-[sub_resource type="Resource" id="Resource_2mjdb"]
+[sub_resource type="Resource" id="Resource_1d337"]
 script = ExtResource("2_lghhw")
-description = "PLACEHOLDER ENTRY 23-1"
+description = "PLACEHOLDER EXPERIENCE 23-1"
 ask_path = "res://data/asks/c_0023_1.json"
 
-[sub_resource type="Resource" id="Resource_sr6qh"]
+[sub_resource type="Resource" id="Resource_2fu6d"]
 script = ExtResource("2_lghhw")
-description = "PLACEHOLDER ENTRY 23-2"
+description = "PLACEHOLDER EXPERIENCE 23-2"
 ask_path = "res://data/asks/c_0023_2.json"
 
-[sub_resource type="Resource" id="Resource_scjgq"]
+[sub_resource type="Resource" id="Resource_g2idq"]
 script = ExtResource("2_lghhw")
-description = "PLACEHOLDER ENTRY 23-3"
+description = "PLACEHOLDER SKILL 23-1"
 ask_path = "res://data/asks/c_0023_3.json"
 
 [resource]
@@ -29,9 +30,13 @@ display_name = "PLACEHOLDER NAME 23"
 strength = 7
 intelligence = 2
 wisdom = 3
+race = ExtResource("3_lghhw")
 job = ExtResource("1_jnxpl")
+age = 26
 traits = Array[ExtResource("4_2fu6d")]([ExtResource("5_g2idq"), ExtResource("6_3nu1y")])
-resume = Array[ExtResource("2_lghhw")]([SubResource("Resource_2mjdb"), SubResource("Resource_sr6qh"), SubResource("Resource_scjgq")])
-resume_header = "PLACEHOLDER HEADER 23"
+experience = Array[ExtResource("2_lghhw")]([SubResource("Resource_1d337"), SubResource("Resource_2fu6d")])
+skill = Array[ExtResource("2_lghhw")]([SubResource("Resource_g2idq")])
+team_declaration = "PLACEHOLDER DECLARATION 23"
 portrait_hair = 2
 portrait_mouth = 3
+judgment = "placeholder judgement （c_0023）"

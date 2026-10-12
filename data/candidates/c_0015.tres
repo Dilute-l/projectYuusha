@@ -2,24 +2,25 @@
 
 [ext_resource type="Resource" path="res://data/jobs/mage.tres" id="1_4ro6s"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_u1bps"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="3_u1bps"]
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_xpgf1"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_twmln"]
 [ext_resource type="Resource" path="res://data/traits/ego.tres" id="5_vybnr"]
 [ext_resource type="Resource" path="res://data/traits/insomnia.tres" id="6_m3mr7"]
 
-[sub_resource type="Resource" id="Resource_4no3a"]
+[sub_resource type="Resource" id="Resource_xpgf1"]
 script = ExtResource("2_u1bps")
-description = "PLACEHOLDER ENTRY 15-1"
+description = "PLACEHOLDER EXPERIENCE 15-1"
 ask_path = "res://data/asks/c_0015_1.json"
 
-[sub_resource type="Resource" id="Resource_fkdih"]
+[sub_resource type="Resource" id="Resource_twmln"]
 script = ExtResource("2_u1bps")
-description = "PLACEHOLDER ENTRY 15-2"
+description = "PLACEHOLDER EXPERIENCE 15-2"
 ask_path = "res://data/asks/c_0015_2.json"
 
-[sub_resource type="Resource" id="Resource_mwfpc"]
+[sub_resource type="Resource" id="Resource_vybnr"]
 script = ExtResource("2_u1bps")
-description = "PLACEHOLDER ENTRY 15-3"
+description = "PLACEHOLDER SKILL 15-1"
 ask_path = "res://data/asks/c_0015_3.json"
 
 [resource]
@@ -29,10 +30,13 @@ display_name = "PLACEHOLDER NAME 15"
 strength = 4
 intelligence = 20
 wisdom = 12
-level = 7
+race = ExtResource("3_u1bps")
 job = ExtResource("1_4ro6s")
+age = 18
 traits = Array[ExtResource("4_twmln")]([ExtResource("5_vybnr"), ExtResource("6_m3mr7")])
-resume = Array[ExtResource("2_u1bps")]([SubResource("Resource_4no3a"), SubResource("Resource_fkdih"), SubResource("Resource_mwfpc")])
-resume_header = "PLACEHOLDER HEADER 15"
+experience = Array[ExtResource("2_u1bps")]([SubResource("Resource_xpgf1"), SubResource("Resource_twmln")])
+skill = Array[ExtResource("2_u1bps")]([SubResource("Resource_vybnr")])
+team_declaration = "PLACEHOLDER DECLARATION 15"
 portrait_race = &"el"
 portrait_hair = 2
+judgment = "placeholder judgement （c_0015）"

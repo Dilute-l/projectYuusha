@@ -37,23 +37,59 @@ static func resolve(day_index: int, member_ids: Array[StringName]) -> BattleRepo
 	var rng := RngService.day_rng(day_index)
 
 	for member_id in member_ids:
-		var template: String = STUB_TEMPLATES[rng.randi_range(0, STUB_TEMPLATES.size() - 1)]
-		# 刻意**不**在这里替换 {actor}：core 只认 id，把 id 翻成人名是表现层的事
-		# （见 scenes/day/battle_report.gd 的 _event_text）。
-		# 真实实现里 narrative_engine.gd 会输出成品文案，这条分工还会再变一次。
+		var member := DataDB.get_candidate(member_id)
+		if member == null:
+			push_warning("[CombatResolver] 名单里的 %s 查不到，跳过" % member_id)   # 别静默
+			continue
+
+		# 这一条播的就是这位候选人自己的 judgment（data/candidates/*.tres 里写好的那句评价）。
+		# 顺序**严格跟着 member_ids 走** —— 谁先出战谁先播，不重排、不排序。
+		var text := member.judgment.strip_edges()
+		var rule_id := &"judgment"
+		if text.is_empty():
+			# 没写评价不能留一行空白：退回桩文案，但要留痕
+			push_warning("[CombatResolver] %s 没写 judgment，这一条退回桩文案" % member_id)
+			text = STUB_TEMPLATES[rng.randi_range(0, STUB_TEMPLATES.size() - 1)]
+			rule_id = &"stub"
 		report.events.append({
-			"text": template,
+			"text": text,
 			"actor": member_id,
-			"rule_id": &"stub",
+			"rule_id": rule_id,
 			"priority": 0,
 		})
 
-	report.day_score = rng.randi_range(30, 90)
+	# ── 循环外：全队合计 ──
+	var team_power := finalPowerCaculation(member_ids)
+	report.day_score = team_power
 	report.breakdown = {
-		"true_power": report.day_score,
+		"true_power": team_power,      # ← 不再是 report.day_score（那会儿它还是 0）
 		"synergy": 0,
 		"lie_penalty": 0,
 		"event_bonus": 0,
 		"luck": 0,
 	}
 	return report
+
+##后续要加入根据特质决定个人分数的地方，在这里加入对tempower的计算就好
+static func powerCaculation(member)->int:
+	var tempower: int = 0
+	match member.job.id:
+		&"job.fighter":
+			tempower += member.strength * 10
+		&"job.mage":
+			tempower += member.intelligence * 10
+		&"job.cleric":
+			tempower += member.wisdom * 10
+	return tempower
+	
+##后需要加入根据羁绊队伍增减分可以在这里修改temptotal
+static func finalPowerCaculation(member_ids: Array[StringName])->int:
+	var temptotal: int = 0
+	for member_id in member_ids:
+		var member := DataDB.get_candidate(member_id)
+		if member == null:
+			# 查不到人不能静默跳过：那样这一份战力就是凭空少了，还看不出来
+			push_warning("[CombatResolver] 名单里的 %s 查不到，战力按 0 计" % member_id)
+			continue
+		temptotal += powerCaculation(member) 
+	return temptotal
