@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>候选人生成器 · Yuusha</title>
+<style>
+  :root { --ink:#1c1a17; --line:#d8d2c6; --bg:#f6f3ec; --card:#fffdf8; --accent:#8a6a3b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+         background:var(--bg); color:var(--ink); }
+  header { padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line);
+           display:flex; gap:10px; align-items:center; flex-wrap:wrap; position:sticky; top:0; z-index:5; }
+  header h1 { font-size:16px; margin:0 10px 0 0; }
+  main { display:grid; grid-template-columns:minmax(560px,1.35fr) minmax(340px,1fr); }
+  .pane { overflow:auto; padding:16px 20px; height:calc(100vh - 56px); }
+  .pane + .pane { border-left:1px solid var(--line); background:#fbf9f4; }
+  fieldset { border:1px solid var(--line); border-radius:6px; background:var(--card);
+             margin:0 0 14px; padding:10px 12px 12px; }
+  legend { font-weight:700; padding:0 6px; color:var(--accent); }
+  label { display:block; font-size:12px; color:#6b6357; margin:8px 0 2px; }
+  input[type=text], input[type=number], textarea, select {
+    width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:4px;
+    background:#fff; font:inherit; color:inherit; }
+  textarea { resize:vertical; min-height:50px; }
+  button { font:inherit; padding:5px 11px; border:1px solid var(--line); border-radius:4px;
+           background:var(--card); cursor:pointer; }
+  button:hover { background:#f0ebe1; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.tiny { padding:2px 7px; font-size:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0 12px; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .row > * { flex:1; } .row > button { flex:0 0 auto; }
+  .card { border:1px solid var(--line); border-radius:6px; background:var(--card); margin-bottom:12px; }
+  .card > .head { display:flex; gap:8px; align-items:center; padding:7px 10px;
+                  border-bottom:1px solid var(--line); background:#f3efe6; border-radius:6px 6px 0 0; }
+  .card > .head b { flex:1; }
+  .body { padding:10px 12px; }
+  .hint { color:#8b8375; font-size:12px; margin:4px 0 0; }
+  .warn { color:#a33; } .ok { color:#3a7a3a; }
+  pre { margin:0 0 12px; padding:10px 12px; background:#2c2a26; color:#f2eee6; border-radius:6px;
+        font:12px/1.5 Consolas,"Cascadia Mono",monospace; white-space:pre; overflow:auto; max-height:46vh; }
+  .files { list-style:none; margin:0 0 12px; padding:0; }
+  .files li { display:flex; gap:8px; align-items:center; padding:4px 0; border-bottom:1px dashed var(--line); }
+  .files li span { flex:1; font-family:Consolas,monospace; font-size:12px; }
+  .tabs { display:flex; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
+  .tabs button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>候选人生成器</h1>
+  <button class="primary" id="add">+ 新增候选人</button>
+  <button id="dup">复制当前</button>
+  <button id="del">删除当前</button>
+  <button id="saveDir" hidden>全部写入 data/…</button>
+  <span id="msg" class="hint"></span>
+</header>
+
+<main>
+  <div class="pane" id="form"></div>
+  <div class="pane">
+    <div class="tabs" id="tabs"></div>
+    <ul class="files" id="files"></ul>
+    <div class="row" style="margin-bottom:10px">
+      <button id="dlOne">下载当前 .tres</button>
+      <button id="dlJson">下载当前的所有 json</button>
+    </div>
+    <pre id="out"></pre>
+  </div>
+</main>
+
+<script>
+"use strict";
+/* ─────────────────────────────────────────────────────────────────────────
+   候选人生成器 —— 单文件、零依赖。
+   产出一位候选人的：
+     data/candidates/<id>.tres        CandidateResource
+     data/asks/<id>_1..N.json         履历 / 专长 每条的追问对话（扁平序号）
+     data/asks/<id>_status.json       属性追问（序号 -1）
+   序号约定与 resume.gd::ask_path_of() 一致：experience 在前，skill 接着发。
+   ───────────────────────────────────────────────────────────────────────── */
+
+const SCRIPTS = {
+  candidate: "res://scripts/resources/candidate_resource.gd",
+  entry:     "res://scripts/resources/resume_entry.gd",
+  trait:     "res://scripts/resources/trait_def.gd",
+};
+const RACES = ["dwarf", "elf", "human"];      // data/races/*.tres
+const JOBS  = ["cleric", "fighter", "mage"];  // data/jobs/*.tres
+const PORTRAIT_RACES = ["hu", "el", "st"];    // 立绘配方代号（hu 人 / el 精灵 / st 矮人）
+
+const $ = (s) => document.querySelector(s);
+const el = (tag, props = {}, kids = []) => {
+  const n = Object.assign(document.createElement(tag), props);
+  for (const k of [].concat(kids)) if (k) n.appendChild(k);
+  return n;
+};
+
+// ── 数据 ────────────────────────────────────────────────────────────────────
+function blankCandidate(n) {
+  return {
+    id: "c_" + String(n).padStart(4, "0"),
+    display_name: "", strength: 10, intelligence: 10, wisdom: 10,
+    race: "human", job: "fighter", gender: "男", age: 20,
+    traits: "",                       // 逗号分隔的 data/traits/*.tres 文件名
+    portrait_race: "hu", portrait_eye: 1, portrait_hair: 1, portrait_mouth: 1, portrait_hat: 1,
+    team_declaration: "", judgment: "",
+    experience: [blankEntry()],
+    skill: [blankEntry()],
+    statusLines: [blankLine(), blankLine()],
+  };
+}
+function blankEntry() { return { description: "", lines: [blankLine(), blankLine()] }; }
+function blankLine(speaker = "", text = "") { return { speaker, text, popup: "" }; }
+
+let candidates = [];
+let current = 0;
+
+// ── 渲染 ────────────────────────────────────────────────────────────────────
+const on = (fn) => (e) => { fn(e.target.value); refresh(); };
+
+function render() {
+  const box = $("#form"); box.textContent = "";
+  if (!candidates.length) {
+    box.appendChild(el("p", { className: "hint", textContent: "还没有候选人。点左上「+ 新增候选人」。" }));
+    renderSide(); return;
+  }
+  const c = candidates[current];
+
+  // 基本信息
+  const basic = el("div", { className: "grid" });
+  const field = (label, value, setter, type = "text") => {
+    const wrap = el("div");
+    wrap.appendChild(el("label", { textContent: label }));
+    wrap.appendChild(el("input", { type, value, oninput: on(setter) }));
+    return wrap;
+  };
+  basic.append(
+    field("id（c_0001）", c.id, (v) => c.id = v.trim()),
+    field("姓名 display_name", c.display_name, (v) => c.display_name = v),
+    field("力量", c.strength, (v) => c.strength = intOf(v), "number"),
+    field("智力", c.intelligence, (v) => c.intelligence = intOf(v), "number"),
+    field("感知", c.wisdom, (v) => c.wisdom = intOf(v), "number"),
+    field("年龄", c.age, (v) => c.age = intOf(v), "number"),
+  );
+  const sel = (label, value, setter, options) => {
+    const wrap = el("div");
+    wrap.appendChild(el("label", { textContent: label }));
+    const s = el("select", { onchange: on(setter) });
+    for (const o of options) s.appendChild(el("option", { value: o, textContent: o, selected: o === value }));
+    wrap.appendChild(s); return wrap;
+  };
+  basic.append(
+    sel("种族 race（data/races/）", c.race, (v) => c.race = v, RACES),
+    sel("职业 job（data/jobs/）", c.job, (v) => c.job = v, JOBS),
+    sel("性别 gender", c.gender, (v) => c.gender = v, ["男", "女"]),
+    sel("立绘种族 portrait_race", c.portrait_race, (v) => c.portrait_race = v, PORTRAIT_RACES),
+  );
+  basic.appendChild(field("portrait_eye", c.portrait_eye, (v) => c.portrait_eye = intOf(v), "number"));
+  basic.appendChild(field("portrait_hair", c.portrait_hair, (v) => c.portrait_hair = intOf(v), "number"));
+  basic.appendChild(field("portrait_mouth", c.portrait_mouth, (v) => c.portrait_mouth = intOf(v), "number"));
+  basic.appendChild(field("portrait_hat", c.portrait_hat, (v) => c.portrait_hat = intOf(v), "number"));
+  basic.appendChild(field("特质 traits（逗号分隔，例如 hot_blooded,greedy）", c.traits, (v) => c.traits = v));
+
+  const fsBasic = el("fieldset", {}, [el("legend", { textContent: "基本信息" }), basic]);
+  box.appendChild(fsBasic);
+
+  // 宣言 / 评价
+  const area = (label, value, setter) => {
+    const wrap = el("div");
+    wrap.appendChild(el("label", { textContent: label }));
+    wrap.appendChild(el("textarea", { value, oninput: on(setter) }));
+    return wrap;
+  };
+  box.appendChild(el("fieldset", {}, [
+    el("legend", { textContent: "文案" }),
+    area("组队宣言 team_declaration", c.team_declaration, (v) => c.team_declaration = v),
+    area("战报评价 judgment", c.judgment, (v) => c.judgment = v),
+  ]));
+
+  // 履历 / 专长
+  box.appendChild(entryFieldset(c, "experience", "个人履历与奖项 experience"));
+  box.appendChild(entryFieldset(c, "skill", "专长 skill"));
+
+  // 属性追问
+  const statusCard = el("div", { className: "card" }, [
+    el("div", { className: "head" }, [
+      el("b", { textContent: "属性追问  <id>_status.json（序号 -1）" }),
+      el("button", { className: "tiny", textContent: "+ 行", onclick: () => { c.statusLines.push(blankLine()); render(); } }),
+    ]),
+  ]);
+  const sb = el("div", { className: "body" });
+  c.statusLines.forEach((ln, i) => sb.appendChild(lineEditor(ln, c.statusLines, i)));
+  statusCard.appendChild(sb);
+  box.appendChild(el("fieldset", {}, [el("legend", { textContent: "状态区追问" }), statusCard]));
+
+  renderSide();
+}
+
+function intOf(v) { const n = parseInt(v, 10); return Number.isNaN(n) ? 0 : n; }
+
+function entryFieldset(c, key, legend) {
+  const list = c[key];
+  const card = el("div", { className: "card" }, [
+    el("div", { className: "head" }, [
+      el("b", { textContent: legend + "（" + list.length + " 条）" }),
+      el("button", { className: "tiny", textContent: "+ 条", onclick: () => { list.push(blankEntry()); render(); } }),
+    ]),
+  ]);
+  const body = el("div", { className: "body" });
+  list.forEach((entry, i) => {
+    const head = el("div", { className: "row" }, [
+      el("input", { type: "text", value: entry.description, placeholder: "履历正文",
+        oninput: on((v) => entry.description = v) }),
+      el("button", { className: "tiny", textContent: "删条", onclick: () => { list.splice(i, 1); render(); } }),
+    ]);
+    const inner = el("div", {}, [head]);
+    entry.lines.forEach((ln, li) => inner.appendChild(lineEditor(ln, entry.lines, li)));
+    inner.appendChild(el("button", { className: "tiny", textContent: "+ 行", onclick: () => { entry.lines.push(blankLine()); render(); } }));
+    body.appendChild(el("div", { className: "card", style: "margin:8px 0" }, [el("div", { className: "body" }, [inner])]));
+  });
+  card.appendChild(body);
+  return el("fieldset", {}, [el("legend", { textContent: legend }), card]);
+}
+
+function lineEditor(ln, arr, i) {
+  return el("div", { className: "row", style: "margin:4px 0" }, [
+    el("input", { type: "text", value: ln.speaker, placeholder: "说话人",
+      oninput: on((v) => ln.speaker = v) }),
+    el("input", { type: "text", value: ln.text, placeholder: "正文",
+      oninput: on((v) => ln.text = v) }),
+    el("input", { type: "text", value: ln.popup, placeholder: "popup（可空）", style: "flex:0 0 130px",
+      oninput: on((v) => ln.popup = v) }),
+    el("button", { className: "tiny", textContent: "删", onclick: () => { arr.splice(i, 1); render(); } }),
+  ]);
+}
+
+// ── 产出 ────────────────────────────────────────────────────────────────────
+function flatEntries(c) {
+  const out = [];
+  for (const e of c.experience) if (e.description.trim() !== "") out.push(e);
+  for (const e of c.skill) if (e.description.trim() !== "") out.push(e);
+  return out;
+}
+
+function askPath(c, i) { return "res://data/asks/" + c.id + "_" + (i + 1) + ".json"; }
+function statusPath(c) { return "res://data/asks/" + c.id + "_status.json"; }
+
+// .tres 里的字符串：转义反斜杠、双引号；换行写成 \n（Godot 两种都收，单行更好 diff）
+function q(s) { return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, "\\n") + '"'; }
+function sn(s) { return '&' + q(s); }
+
+function buildTres(c) {
+  const L = [];
+  // 属性等于 Godot 默认值的也照写 —— 无害，Godot 载入后自己会在下次保存时省掉
+  const ext = [];      // [line, key]
+  const ids = {};
+  const pushExt = (type, path, key) => {
+    const id = (ext.length + 1) + "_" + key;
+    ext.push('[ext_resource type="' + type + '" path="' + path + '" id="' + id + '"]');
+    ids[key] = id;
+  };
+  pushExt("Script", SCRIPTS.candidate, "script");
+  pushExt("Script", SCRIPTS.entry, "entry");
+  pushExt("Resource", "res://data/jobs/" + c.job + ".tres", "job");
+  pushExt("Resource", "res://data/races/" + c.race + ".tres", "race");
+  const traits = c.traits.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+  if (traits.length) pushExt("Script", SCRIPTS.trait, "traitscript");
+  const traitIds = traits.map((t, i) => {
+    const id = (ext.length + 1) + "_tr" + i;
+    ext.push('[ext_resource type="Resource" path="res://data/traits/' + t + '.tres" id="' + id + '"]');
+    return id;
+  });
+
+  // 词条 sub_resource：experience 先、skill 后，序号与扁平序号一致
+  const subs = [];
+  const subIds = { experience: [], skill: [] };
+  let n = 0;
+  const all = flatEntries(c);
+  for (const key of ["experience", "skill"]) {
+    for (const e of c[key]) {
+      if (e.description.trim() === "") continue;
+      const sid = "Resource_e" + n++;
+      subIds[key].push(sid);
+      subs.push('[sub_resource type="Resource" id="' + sid + '"]',
+                'script = ExtResource("' + ids.entry + '")',
+                "description = " + q(e.description),
+                "ask_path = " + q(askPath(c, all.indexOf(e))),
+                "");
+    }
+  }
+
+  L.push('[gd_resource type="Resource" script_class="CandidateResource" format=3]', "");
+  for (const line of ext) L.push(line);
+  L.push("");
+  for (const line of subs) L.push(line);
+  L.push("[resource]");
+  L.push('script = ExtResource("' + ids.script + '")');
+  L.push("id = " + sn(c.id));
+  L.push("display_name = " + q(c.display_name));
+  L.push("strength = " + c.strength);
+  L.push("intelligence = " + c.intelligence);
+  L.push("wisdom = " + c.wisdom);
+  L.push('race = ExtResource("' + ids.race + '")');
+  L.push('job = ExtResource("' + ids.job + '")');
+  L.push("gender = " + sn(c.gender));
+  L.push("age = " + c.age);
+  if (traitIds.length) {
+    L.push("traits = Array[ExtResource(\"" + ids.traitscript + "\")]([" +
+           traitIds.map((t) => 'ExtResource("' + t + '")').join(", ") + "])");
+  }
+  for (const key of ["experience", "skill"]) {
+    L.push(key + " = Array[ExtResource(\"" + ids.entry + "\")]([" +
+           subIds[key].map((s) => 'SubResource("' + s + '")').join(", ") + "])");
+  }
+  L.push("team_declaration = " + q(c.team_declaration));
+  L.push("judgment = " + q(c.judgment));
+  L.push("portrait_race = " + sn(c.portrait_race));
+  L.push("portrait_eye = " + c.portrait_eye);
+  L.push("portrait_hair = " + c.portrait_hair);
+  L.push("portrait_mouth = " + c.portrait_mouth);
+  L.push("portrait_hat = " + c.portrait_hat);
+  return L.join("\n") + "\n";
+}
+
+function lineObject(ln) {
+  const o = { speaker_name: ln.speaker, text: ln.text };
+  if (ln.popup.trim() !== "") o.popup = ln.popup.trim();
+  return o;
+}
+function jsonText(lines) { return JSON.stringify(lines.map(lineObject), null, "\t") + "\n"; }
+
+function filesFor(c) {
+  const out = [{ name: c.id + ".tres", dir: "candidates", text: buildTres(c) }];
+  flatEntries(c).forEach((e, i) => out.push({ name: c.id + "_" + (i + 1) + ".json", dir: "asks", text: jsonText(e.lines) }));
+  out.push({ name: c.id + "_status.json", dir: "asks", text: jsonText(c.statusLines) });
+  return out;
+}
+
+// ── 右侧 ────────────────────────────────────────────────────────────────────
+function renderSide() {
+  const tabs = $("#tabs"); tabs.textContent = "";
+  candidates.forEach((c, i) => tabs.appendChild(el("button", {
+    className: i === current ? "on" : "",
+    textContent: c.id + (c.display_name ? " · " + c.display_name : ""),
+    onclick: () => { current = i; render(); },
+  })));
+
+  const list = $("#files"); list.textContent = "";
+  const out = $("#out");
+  if (!candidates.length) { out.textContent = ""; return; }
+  const c = candidates[current];
+  const files = filesFor(c);
+  for (const f of files) {
+    list.appendChild(el("li", {}, [
+      el("span", { textContent: "data/" + f.dir + "/" + f.name }),
+      el("button", { className: "tiny", textContent: "看", onclick: () => { out.textContent = f.text; } }),
+      el("button", { className: "tiny", textContent: "下载", onclick: () => download(f.name, f.text) }),
+    ]));
+  }
+  out.textContent = files[0].text;
+
+  const ids = candidates.map((x) => x.id);
+  const dup = ids.filter((v, i) => ids.indexOf(v) !== i);
+  $("#msg").textContent = dup.length ? "⚠ id 重复：" + [...new Set(dup)].join("、")
+                                     : candidates.length + " 位候选人";
+  $("#msg").className = dup.length ? "warn" : "ok";
+}
+
+function download(name, text) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: name });
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+}
+
+// ── 动作 ────────────────────────────────────────────────────────────────────
+$("#add").onclick = () => { candidates.push(blankCandidate(candidates.length + 1)); current = candidates.length - 1; render(); };
+$("#dup").onclick = () => {
+  if (!candidates.length) return;
+  const copy = JSON.parse(JSON.stringify(candidates[current]));
+  copy.id = copy.id + "_copy";
+  candidates.push(copy); current = candidates.length - 1; render();
+};
+$("#del").onclick = () => {
+  if (!candidates.length) return;
+  candidates.splice(current, 1); current = Math.max(0, current - 1); render();
+};
+$("#dlOne").onclick = () => {
+  if (!candidates.length) return;
+  const f = filesFor(candidates[current])[0];
+  download(f.name, f.text);
+};
+$("#dlJson").onclick = () => {
+  if (!candidates.length) return;
+  for (const f of filesFor(candidates[current])) if (f.name.endsWith(".json")) download(f.name, f.text);
+};
+
+// Chromium：一次把 data/candidates 与 data/asks 都写好，省掉一个个下载
+if (window.showDirectoryPicker) {
+  $("#saveDir").hidden = false;
+  $("#saveDir").onclick = async () => {
+    try {
+      const root = await window.showDirectoryPicker({ mode: "readwrite" });   // 选 data/ 目录
+      let n = 0;
+      for (const c of candidates) {
+        for (const f of filesFor(c)) {
+          const dir = await root.getDirectoryHandle(f.dir, { create: true });
+          const fh = await dir.getFileHandle(f.name, { create: true });
+          const w = await fh.createWritable();
+          await w.write(f.text); await w.close();
+          n++;
+        }
+      }
+      $("#msg").textContent = "已写入 " + n + " 个文件 ✅"; $("#msg").className = "ok";
+    } catch (e) {
+      if (e && e.name !== "AbortError") { $("#msg").textContent = "写入失败：" + e.message; $("#msg").className = "warn"; }
+    }
+  };
+}
+
+candidates.push(blankCandidate(1));
+render();
+</script>
+</body>
+</html>
