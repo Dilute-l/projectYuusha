@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "冒险者协会B级冒险者"
+ask_path = "res://data/asks/c_0101_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "剑术"
+ask_path = "res://data/asks/c_0101_2.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_0101"
+display_name = "法斯特"
+strength = 15
+intelligence = 10
+wisdom = 12
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"男"
+age = 20
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
+team_declaration = "我是我们村里最好的战士，还有村里最好的剑！"
+judgment = "法斯特的战斗水平还不错，而且出人意料的勇敢。"
+portrait_race = &"hu"
+portrait_eye = 1
+portrait_hair = 1
+portrait_mouth = 1
+portrait_hat = 1
