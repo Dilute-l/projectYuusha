@@ -27,6 +27,7 @@ var _phase: int = DayPhase.Phase.DAY_BRIEFING
 @onready var _approved: TextureButton = get_node_or_null("Approved") as TextureButton
 @onready var _nah: TextureButton = get_node_or_null("Nah") as TextureButton
 @onready var _dialoguer: Dialoguer = get_node_or_null("Dialoguer") as Dialoguer
+@onready var _waterbutton: TextureButton = get_node_or_null("WaterButton") as TextureButton
 @onready var _handbook: Handbook = get_node_or_null("Handbook") as Handbook
 @onready var _notice_board: TextureButton = get_node_or_null("NoticeBoard") as TextureButton
 @onready var _popup: DialoguePopup = get_node_or_null("Popup") as DialoguePopup
@@ -766,7 +767,7 @@ func _on_handbook_closed() -> void:
 ##
 ## 关掉之后恢复：按钮 enabled、词条菜单回到 ASK（面试里点词条 = 追问）。
 func _set_scene_interaction_enabled(enabled: bool) -> void:
-	var buttons: Array[TextureButton] = [_approved, _nah, _notice_board]
+	var buttons: Array[TextureButton] = [_approved, _nah, _notice_board, _waterbutton]
 	for button in buttons:
 		if button != null:
 			button.disabled = not enabled
@@ -774,3 +775,22 @@ func _set_scene_interaction_enabled(enabled: bool) -> void:
 		_resume.entry_menu = Resume.EntryMenu.ASK if enabled else Resume.EntryMenu.HIDDEN
 		if not enabled:
 			_resume.close_token_menu()
+
+
+func _on_water_button_pressed() -> void:
+	if _dialoguer == null:
+		push_error("[Interview] 找不到 Dialoguer")
+		return
+	# 手册开着时不给看
+	# （按钮这时本身也是 disabled 的，这里只是第二层防线
+	if is_handbook_open():
+		return
+	# 阶段对话还没播完时**不要打断它**：Dialoguer 只有一个正文 Label，
+	# 打断等于把阶段对话换掉，而它不会再播第二次 —— 这个阶段就失去了
+	# 「看完自动推进」这条路径（现在还有占位 HUD 的按钮兜底，等 HUD 删掉就是死路）。
+	if _advance_when_dialogue_ends:
+		return
+	if not _dialoguer.typer.load_dialogue("Watercooler"):
+		return
+	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
+	_dialoguer.play()

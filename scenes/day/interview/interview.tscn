@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://dvdusjuloxc7j"]
 
 [ext_resource type="Script" uid="uid://v31l2hifnnvk" path="res://scenes/day/interview/interview.gd" id="1_fa01g"]
-[ext_resource type="Texture2D" uid="uid://bugfrjmjd4qa0" path="res://assets/art/interview/itv_bkg_phd.png" id="1_x7pen"]
-[ext_resource type="Texture2D" uid="uid://vvalhoxhfslq" path="res://assets/art/interview/table_phd.png" id="2_vgtep"]
+[ext_resource type="Texture2D" uid="uid://c0glgwas5kv7" path="res://assets/art/interview/interview_background.png" id="2_fa8i0"]
 [ext_resource type="Texture2D" uid="uid://bvisgb5i4xwiw" path="res://assets/art/interview/noticebd_phd.png" id="4_8dvi3"]
+[ext_resource type="Texture2D" uid="uid://drhh42u1dx068" path="res://assets/art/interview/table.png" id="4_wtybp"]
 [ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="5_asawf"]
 [ext_resource type="Texture2D" uid="uid://csok7wd54o1wn" path="res://assets/art/interview/handbook_phd.png" id="5_h3fcf"]
 [ext_resource type="BitMap" uid="uid://4wg2b4fu0ffy" path="res://assets/art/interview/noticebd_phd.tres" id="5_ytunt"]
@@ -11,11 +11,16 @@
 [ext_resource type="BitMap" uid="uid://x3y8g1h1mu3e" path="res://assets/art/interview/handbook_phd.tres" id="6_q4rqa"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_asawf"]
-[ext_resource type="Texture2D" uid="uid://pqp26scrqywu" path="res://assets/art/interview/itv_approve_phd.png" id="10_jcwbe"]
-[ext_resource type="BitMap" uid="uid://nwlgkq883df0" path="res://assets/art/interview/itv_approve_phd.tres" id="11_hqfrh"]
-[ext_resource type="Texture2D" uid="uid://bmd57smaygn7x" path="res://assets/art/interview/itv_nah_phd.png" id="12_y6gwq"]
+[ext_resource type="Texture2D" uid="uid://dxwh63d2bke8b" path="res://assets/art/interview/yes.png" id="10_wtybp"]
+[ext_resource type="BitMap" uid="uid://dl03ppkuvvo6y" path="res://assets/art/interview/yes.tres" id="11_k2e4n"]
+[ext_resource type="Texture2D" uid="uid://deffmax7f528e" path="res://assets/art/interview/no.png" id="12_wtybp"]
 [ext_resource type="BitMap" uid="uid://dsg0dr5kglx7m" path="res://assets/art/interview/itv_nah_phd.tres" id="13_h3fcf"]
+[ext_resource type="Texture2D" uid="uid://y8i38h1dk0jt" path="res://assets/art/interview/water.png" id="14_k2e4n"]
 [ext_resource type="PackedScene" uid="uid://dyj06ie8ocu0" path="res://scenes/day/interview/handbook.tscn" id="14_xqjd5"]
+[ext_resource type="Texture2D" uid="uid://bywxyuu1omr5i" path="res://assets/art/interview/water_hover.png" id="15_4uqih"]
+[ext_resource type="BitMap" uid="uid://2ugj346p8bwc" path="res://assets/art/interview/water.tres" id="16_wtybp"]
+
+[sub_resource type="BitMap" id="BitMap_wtybp"]
 
 [node name="Interview" type="Control" unique_id=190169890]
 layout_mode = 3
@@ -23,7 +28,8 @@ anchors_preset = 0
 script = ExtResource("1_fa01g")
 
 [node name="ItvBkgPhd" type="Sprite2D" parent="." unique_id=853107576]
-texture = ExtResource("1_x7pen")
+scale = Vector2(0.5086342, 0.50863427)
+texture = ExtResource("2_fa8i0")
 centered = false
 
 [node name="Interviewee" parent="." unique_id=1881224001 instance=ExtResource("6_asawf")]
@@ -35,7 +41,8 @@ offset_bottom = 350.0
 scale = Vector2(1.5, 1.5)
 
 [node name="TablePhd" type="Sprite2D" parent="." unique_id=1819501187]
-texture = ExtResource("2_vgtep")
+scale = Vector2(0.50863415, 0.5086342)
+texture = ExtResource("4_wtybp")
 centered = false
 
 [node name="HandbookButton" type="TextureButton" parent="." unique_id=830048374]
@@ -47,8 +54,6 @@ texture_click_mask = ExtResource("6_q4rqa")
 
 [node name="Resume" parent="." unique_id=429165533 instance=ExtResource("5_asawf")]
 layout_mode = 1
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="NoticeBoard" type="TextureButton" parent="." unique_id=1916152136]
 layout_mode = 0
@@ -59,18 +64,42 @@ texture_click_mask = ExtResource("5_ytunt")
 
 [node name="Approved" type="TextureButton" parent="." unique_id=1053593264]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-texture_normal = ExtResource("10_jcwbe")
-texture_click_mask = ExtResource("11_hqfrh")
+offset_left = -61.000008
+offset_top = -265.00003
+offset_right = 2205.0
+offset_bottom = 1009.0
+scale = Vector2(0.72, 0.72)
+texture_normal = ExtResource("10_wtybp")
+texture_click_mask = ExtResource("11_k2e4n")
 
 [node name="Nah" type="TextureButton" parent="." unique_id=1717759339]
 layout_mode = 0
-offset_left = 100.0
-offset_right = 1252.0
-offset_bottom = 648.0
-texture_normal = ExtResource("12_y6gwq")
+offset_left = 53.999996
+offset_top = -297.00003
+offset_right = 2320.0
+offset_bottom = 977.0
+scale = Vector2(0.72, 0.72)
+texture_normal = ExtResource("12_wtybp")
 texture_click_mask = ExtResource("13_h3fcf")
+
+[node name="WaterButton" type="TextureButton" parent="." unique_id=2140988842]
+layout_mode = 0
+offset_left = -509.0
+offset_top = 1.0
+offset_right = 1757.0
+offset_bottom = 1275.0
+scale = Vector2(0.51, 0.51)
+texture_normal = ExtResource("14_k2e4n")
+texture_hover = ExtResource("15_4uqih")
+texture_click_mask = ExtResource("16_wtybp")
+
+[node name="PaintingButton" type="TextureButton" parent="." unique_id=426063779]
+layout_mode = 0
+offset_left = -509.0
+offset_top = 1.0
+offset_right = -469.0
+offset_bottom = 41.0
+texture_click_mask = SubResource("BitMap_wtybp")
 
 [node name="Handbook" parent="." unique_id=2016442786 instance=ExtResource("14_xqjd5")]
 visible = false
@@ -87,3 +116,4 @@ layout_mode = 0
 [connection signal="pressed" from="NoticeBoard" to="." method="_on_notice_board_pressed"]
 [connection signal="pressed" from="Approved" to="." method="_on_approved_pressed"]
 [connection signal="pressed" from="Nah" to="." method="_on_nah_pressed"]
+[connection signal="pressed" from="WaterButton" to="." method="_on_water_button_pressed"]
