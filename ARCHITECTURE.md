@@ -116,6 +116,7 @@ res://
 │   │   └─ battle_report.tscn          战报演出容器（车夫对话、逐条事件、分数）
 │   ├─ ending/                 ending.tscn（收容结局相关子场景）
 │   └─ common/                 dialogue.tscn / interview_background.tscn / haohan.tscn
+│                                 / setting_page.tscn（设置页浮层，§14）
 │                                 （可在多场景实例化复用的通用场景）
 │
 ├─ ui/
@@ -295,6 +296,7 @@ class_name DayConfig extends Resource
 | `dialogue.tscn` | 用于在多个场景下创建实例化的对话框 |  |
 | `interview_background.tscn` | 用于在多个场景下实现背景相关动画 | 多种（动画种类） |
 | `haohan.tscn` | 用于在剧情等地方创建实例化的主角的手 |  |
+| `setting_page.tscn` | **设置页浮层**（§14）：常规只有左上角那颗设置按钮，点它或按 Esc 就把整页盖在最上层；页面上有「继续游戏」「退出游戏」两颗按钮，手（光标）也画在这一层里 | `opened` / `closed` |
 
 每日流程由 `day_loop.tscn` 持有状态机驱动：
 
@@ -1246,3 +1248,137 @@ func play(pass_through: bool = false) -> void:
 > 因为加了这个演出，另外两个自检在实例化 `interview.tscn` 之后各加了一句 `skip_animation()`：
 > `smoke_team_builder` 要比的是**站定之后**的纸面矩形（§12.2），`smoke_interview_ask`
 > 则是要立刻开始点词条（演出期间追问是被**故意**挡住的）。
+
+---
+
+## 14. 设置页（`setting_page.tscn`）
+
+> 游戏里随时能叫出来的那一页：**平时画面上只多一颗小按钮，
+> 点它或者按 Esc，一整页设置纸就盖在当前场景最上面**；
+> 纸上现在是「继续游戏」和「退出游戏」两颗按钮，
+> 而**跟着鼠标的那只手仍然画在这一页之上**（手是光标，被盖住就等于没光标）。
+
+### 14.1 文件与挂载点
+
+| 文件 | 职责 |
+| --- | --- |
+| `scenes/common/setting_page.gd` / `.tscn` | `class_name SettingPage`：**开关**（按钮 / Esc）、**整页盖上来**、**继续游戏 / 退出游戏**、**手（`haohan.tscn`）也在这一层** |
+| `assets/art/setting/setting_button_phd.png` | 设置按钮，原生 50×50 |
+| `assets/art/setting/setting_page_phd.png` | 设置整页，原生 1152×648（= 整块画布） |
+| `scenes/day/day_loop.tscn` | 把 `SettingPage` **实例化在最后**（和 FlowHud 平级） |
+
+场景树：
+
+```
+SettingPage (CanvasLayer, layer = 100) [setting_page.gd]
+├─ Page (Control, 全屏 = 画布大小, mouse_filter = STOP)   ← 默认 visible = false
+│   ├─ PagePhd (TextureRect)     setting_page_phd.png，铺满整块画布
+│   ├─ ContinueButton (Button)   「继续游戏」，画布正中偏上
+│   └─ ExitButton (Button)       「退出游戏」，画布正中
+├─ SettingButton (TextureButton)   setting_button_phd.png，贴在画布左上角 (0,0)
+├─ Haohan (haohan.tscn)            手（光标），z_index = 1 → 画在设置页**之上**
+└─ Dialoguer                       退出确认那段提醒（和主菜单同一个 dialoguer.tscn，z_index = 2）
+```
+
+### 14.2 为什么必须是 CanvasLayer
+
+「盖在当前场景之上（图层最高）」**不能靠树序**：`day_loop` 的阶段界面是普通 `Control`
+（默认画布 layer 0），而占位 HUD 是 `CanvasLayer(layer 10)`；CanvasLayer 的绘制顺序
+**只由 `layer` 决定**，跟它在树里排第几无关（§10.6 那条「FlowHud 留在 layer 10」是同一个道理）。
+
+所以本浮层自己就是一层，`LAYER = 100` —— 比 FlowHud 的 10 大，就必然在最上面。
+层号在 `_ready()` 里再赋一次（不是只在 `.tscn` 里填）：**「最高」这条由代码保证**，
+别人手滑改了场景里的数字也不会把设置页压到 HUD 底下去。
+
+**挡鼠标 = 挡住底下场景**：`Page` 铺满画布且 `mouse_filter = STOP`，于是页面上任何一处点击
+都被它吃掉，穿不到下面的按钮上。**不需要**再去 `disabled` 底下的场景 —— 点不到就已经等于点不动。
+
+### 14.2.1 手（光标）也要在设置页之上
+
+手是光标，被设置页盖住就等于「没有光标」—— 所以 `haohan.tscn` **实例化在本层里**
+（`SettingPage/Haohan`），而不是让底下那个场景的手露出来。
+
+- **凭什么它在上面**：同一块画布里，绘制顺序只由 `z_index` 决定（其次才是树序）。
+  `haohan.tscn` 的根节点自带 `z_index = 1`，`Page` 是 0 —— 手必然画在设置页之上，
+  跟它在树里排第几无关。
+- **底下那只手怎么办**：不用管。它在 layer 0，被本层整块盖住；而且它和本层这只手
+  读的是**同一个鼠标位置**、用的是**同一张贴图**，所以看上去仍然只有「一只跟着鼠标的手」。
+  好处是本层这只手**不依赖底下的场景有没有手**（`battle_report` / 阶段切换的空档都不会没光标）。
+- **它和退出提醒的先后**：`Dialoguer` 的根节点是 `z_index = 2`，所以在它之上 ——
+  和主菜单的退出确认是同一个观感（§12.9 那套）。想把手提到提醒之上，只要给
+  `SettingPage/Haohan` 填一个 `z_index = 3`。
+
+### 14.3 开与关是同一个开关
+
+| 入口 | 行为 |
+| --- | --- |
+| 左键点设置按钮 | `toggle()` |
+| 按 **Esc** | `toggle()` |
+
+- **两个入口走同一个 `toggle()`**，所以「关着就开、开着就收」的手感必然一致。
+- 设置按钮**一直画在 `Page` 之上**（它是 `Page` 的兄弟、且排在它后面），所以页面开着时那颗按钮
+  仍然点得到、看得见。
+- Esc 走 **`_unhandled_input`** 而不是 `_input`：场景里已经有控件在 `_input` 里处理 `ui_cancel`
+  （简历词条菜单 `resume.gd`），它在该吃的时候会 `set_input_as_handled()` ——
+  那一下是「收菜单」，不该被抢来开设置页。**设置页永远排在它们后面。**
+- 页面的显隐**只**由 `open()` / `close()` 管，两个方法各自幂等，并对外发 `opened` / `closed`。
+
+### 14.4 两颗按钮：继续游戏 / 退出游戏
+
+| 按钮 | 位置 | 干什么 |
+| --- | --- | --- |
+| **继续游戏** | 退出按钮的**正上方**（同宽、左缘对齐、间隔 20px） | 就是 `close()` —— 收起设置页接着玩 |
+| **退出游戏** | 画布正中 | 见下：第一下弹提醒，第二下才退出 |
+
+两颗按钮都是同一套观感（`Silver.ttf` + 三个 `StyleBoxEmpty`，和主菜单那几个文字按钮一致），
+都 `focus_mode = 0`：不然点过一次之后按空格 / 回车会把它再触发一遍。
+
+> 「继续游戏」和 Esc、和再点一次设置按钮走的是**同一个 `close()`**（§14.3），
+> 顺手也会把退出确认作废 —— 三条退路的行为完全一致。
+
+### 14.4.1 退出按钮：与主菜单那颗**功能一样**（§12.9）
+
+```gdscript
+func _on_exit_pressed() -> void:
+	if _exit_confirming:
+		SceneRouter.quit_game()          # 第二下：真的退出
+		return
+	if not _dialoguer.typer.load_dialogue(EXIT_CONFIRM_DIALOGUE):
+		return
+	_exit_confirming = true
+	_dialoguer.play(true)                # 第一下：弹提醒，走**穿透模式**
+```
+
+- 文案用的就是主菜单那段（`data/dialogue.json` 的 `test1`），一点新文案都没有。
+- `play(true)`（穿透）的理由和主菜单完全一样：第二下点退出按钮时，同一次点击**既把提醒推完、
+  也照常触发按钮**；玩家也可以完全不理会它。
+- **反悔**：鼠标移出退出按钮、移出窗口、或者收掉设置页 —— 三种都会 `_cancel_exit_confirm()`，
+  把「已确认」抹掉、把提醒收起来。所以不会出现「上次留下的确认 + 这次点一下 = 直接退出」。
+
+> ⚠️ 与主菜单的一处**细微差别**（故意的）：`main_menu.gd` 是先把 `_exit_confirming = true`
+> 再 `load_dialogue()`，文案读不出来就会留下一个「已经确认过」的状态。
+> 这里把标志位放在**读盘成功之后** —— 文案读不出来时这一下就是什么都没发生，
+> 而不是变成「一按就退」。正常路径下两者表现完全一致。
+
+### 14.5 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_setting_page.tscn
+```
+
+74 项：两张美术的来源与尺寸、**常规状态只有那颗按钮可见**、按钮贴在左上角且不缩放、
+**层号压过 FlowHud 且是容器里最高的一层**、**手实例化在本层、可见、z_index 高于设置页**、
+点按钮 / 按 Esc 都能开、**再点 / 再按一次都能收**、`ui_accept` 不会误开、
+**整页铺满画布且 `MOUSE_FILTER_STOP`（底下的场景点不到）**、
+按钮排在整页之后（真的压在页面上）、**继续游戏按钮在退出按钮正上方且两颗一样宽**、
+**点「继续游戏」会收起设置页并作废退出确认**、退出按钮在画布正中、
+**第一下只弹提醒不退出（播的就是 `data/dialogue.json` 里那一段，逐字比对）**、
+移出按钮 / 移出窗口 / 收页面三种反悔都作废、
+以及 **`day_loop.tscn` 里确实实例化了它、挂上去的层号是最高的一层、默认是收起的**。
+全绿退出码 0。
+
+> 「第二下真的退出」**故意不测**：那一下会 `get_tree().quit()`，把自检自己终结掉 ——
+> 绿着退出，什么都验不到。它和第一下走的是同一个函数，与主菜单那颗按钮是同一条路。
+
+> 画布同样塞进 1152×648 的 `SubViewport` 里测（理由见 §10.6）；`day_loop` 那几条是
+> **真的把 `day_loop.tscn` 实例化出来**再查的，不是查 `.tscn` 文本。

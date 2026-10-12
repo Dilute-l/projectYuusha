@@ -1,0 +1,102 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/common/setting_page.gd" id="1_setpg"]
+[ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="2_dlg"]
+[ext_resource type="Texture2D" uid="uid://d3omppjau6345" path="res://assets/art/setting/setting_button_phd.png" id="3_btn"]
+[ext_resource type="Texture2D" uid="uid://bgimxg8bni5cl" path="res://assets/art/setting/setting_page_phd.png" id="4_page"]
+[ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="5_font"]
+[ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="6_haohan"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_normal"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hover"]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pressed"]
+
+[node name="SettingPage" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_setpg")
+
+[node name="Page" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="PagePhd" type="TextureRect" parent="Page"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_page")
+expand_mode = 1
+
+[node name="ContinueButton" type="Button" parent="Page"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -130.0
+offset_top = -155.0
+offset_right = 130.0
+offset_bottom = -65.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
+theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxEmpty_normal")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_hover")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pressed")
+text = "继续游戏"
+
+[node name="ExitButton" type="Button" parent="Page"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -130.0
+offset_top = -45.0
+offset_right = 130.0
+offset_bottom = 45.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
+theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxEmpty_normal")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_hover")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pressed")
+text = "退出游戏"
+
+[node name="SettingButton" type="TextureButton" parent="."]
+offset_right = 50.0
+offset_bottom = 50.0
+focus_mode = 0
+texture_normal = ExtResource("3_btn")
+
+[node name="Haohan" parent="." instance=ExtResource("6_haohan")]
+layout_mode = 0
+
+[node name="Dialoguer" parent="." instance=ExtResource("2_dlg")]
+visible = false
+layout_mode = 0
+
+[connection signal="pressed" from="Page/ContinueButton" to="." method="_on_continue_pressed"]
+[connection signal="pressed" from="Page/ExitButton" to="." method="_on_exit_pressed"]
+[connection signal="pressed" from="SettingButton" to="." method="_on_setting_button_pressed"]
+[connection signal="mouse_exited" from="Page" to="." method="_on_mouse_exited"]
+[connection signal="mouse_exited" from="Page/ExitButton" to="." method="_on_exit_mouse_exited"]
