@@ -53,7 +53,8 @@
 	{ "speaker_name": "腻子", "text": "对话框重绘了。参考的是星露谷，但是只能画到这样了。再画下去就不是粗糙手绘风了。" }
   ],
 	"Dilute":[
-	{ "speaker_name": "lulu", "text": "制作组的其他几个人没有人知道知道这个人的头像究竟是谁" }
+	{ "speaker_name": "lulu", "text": "制作组的其他几个人没有人知道知道这个人的头像究竟是谁" },
+    { "speaker_name": "真·lulu", "text": "其实是我的 oc 来着，虽然经常被错认成其他角色就是了"}
   ],
 	"Midu":[
 	{ "config": { "sound": "normal", "extra_silent": "獭" } },
