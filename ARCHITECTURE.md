@@ -944,13 +944,13 @@ TeamBuilder (Control) [team_builder.gd]
 ```
 data/days/day_XX.tres
    └─ candidates ──► GameState.current_candidates
-                          └─ 面试判定 ──► GameState.passed_ids   （本日过程量，§7 不进存档）
-                                              └─ team_builder.gd
-                                                   ├─ _passed_candidates()  只留今天通过了的那几位
-                                                   ├─ TeamBuilderUI.set_candidates()
-                                                   │     └─ CandidateEntry.set_candidate()
-                                                   │          └─ 头像 ← FramedAvatar ← PortraitComposer.portrait_texture()
-                                                   └─ TeamBuilderUI.set_decisions(进队, 不进队)
+						  └─ 面试判定 ──► GameState.passed_ids   （本日过程量，§7 不进存档）
+											  └─ team_builder.gd
+												   ├─ _passed_candidates()  只留今天通过了的那几位
+												   ├─ TeamBuilderUI.set_candidates()
+												   │     └─ CandidateEntry.set_candidate()
+												   │          └─ 头像 ← FramedAvatar ← PortraitComposer.portrait_texture()
+												   └─ TeamBuilderUI.set_decisions(进队, 不进队)
 ```
 
 - **左边列的是「今天通过面试的人」**（`GameState.passed_ids` 的顺序），不是当天全部出场者：

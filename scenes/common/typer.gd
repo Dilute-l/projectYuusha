@@ -958,4 +958,9 @@ func _normalize_line(entry: Dictionary) -> Dictionary:
 		elif not sname.is_empty():
 			push_warning("[Typer] 行内音效名「%s」未知，已忽略（可用：%s）" % [
 				sname, ", ".join(SOUND_FILES.keys())])
+	# 行级弹窗（可选）：值是 PopupOverlay 要显示的子节点名，例如 "AwardPhd"。
+	# 没写就不放这个键 ——「这一句不弹东西」和「弹一个名字是空串的」是两回事。
+	var popup_name := String(entry.get("popup", "")).strip_edges()
+	if not popup_name.is_empty():
+		line["popup"] = popup_name
 	return line

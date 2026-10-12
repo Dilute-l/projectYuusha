@@ -39,3 +39,4 @@ skill = Array[ExtResource("2_m7ald")]([SubResource("Resource_0ir0f")])
 team_declaration = "PLACEHOLDER DECLARATION 18"
 portrait_hair = 2
 portrait_mouth = 2
+judgment = "placeholder judgement （c_0018）"

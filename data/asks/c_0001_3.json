@@ -1,4 +1,5 @@
 [
 	{ "speaker_name": "面试官", "text": "PLACEHOLDER QUESTION 01-3" },
-	{ "speaker_name": "PLACEHOLDER NAME 01", "text": "PLACEHOLDER ANSWER 01-3" }
+	{ "speaker_name": "PLACEHOLDER NAME 01", "text": "PLACEHOLDER ANSWER 01-3" },
+	{ "speaker_name": "棍木", "text": "这是我得的棍木奖","popup":"AwardPhd" }
 ]

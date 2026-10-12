@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c30g1ll4c2ch5" path="res://scenes/day/interview/resume/resume_token.tscn" id="3_yu2w1"]
 [ext_resource type="PackedScene" path="res://scenes/day/interview/resume/resume_token_menu.tscn" id="4_menu"]
 [ext_resource type="FontFile" uid="uid://b8u6a2faqsh1d" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="5_yu2w1"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/resume_stamp_phd.png" id="6_ltjbd"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vkqoe"]
 
@@ -264,5 +265,9 @@ theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("5_yu2w1")
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="ResumeStampPhd" type="Sprite2D" parent="." unique_id=601284995]
+texture = ExtResource("6_ltjbd")
+centered = false
 
 [connection signal="pressed" from="Status" to="." method="_on_status_pressed"]

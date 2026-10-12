@@ -44,6 +44,9 @@ extends Resource
 ## 那两栏是「可以被质疑的履历」，这一栏是「他自己喊的口号」，性质不一样。
 @export_multiline var team_declaration: String = ""
 
+##作为最终在战报上呈现出的对这个人的评价
+@export var judgment: String = ""
+
 ## 立绘（可选，UI 用）
 @export var portrait: Texture2D
 

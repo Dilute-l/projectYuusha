@@ -38,3 +38,4 @@ skill = Array[ExtResource("2_kvsui")]([SubResource("Resource_xsrpj")])
 team_declaration = "PLACEHOLDER DECLARATION 03"
 portrait_race = &"st"
 portrait_hat = 2
+judgment = "placeholder judgement （c_0003）"

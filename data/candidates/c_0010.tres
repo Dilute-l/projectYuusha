@@ -38,3 +38,4 @@ experience = Array[ExtResource("2_1wpqe")]([SubResource("Resource_mlqhf"), SubRe
 skill = Array[ExtResource("2_1wpqe")]([SubResource("Resource_abyum")])
 team_declaration = "PLACEHOLDER DECLARATION 10"
 portrait_race = &"st"
+judgment = "placeholder judgement （c_0010）"

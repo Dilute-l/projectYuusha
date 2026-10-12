@@ -29,6 +29,7 @@ var _phase: int = DayPhase.Phase.DAY_BRIEFING
 @onready var _dialoguer: Dialoguer = get_node_or_null("Dialoguer") as Dialoguer
 @onready var _handbook: Handbook = get_node_or_null("Handbook") as Handbook
 @onready var _notice_board: TextureButton = get_node_or_null("NoticeBoard") as TextureButton
+@onready var _popup: DialoguePopup = get_node_or_null("Popup") as DialoguePopup
 
 ## 本阶段做完了。day_loop 挂载本场景时会把它接到 advance() 上。
 signal phase_finished()
@@ -355,6 +356,11 @@ func _refresh_interviewee() -> void:
 
 	if _resume != null:
 		_resume.set_candidate(candidate)
+	# 对话框也要知道「现在台上是谁」——它靠这个填 popup 里的字（候选人名字等）。
+	# Dialoguer 自己不认识 GameState（主菜单 / 面试 / 战报一起复用它，主菜单那边根本没有候选人），
+	# 所以候选人必须由**本场景**塞进去。放在这里 = 换一位面试者时自动同步。
+	if _dialoguer != null:
+		_dialoguer.set_candidate(candidate)
 
 
 # ---------------------------------------------------------------------------
