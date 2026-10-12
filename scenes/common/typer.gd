@@ -104,11 +104,31 @@ const DEFAULT_FONT_PATH: String = "res://assets/fonts/youaimoshouheiti-bold.ttf"
 ## 比设计的更大，长句子会超出底板被截断（Label 的溢出是静默的）。
 const DEFAULT_FONT_SIZE: int = 36
 
+## 默认字间距：每个字之后额外加的像素。
+##
+## 4 是「能明显看出变松、但不会把现有对话挤到换行变多」的稳妥值：
+## 实测间距 0～8 都不会让任何一行超出正文字段（908 x 188）。
+## 想改观感只改这一行，或直接在检查器里调 typer 的 char_spacing。
+const DEFAULT_CHAR_SPACING: float = 1.0
+
+## 默认空格间距。汉字之间没有空格，所以这个只影响夹了空格的句子。
+const DEFAULT_SPACE_SPACING: float = 0.0
+
 ## 默认字体路径。留空 = 不动现有字体
 @export_file("*.ttf", "*.otf") var default_font_path: String = DEFAULT_FONT_PATH
 
 ## 默认字号。<= 0 表示不改动现有字号
 @export var default_font_size: int = DEFAULT_FONT_SIZE
+
+## 字间距：每个字之后额外加的像素。0 = 字体自带的字距（原样）。
+##
+## 为什么要有它：重绘对话框后用的是比例中文字体，字挨得比较紧、读起来发挤。
+## 调大它会让整行变宽（每个字都多占这么多像素），所以调过头会让每行更早换行。
+## 参考：字号 36、正文字段 908px 时，0～8 都还装得下现有全部对话。
+@export_range(-8.0, 24.0, 1.0) var char_spacing: float = DEFAULT_CHAR_SPACING
+
+## 空格间距：每个**空格**之后额外加的像素。只影响空格，不影响汉字之间的字距。
+@export_range(-8.0, 32.0, 1.0) var space_spacing: float = DEFAULT_SPACE_SPACING
 
 ## 打开/关闭逐字音效
 @export var sound_enabled: bool = true
@@ -752,6 +772,11 @@ var _speaker_label: Label = null
 ## 把默认字体与字号套用到本节点（theme override）。
 ## 可以用 default_font_path = "" 或 default_font_size <= 0 关掉其中一项。
 ## 找不到字体时只警告，保留现有字体，不影响打字机本身。
+##
+## 字间距（char_spacing / space_spacing）走 FontVariation 包一层：
+## Label 本身**没有**字间距的 theme 项，唯一能调字距的办法就是换一个带 spacing 的 Font。
+## 好处是它只改字形推进量，**不动 ascent / descent / 行高**（实测行高恒为 37@36px），
+## 所以加字距不会把行数搞乱 —— 只会让每行更早换行。
 func apply_default_font() -> void:
 	if not default_font_path.is_empty():
 		if not ResourceLoader.exists(default_font_path):
@@ -759,11 +784,25 @@ func apply_default_font() -> void:
 		else:
 			var font := ResourceLoader.load(default_font_path)
 			if font is Font:
-				add_theme_font_override(&"font", font)
+				add_theme_font_override(&"font", _with_spacing(font))
 			else:
 				push_warning("[Typer] 不是字体资源：%s" % default_font_path)
 	if default_font_size > 0:
 		add_theme_font_size_override(&"font_size", default_font_size)
+
+
+## 给字体套上字间距。两个间距都是 0 时原样返回，不做多余的包装。
+##
+## spacing_glyph 是**每个字形**之后的额外像素，spacing_space 是**每个空格**之后的。
+## 两者可以分别调：只想让字挤开一点、不想让空格更宽，就只调 char_spacing。
+func _with_spacing(font: Font) -> Font:
+	if is_zero_approx(char_spacing) and is_zero_approx(space_spacing):
+		return font
+	var variation := FontVariation.new()
+	variation.base_font = font
+	variation.spacing_glyph = int(round(char_spacing))
+	variation.spacing_space = int(round(space_spacing))
+	return variation
 
 
 ## 露出下一个字。返回「这个字是否应该发声」（静音字符返回 false）。
