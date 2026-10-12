@@ -20,6 +20,10 @@ const GAME_CANVAS := Vector2i(1152, 648)
 const TALL_CANVAS := Vector2i(1152, 900)
 const WIDE_CANVAS := Vector2i(1600, 900)
 
+## resume.tscn 里预摆的那枚印章用的贴图。期望值从**文件名**来，不抄场景里的 uid ——
+## 换图时这里跟着改一行就够了，改不动就说明换的不是这一张。
+const STAMP_TEXTURE_PATH := "res://assets/art/interview/resume/resume_stamp_phd.png"
+
 var _failures: Array[String] = []
 var _checks: int = 0
 var _canvas := Vector2.ZERO
@@ -55,22 +59,35 @@ func _run() -> void:
 	vp.disable_3d = true
 	get_tree().root.add_child(vp)
 
-	# 简历内容全部来自数据：开一局 → 取第 1 天名单里第一位 → 喂给简历。
+	# 简历内容全部来自数据：开一局 → 从第 1 天名单里挑**条目最多**的那一位 → 喂给简历。
 	# 这里**不**造一份测试用简历，测的就是「data/candidates/*.tres → 纸面」这条路。
+	#
+	# ⚠️ 为什么不是「名单第一位」：本测试后面要用到**第 3 条**词条（下标 2），
+	# 名单里谁条目多完全由数据决定 —— 写死「第一位」会在数据一改就红，
+	# 而那根本不是这个测试该管的事（数据覆盖度是 smoke_m0 的活，§11.4）。
 	GameState.start_new_run(20261010)
 	var candidate: CandidateResource = null
-	if not GameState.current_candidates.is_empty():
-		candidate = GameState.current_candidates[0]
+	for c in GameState.current_candidates:
+		if candidate == null or Resume.entries_of(c).size() > Resume.entries_of(candidate).size():
+			candidate = c
 	_check(candidate != null, "第 1 天名单里有候选人")
 	if candidate == null:
 		_report()
 		return
 	var entries := Resume.entries_of(candidate)
-	_check(entries.size() >= 3, "第 1 天第一位至少带 3 条履历/专长（实际 %d）" % entries.size())
+	_check(entries.size() >= 3, "挑出的这位至少带 3 条履历/专长（实际 %d，%s）" % [entries.size(), candidate.id])
 
 	var resume := RESUME_SCENE.instantiate() as Resume
 	vp.add_child(resume)
 	await _settle()
+
+	var stamp: Sprite2D = resume.get_node("ResumeStamp")
+	var stamp_rest := stamp.position
+
+	# ---- 空纸不盖章（场景里预摆的那张图不该自己冒出来）----
+	_check(stamp != null, "ResumeStamp 就位")
+	_check(not stamp.visible, "还没喂候选人 → 不盖章")
+	_check(stamp.texture == null, "还没喂候选人 → 节点上也没有残留的图")
 
 	# 实例化时纸上是空的（场景里不写死任何候选人文案），数据靠这里灌进去
 	resume.set_candidate(candidate)
@@ -106,6 +123,23 @@ func _run() -> void:
 	_check(name_value.text == candidate.display_name, "姓名栏 = 数据里的 display_name")
 	_check((third as Button).text.contains(entries[2].description),
 			"第三条词条正文 = 数据里的 description")
+
+	# ---- 印章：显不显示、用哪张图，全部来自候选人数据（CandidateResource.resume_stamp）----
+	# 数据样本是 data/candidates/c_0001.tres（故意填了章的那一位）。这里**显式按 id 取**，
+	# 不跟着上面那位走 —— 上面那位是「条目最多」挑出来的，跟有没有章没有关系。
+	var stamped: CandidateResource = DataDB.get_candidate(&"c_0001")
+	_check(stamped != null and stamped.resume_stamp != null,
+			"data/candidates/c_0001.tres 在数据里填了 resume_stamp")
+	_check(stamped != null and stamped.resume_stamp != null
+			and stamped.resume_stamp.resource_path == STAMP_TEXTURE_PATH,
+			"填的就是 %s" % STAMP_TEXTURE_PATH)
+
+	# 纸上的章严格跟着**当前这位**走：有图就盖，没图就不盖
+	_check(stamp.visible == (candidate.resume_stamp != null),
+			"盖章与否 = 当前这位有没有 resume_stamp（%s：%s）"
+			% [candidate.id, "有" if candidate.resume_stamp != null else "没有"])
+	_check(stamp.texture == candidate.resume_stamp, "盖的就是他数据里那张")
+	_check(stamp.position == stamp_rest, "章的位置是场景摆的那一处，代码没动它（%s）" % stamp.position)
 
 	# 顺带如实报一下按钮能不能画中文（§10.5）。
 	# 查的是**按钮真正生效的那一款字体**（get_theme_font 会把 theme_override_fonts/font 解出来），
@@ -268,6 +302,8 @@ func _run() -> void:
 	_check(declaration.text.is_empty(), "喂 null → 组队宣言清空")
 	_check(resume.token_count() == 0, "喂 null → 词条全部收起")
 	_check(not menu.is_open(), "喂 null → 菜单不会留在半空")
+	_check(not stamp.visible, "喂 null → 章也收起来")
+	_check(stamp.texture == null, "喂 null → 章那张图从节点上摘掉（不留上一位的图）")
 
 	# ---- 组队宣言就是一段字：长得再不像「字段拼出来的」也照样原样铺 ----
 	var odd := CandidateResource.new()
@@ -276,6 +312,22 @@ func _run() -> void:
 	await _settle()
 	_check(declaration.text == odd.team_declaration, "组队宣言原样铺，不做任何拼接 / 加工")
 	_check(resume.get_candidate() == odd, "get_candidate 能把当前这位取回来")
+	_check(not stamp.visible, "这位没填 resume_stamp → 不盖章")
+	_check(stamp.texture == null, "没填就是空，不退回默认那张图")
+
+	# ---- 换回一位带章的：章要跟着回来，而且换的是**他那张** ----
+	var with_stamp := CandidateResource.new()
+	with_stamp.resume_stamp = load(STAMP_TEXTURE_PATH)
+	resume.set_candidate(with_stamp)
+	await _settle()
+	_check(stamp.visible, "换到填了章的候选人 → 章又盖上")
+	_check(stamp.texture == with_stamp.resume_stamp, "盖的是他自己那张")
+
+	# ---- 从带章的换到不带章的：不能留上一位的章 ----
+	resume.set_candidate(odd)
+	await _settle()
+	_check(not stamp.visible, "换回没章的 → 章消失")
+	_check(stamp.texture == null, "换回没章的 → 图也摘干净（不会张冠李戴）")
 
 
 func _report() -> void:

@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://0rok61jt6i43"]
 
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_3dhqj"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_xxx0b"]
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="3_lejus"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_xxx0b"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_lejus"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="3_xxx0b"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="4_pqkly"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_pqkly"]
 [ext_resource type="Resource" path="res://data/traits/lone_wolf.tres" id="5_d3xsx"]
 
 [sub_resource type="Resource" id="Resource_lejus"]
@@ -37,6 +37,6 @@ traits = Array[ExtResource("4_pqkly")]([ExtResource("5_d3xsx")])
 experience = Array[ExtResource("2_xxx0b")]([SubResource("Resource_lejus"), SubResource("Resource_pqkly")])
 skill = Array[ExtResource("2_xxx0b")]([SubResource("Resource_d3xsx")])
 team_declaration = "PLACEHOLDER DECLARATION 08"
+judgment = "placeholder judgement （c_0008）"
 portrait_eye = 2
 portrait_hair = 2
-judgment = "placeholder judgement （c_0008）"

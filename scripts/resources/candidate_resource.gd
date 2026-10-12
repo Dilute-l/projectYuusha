@@ -50,6 +50,19 @@ extends Resource
 ## 立绘（可选，UI 用）
 @export var portrait: Texture2D
 
+## 简历上那枚印章（resume.tscn 的 `ResumeStamp`）。
+##
+## **一张贴图同时决定两件事**：
+##   · 留空（null）→ 这张简历**不盖章**；
+##   · 填一张图   → 就在纸上盖这枚章（图就是 assets/art/interview/resume/ 下的那张）。
+##
+## 为什么不留一个「要不要盖章」的 bool：章是「有没有图」这件事本身 ——
+## 两个字段的话必然会出现 `show = true` 却没图的组合，还得多写一条兜底。
+##
+## 图的**位置 / 缩放**不在这里：那是版面，写在 resume.tscn 上（换图不用动它）。
+## 谁把谁盖在纸上由 `scenes/day/interview/resume/resume.gd::_apply_stamp()` 落地。
+@export var resume_stamp: Texture2D
+
 # ---------------------------------------------------------------------------
 # 立绘部件（面试者那身「拼装立绘」的配方，见 scenes/day/interview/interviewee.gd）
 # ---------------------------------------------------------------------------

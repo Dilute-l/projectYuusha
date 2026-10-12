@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dvdusjuloxc7j"]
+[gd_scene format=3 uid="uid://bnnwb5iopqe28"]
 
 [ext_resource type="Script" uid="uid://v31l2hifnnvk" path="res://scenes/day/interview/interview.gd" id="1_fa01g"]
 [ext_resource type="Texture2D" uid="uid://c0glgwas5kv7" path="res://assets/art/interview/interview_background.png" id="2_fa8i0"]
@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="5_asawf"]
 [ext_resource type="Texture2D" uid="uid://csok7wd54o1wn" path="res://assets/art/interview/handbook_phd.png" id="5_h3fcf"]
 [ext_resource type="BitMap" uid="uid://4wg2b4fu0ffy" path="res://assets/art/interview/noticebd_phd.tres" id="5_ytunt"]
-[ext_resource type="PackedScene" uid="uid://cu45yv8cffejs" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
+[ext_resource type="PackedScene" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
 [ext_resource type="BitMap" uid="uid://x3y8g1h1mu3e" path="res://assets/art/interview/handbook_phd.tres" id="6_q4rqa"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_asawf"]

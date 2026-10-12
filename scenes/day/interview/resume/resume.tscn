@@ -266,7 +266,7 @@ theme_override_fonts/font = ExtResource("5_yu2w1")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ResumeStampPhd" type="Sprite2D" parent="." unique_id=601284995]
+[node name="ResumeStamp" type="Sprite2D" parent="." unique_id=601284995]
 texture = ExtResource("6_ltjbd")
 centered = false
 

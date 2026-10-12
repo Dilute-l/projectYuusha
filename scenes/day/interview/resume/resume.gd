@@ -10,6 +10,7 @@ extends Control
 ##   个人履历与奖项                     → ExperienceContainer 里一串 ResumeToken
 ##   专长                              → SkillContainer 里一串 ResumeToken
 ##   组队宣言                           → DeclarationContainer（一整段自由文本）
+##   印章                              → ResumeStamp（Sprite2D；有没有图由数据决定，见 _apply_stamp）
 ##
 ## ⚠️ 数据来源：**全部来自 CandidateResource**（data/candidates/*.tres）。
 ##   本脚本里没有一句候选人文案，也没有「默认履历」这种兜底 ——
@@ -35,6 +36,14 @@ const STATUS_ENTRY_INDEX := -1
 ## 约定：属性追问的对话文件。一条追问一份 json，属性这条由 id 拼出来。
 const STATUS_ASK_FORMAT := "res://data/asks/%s_status.json"
 
+## 印章节点名，**两个都认**。
+##
+## 场景里现在叫 `ResumeStamp`，早先叫 `ResumeStampPhd`（同一个节点，只改过名）。
+## 认两个是因为「谁把 .tscn 存成哪个名字」这件事不该让印章**静默消失** ——
+## 找不到节点时 _apply_stamp 会直接返回，效果就是「数据填了也不盖章」，
+## 那是最难查的一类 bug。两个名字都没有才在 _ready() 里报错。
+const STAMP_NODE_NAMES: Array[StringName] = [&"ResumeStamp", &"ResumeStampPhd"]
+
 # ---- 节点 -------------------------------------------------------------------
 
 @onready var _token_menu: ResumeTokenMenu = get_node_or_null("TokenMenu") as ResumeTokenMenu
@@ -42,6 +51,10 @@ const STATUS_ASK_FORMAT := "res://data/asks/%s_status.json"
 @onready var _status: Button = get_node_or_null("Status") as Button
 @onready var _experience_list: VBoxContainer = get_node_or_null("ExperienceContainer") as VBoxContainer
 @onready var _skill_list: VBoxContainer = get_node_or_null("SkillContainer") as VBoxContainer
+
+## 盖在纸上的那枚印章。显不显示、用哪张图全看 CandidateResource.resume_stamp ——
+## 这里是它唯一的落点（见 _apply_stamp）。
+@onready var _stamp: Sprite2D = _find_stamp()
 
 ## 各栏的「值」显示位。名字带 _value 是为了和场景里那批 *Label（栏目标题）区分开。
 @onready var _name_value: Label = get_node_or_null("NameContainer") as Label
@@ -103,10 +116,24 @@ func _ready() -> void:
 	if _status != null and not _status.pressed.is_connected(_on_status_pressed):
 		_status.pressed.connect(_on_status_pressed)
 
+	# 印章节点不见了就得喊：_apply_stamp 找不到节点会直接返回，
+	# 表现是「数据里填了章，纸上什么都不发生」—— 不报错的话根本查不出来。
+	if _stamp == null:
+		push_error("[Resume] 找不到印章节点（ResumeStamp / ResumeStampPhd 都没有），resume_stamp 不会显示")
+
 	# 没人喂数据时保持空纸：场景里预摆的词条只是版面占位，不该有内容。
 	# （F6 单独跑本场景看到的就是一张空简历，这是预期行为。）
 	if _candidate == null:
 		_clear()
+
+
+## 按 STAMP_NODE_NAMES 找印章节点；一个都没有则返回 null。
+func _find_stamp() -> Sprite2D:
+	for node_name in STAMP_NODE_NAMES:
+		var node := get_node_or_null(NodePath(String(node_name)))
+		if node is Sprite2D:
+			return node
+	return null
 
 
 func _on_visibility_changed() -> void:
@@ -127,6 +154,7 @@ func set_candidate(candidate: CandidateResource) -> void:
 		return
 	_fill_fields(candidate)
 	_fill_tokens(candidate)
+	_apply_stamp(candidate)
 
 
 ## 当前铺在纸上的候选人；没有则 null
@@ -204,6 +232,29 @@ func _set_label(label: Label, text: String) -> void:
 		label.text = text
 
 
+# ---- 印章 -------------------------------------------------------------------
+
+
+## 把候选人那枚印章盖到纸上（`ResumeStamp`）。
+##
+## 规则只有一条，**全在数据里**（CandidateResource.resume_stamp）：
+##
+##   有图 → 换上这张图并显示；
+##   没图 → 不显示（并且把上一次那张图**从节点上摘掉**）。
+##
+## 「摘掉」这一下不是多余的：同一张简历会被反复喂不同的候选人（§11.2 换人时整体重刷），
+## 只改 visible 的话，下一位没章的候选人纸上不会画章、但节点里还留着上一位的图 ——
+## 谁哪天顺手把它 visible 回来，就会盖出一个张冠李戴的章。空就是空。
+##
+## 位置 / 缩放 / centered 一律**不在这里碰**：那是版面，写在 resume.tscn 上。
+func _apply_stamp(candidate: CandidateResource) -> void:
+	if _stamp == null:
+		return
+	var texture: Texture2D = candidate.resume_stamp if candidate != null else null
+	_stamp.texture = texture
+	_stamp.visible = texture != null
+
+
 func _clear() -> void:
 	_set_label(_name_value, "")
 	_set_label(_race_value, "")
@@ -215,6 +266,7 @@ func _clear() -> void:
 	_set_label(_wis_value, "")
 	_set_label(_declaration_value, "")
 	_fill_lists([], [])
+	_apply_stamp(null)
 
 
 # ---- 词条 -------------------------------------------------------------------
