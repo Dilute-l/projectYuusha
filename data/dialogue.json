@@ -39,11 +39,14 @@
 	{ "speaker_name": "饮水机", "text": "散发出一股强大的气场。" },
 	{ "speaker_name": "饮水机", "text": "没人知道为什么在一个剑与魔法的世界中会有这东西。" }
   ],
+	"Watercooler_Night": [
+	{ "speaker_name": "饮水机", "text": "下班了。" }
+  ],
 	"Sorry":[
 	{ "speaker_name": "腻子", "text": "老大抱歉喵^1 这里我还没做出来喵^1 只做了个占位符喵" }
   ],
 	"WhatN1zHasDone":[
-	{ "speaker_name": "腻子", "text": "装修了面试房间。 很抱歉我今天累了，所以房间里能互动的东西实在不多。" }
+	{ "speaker_name": "腻子", "text": "旷工了。" }
   ],
 	"Liuxu":[
 	{ "speaker_name": "腻子", "text": "我们的分辨率没有问题" }
@@ -54,7 +57,7 @@
   ],
 	"Dilute":[
 	{ "speaker_name": "lulu", "text": "制作组的其他几个人没有人知道知道这个人的头像究竟是谁" },
-    { "speaker_name": "真·lulu", "text": "其实是我的 oc 来着，虽然经常被错认成其他角色就是了"}
+	{ "speaker_name": "真·lulu", "text": "其实是我的 oc 来着，虽然经常被错认成其他角色就是了"}
   ],
 	"Midu":[
 	{ "config": { "sound": "normal", "extra_silent": "獭" } },

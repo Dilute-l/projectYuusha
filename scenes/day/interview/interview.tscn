@@ -12,10 +12,12 @@
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_asawf"]
 [ext_resource type="Texture2D" uid="uid://dxwh63d2bke8b" path="res://assets/art/interview/yes.png" id="10_wtybp"]
+[ext_resource type="Texture2D" uid="uid://c34p2mqnxvexr" path="res://assets/art/interview/yes_hover.png" id="11_4uqih"]
 [ext_resource type="BitMap" uid="uid://dl03ppkuvvo6y" path="res://assets/art/interview/yes.tres" id="11_k2e4n"]
 [ext_resource type="Texture2D" uid="uid://deffmax7f528e" path="res://assets/art/interview/no.png" id="12_wtybp"]
-[ext_resource type="BitMap" uid="uid://dsg0dr5kglx7m" path="res://assets/art/interview/itv_nah_phd.tres" id="13_h3fcf"]
+[ext_resource type="BitMap" uid="uid://dl0m0lj0amihi" path="res://assets/art/interview/no.tres" id="13_wtybp"]
 [ext_resource type="Texture2D" uid="uid://y8i38h1dk0jt" path="res://assets/art/interview/water.png" id="14_k2e4n"]
+[ext_resource type="Texture2D" uid="uid://bel4htp3jetqo" path="res://assets/art/interview/no_hover.png" id="14_xdl4b"]
 [ext_resource type="PackedScene" uid="uid://dyj06ie8ocu0" path="res://scenes/day/interview/handbook.tscn" id="14_xqjd5"]
 [ext_resource type="Texture2D" uid="uid://bywxyuu1omr5i" path="res://assets/art/interview/water_hover.png" id="15_4uqih"]
 [ext_resource type="BitMap" uid="uid://2ugj346p8bwc" path="res://assets/art/interview/water.tres" id="16_wtybp"]
@@ -70,6 +72,7 @@ offset_right = 2205.0
 offset_bottom = 1009.0
 scale = Vector2(0.72, 0.72)
 texture_normal = ExtResource("10_wtybp")
+texture_hover = ExtResource("11_4uqih")
 texture_click_mask = ExtResource("11_k2e4n")
 
 [node name="Nah" type="TextureButton" parent="." unique_id=1717759339]
@@ -80,7 +83,8 @@ offset_right = 2320.0
 offset_bottom = 977.0
 scale = Vector2(0.72, 0.72)
 texture_normal = ExtResource("12_wtybp")
-texture_click_mask = ExtResource("13_h3fcf")
+texture_hover = ExtResource("14_xdl4b")
+texture_click_mask = ExtResource("13_wtybp")
 
 [node name="WaterButton" type="TextureButton" parent="." unique_id=2140988842]
 layout_mode = 0

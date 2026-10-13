@@ -1,10 +1,13 @@
 [gd_scene format=3 uid="uid://c3jgjfib6nxve"]
 
 [ext_resource type="Script" uid="uid://bge3j811urjem" path="res://scenes/day/team_builder/team_builder.gd" id="1_0x3h0"]
-[ext_resource type="Texture2D" uid="uid://bugfrjmjd4qa0" path="res://assets/art/interview/itv_bkg_phd.png" id="1_i8vpa"]
-[ext_resource type="Texture2D" uid="uid://vvalhoxhfslq" path="res://assets/art/interview/table_phd.png" id="2_cvggo"]
+[ext_resource type="Texture2D" uid="uid://c0glgwas5kv7" path="res://assets/art/interview/interview_background.png" id="2_cljne"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_0x3h0"]
+[ext_resource type="Texture2D" uid="uid://drhh42u1dx068" path="res://assets/art/interview/table.png" id="3_hdl43"]
+[ext_resource type="Texture2D" uid="uid://y8i38h1dk0jt" path="res://assets/art/interview/water.png" id="3_snefw"]
+[ext_resource type="Texture2D" uid="uid://bywxyuu1omr5i" path="res://assets/art/interview/water_hover.png" id="4_bthog"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_cvggo"]
+[ext_resource type="BitMap" uid="uid://2ugj346p8bwc" path="res://assets/art/interview/water.tres" id="5_ra5d4"]
 [ext_resource type="PackedScene" path="res://scenes/day/team_builder/team_builder_ui.tscn" id="5_tbui"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="6_cljne"]
 [ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="6_resume"]
@@ -15,11 +18,24 @@ anchors_preset = 0
 script = ExtResource("1_0x3h0")
 
 [node name="ItvBkgPhd" type="Sprite2D" parent="." unique_id=1008765384]
-texture = ExtResource("1_i8vpa")
+scale = Vector2(0.5086342, 0.5086342)
+texture = ExtResource("2_cljne")
 centered = false
 
+[node name="WaterButton" type="TextureButton" parent="." unique_id=929950488]
+layout_mode = 0
+offset_left = -509.0
+offset_top = 1.0
+offset_right = 1757.0
+offset_bottom = 1275.0
+scale = Vector2(0.51, 0.51)
+texture_normal = ExtResource("3_snefw")
+texture_hover = ExtResource("4_bthog")
+texture_click_mask = ExtResource("5_ra5d4")
+
 [node name="TablePhd" type="Sprite2D" parent="." unique_id=864795664]
-texture = ExtResource("2_cvggo")
+scale = Vector2(0.50863415, 0.5086342)
+texture = ExtResource("3_hdl43")
 centered = false
 
 [node name="TeamBuilderUI" parent="." unique_id=1282000125 instance=ExtResource("5_tbui")]
@@ -28,8 +44,6 @@ layout_mode = 1
 [node name="Resume" parent="." unique_id=215054407 instance=ExtResource("6_resume")]
 visible = false
 layout_mode = 1
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="Confirm" type="Button" parent="." unique_id=1282773667]
 layout_mode = 0
@@ -51,4 +65,5 @@ color = Color(0.6623526, 0.7189713, 0.98323464, 1)
 visible = false
 layout_mode = 0
 
+[connection signal="pressed" from="WaterButton" to="." method="_on_water_button_pressed"]
 [connection signal="pressed" from="Confirm" to="." method="_on_confirm_pressed"]

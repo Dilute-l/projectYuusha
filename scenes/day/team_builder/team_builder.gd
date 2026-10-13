@@ -352,3 +352,15 @@ func _play_dialogue(id: String, pass_through: bool = false) -> bool:
 		return false
 	_dialoguer.play(pass_through)
 	return true
+	
+func _on_water_button_pressed() -> void:
+	if _dialoguer == null:
+		push_error("[Interview] 找不到 Dialoguer")
+		return
+	#这里需不需要这个呢
+	#if _advance_when_dialogue_ends:
+	#	return
+	if not _dialoguer.typer.load_dialogue("Watercooler_Night"):
+		return
+	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
+	_dialoguer.play()
