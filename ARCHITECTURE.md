@@ -179,6 +179,7 @@ class_name CandidateResource extends Resource
 @export var skill: Array[ResumeEntry] = []      # 专长（见 §3.2）
 @export_multiline var team_declaration: String  # 组队宣言：一整段自由文本，不挂追问
 @export var portrait: Texture2D                 # 整张立绘（可选；当前用拼装立绘，见下）
+@export var resume_stamp: Texture2D             # 简历上那枚印章；留空 = 不盖章（§10.6）
 
 # 拼装立绘的「配方」（见 §10.7）。取值直接对应 assets/art/portrait/ 的文件名。
 @export var portrait_race: StringName = &"hu"   # hu / el / st → {race}_body_phd.png
@@ -201,6 +202,7 @@ class_name CandidateResource extends Resource
 | `experience` | 个人履历与奖项 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
 | `skill` | 专长 | 同上。**与 `experience` 共用一套扁平序号**，见 §10.6 |
 | `team_declaration` | 组队宣言 | **一整段自由文本**，原样铺在纸面右下；不挂追问（它是「他自己喊的口号」，不是「可被质疑的履历」） |
+| `resume_stamp` | 简历上的印章 | 一张贴图同时决定**显不显示**与**用哪张**：留空 = 不盖章（§10.6） |
 | `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号；面试者的长相也是数据，不是代码里摇的（§10.7） |
 
 > 真假不再由隐藏字段承载：玩家看到的 `strength / intelligence / wisdom / race / job / traits`
@@ -559,6 +561,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | 年龄 | `AgeContainer` | `age` |
 | 力量 / 智力 / 感知 | `Status/Str·Int·WisContainer` | `strength` / `intelligence` / `wisdom` |
 | 组队宣言 | `DeclarationContainer` | `team_declaration` |
+| 印章 | `ResumeStamp` | `resume_stamp`（见下） |
 
 栏目标题（「姓名」「种族」…）是场景里另外一批 `*Label` 节点，**不是数据**。
 任一字段为空就把那一栏清空 —— 不写「未知」这种兜底字，免得看不出来数据漏了。
@@ -567,6 +570,37 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 > 一个多行字符串说了算，`resume.gd` 一个字都不拼」。版面拆成一栏一格之后，它变成了重复的第二份文案，
 > 而且没有任何节点能放它 —— 已删除。`team_declaration` 接替了「一整段自由文本」这个位置
 > （但它只占右下角那一栏，不挂追问）。
+
+#### 印章（`ResumeStamp`）：一个字段管「显不显示」和「用哪张」
+
+纸面右上方盖着的那枚章由 **`CandidateResource.resume_stamp`（`Texture2D`）** 决定：
+
+```gdscript
+# data/candidates/c_0001.tres
+resume_stamp = ExtResource("7_stamp")   # → assets/art/interview/resume/resume_stamp_phd.png
+# 没写这一行的候选人 → 不盖章
+```
+
+`resume.gd::_apply_stamp()` 是它唯一的落点，规则只有一条：
+
+| 数据 | 纸上 |
+| --- | --- |
+| 有图 | 换上这张图并显示 |
+| 没图（null） | **不显示**，并且把节点上的 `texture` 一起清成空 |
+
+- **为什么不留一个「要不要盖章」的 bool**：章就是「有没有图」这件事本身。
+  两个字段必然会写出 `show = true` 却没图的组合，还得多一条兜底规则去猜谁说了算。
+- **为什么「没图」还要把 `texture` 摘掉**：同一张简历会被反复喂不同的候选人（§11.2 换人时整体重刷）。
+  只改 `visible` 的话，下一位没章的候选人纸上不画章、但节点里还留着上一位的图 ——
+  哪天有人顺手 `visible = true`，就会盖出一个**张冠李戴**的章。空就是空。
+- **位置 / 缩放 / `centered` 一律不碰**：那是版面，写在 `resume.tscn` 上；本脚本只换图与显隐。
+  换一张尺寸不同的章不用改一行代码。
+- **`ResumeStamp` 与 `ResumeStampPhd` 两个名字都认**（`STAMP_NODE_NAMES`）：节点改过一次名，
+  而「节点名没对上」的后果是**印章静默消失**（`_apply_stamp` 找不到节点就直接返回），
+  是最难查的一类 bug。两个名字都没有时 `_ready()` 会 `push_error`。
+- 数据样本：`data/candidates/c_0001.tres` 是**唯一**填了章的候选人，其余 25 位都留空。
+- `Popup.tscn` 里还有一枚同名印章（`AwardPhd/ResumeStampPhd`），那是**对话小牌子**上的装饰，
+  和这一枚走的是两条路 —— 它归 `DialoguePopup` 管，不看 `resume_stamp`。
 
 #### 词条：两个列表共用一套「扁平序号」
 
@@ -686,10 +720,15 @@ DayLoop (Node)
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_resume_menu.tscn
 ```
 
-43 项：面板/按钮就位、**纸面内容确实来自 `data/candidates/*.tres`**（抬头原样铺数据里那一段字、
+66 项：面板/按钮就位、**纸面内容确实来自 `data/candidates/*.tres`**（抬头原样铺数据里那一段字、
 逐条词条正文来自 `description`）、给一份「不像字段拼出来」的抬头也照样原样显示、喂 `null` 时整页清空、
+**印章跟着数据走**（空纸不盖章、有图就盖、没图就收、换人时图也摘干净、位置不被代码动过）、
 点词条开菜单并记住序号、贴边 / 翻边 / 底部夹取、**改画布尺寸后自动重排**、点外面与 Esc 收起、
 整块显隐不诈尸、「追问」广播 `resume_entry_asked` 并收起菜单。全绿退出码 0。
+
+> 样本候选人按「第 1 天名单里**条目最多**的那位」挑，不是「名单第一位」：后面要用到第 3 条词条，
+> 而名单里谁条目多完全由数据决定 —— 写死第一位的话，数据一改测试就红，而那不是它该管的事
+> （数据覆盖度是 `smoke_m0` 的活，§11.4）。印章那几条则**显式按 id 取 `c_0001`**。
 
 它把简历放进一个尺寸可控的 `SubViewport`（1152×648 = 游戏真实画布）：headless 下窗口是 1152×1152
 且 `--resolution` 不生效，直接挂在 root 上既测不到真实画布，也测不了「画布变了」这一条。
@@ -851,7 +890,7 @@ var asked_entries: Dictionary = {}
 
 | 目录 | 粒度 | 装什么 |
 | --- | --- | --- |
-| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`） | 姓名、种族（引用 `data/races/*.tres`）、职业（引用 `data/jobs/*.tres`）、性别、年龄、三项属性、特质（引用 `data/traits/*.tres`）、**个人履历与奖项**（`experience`）、**专长**（`skill`）、**组队宣言**（`team_declaration`）、**拼装立绘配方**；每条履历/专长 = 描述 + 追问 json 的路径（内联 `sub_resource`，跟着本人走） |
+| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`，另有 `c_0101.tres`） | 姓名、种族（引用 `data/races/*.tres`）、职业（引用 `data/jobs/*.tres`）、性别、年龄、三项属性、特质（引用 `data/traits/*.tres`）、**个人履历与奖项**（`experience`）、**专长**（`skill`）、**组队宣言**（`team_declaration`）、**简历印章**（`resume_stamp`，§10.6）、**拼装立绘配方**；每条履历/专长 = 描述 + 追问 json 的路径（内联 `sub_resource`，跟着本人走） |
 | `data/races/` | **一个种族一个文件**（`human` / `elf` / `dwarf`） | `RaceDef`：`id` / `display_name` / `description`。与立绘配方代号对应：`hu`→human、`el`→elf、`st`→dwarf |
 | `data/asks/` | **一条追问一份 json**（`c_0001_1.json` … `c_0025_3.json`，外加每人的 `<id>_status.json`） | 一份就是「一段对话」，格式与 `data/dialogue.json` 里的一段完全一致，所以 `Typer` 那套逐字显示 / 点击推进照用 |
 | `data/asks/` | **一条追问一个文件**（`c_0001_1.json` … 共 75 份） | 那一条的追问对话本身：行数组，每行 `{ speaker_name, text }`，格式同 `data/dialogue.json` 的一段 |
@@ -895,6 +934,10 @@ data/days/day_XX.tres
   想让人物的自我介绍更有性格（甚至藏一个后面能被手册戳破的谎言），改这一栏就行。
 - 换某天出场的人 / 调名额 → 点开 `data/days/day_XX.tres`，拖 `candidates` 数组。
 - 加一位新面试者 → `data/candidates/` 下新建一份，再把它拖进某天的 `candidates`。
+  嫌手搓 `.tres` 麻烦就用 **`tools/candidate_generator.html`**：单文件、零依赖，浏览器直接打开，
+  填完点「全部写入 data/…」（Chromium）或逐个下载 —— 它一次吐出
+  `data/candidates/<id>.tres` + 该人每条追问的 `data/asks/<id>_N.json` + `<id>_status.json`，
+  序号约定与 `Resume.gd::ask_path_of()` 一致。**改数据模型就得同步改它**（例如 §10.6 的 `resume_stamp`）。
 - 加一个新职业 / 新特质 → 在 `data/jobs/` / `data/traits/` 建资源，候选人引用它即可（`DataDB` 按目录自动归类）。
 
 ### 11.4 覆盖率自检
@@ -957,8 +1000,9 @@ data/days/day_XX.tres
 
 - **左边列的是「今天通过面试的人」**（`GameState.passed_ids` 的顺序），不是当天全部出场者：
   面试的「录用」就是玩家的第一次筛选，组队是在**通过者里**挑满今天这一队（§12.7）。
-- **立绘不取景、不居中**：`PortraitComposer.portrait_texture()` 给的是 300×300 的整张画布，
-  头像框按自己的坐标系原位铺上去，露出来多少由取景窗决定（§12.4）。
+- **立绘不取景、不居中**：`PortraitComposer.portrait_texture()` 给的是整张立绘画布
+  （`600×675`），头像框按 `AvatarFrame.PORTRAIT_SCALE` 折算进自己的坐标系后原位铺上去，
+  露出来多少由取景窗决定（§12.4）。
 - **右半边复用 `resume.tscn`，位置靠「同一个场景」而不是靠对齐代码**：纸面用的是绝对偏移，
   所以把它实例化到组队场景里，位置与面试**逐像素相同**。`smoke_team_builder` 会把两边的
   栏目矩形与底纸位置拿来比，以后谁动了偏移都会当场红。
@@ -993,21 +1037,32 @@ data/days/day_XX.tres
 
 ### 12.4 方头像框是怎么叠的
 
-一套三张同坐标系的 300×300 图（`AvatarFrame` 是它们的唯一出处）：
+头像框自己是**一套三张同坐标系的 300×300 图**（`AvatarFrame` 是它们的唯一出处）；
+立绘是**另一套坐标系**（`PortraitComposer.CANVAS × CANVAS_H` = 600×675），
+两者差一个 `AvatarFrame.PORTRAIT_SCALE = 300 / 600 = 0.5`：
 
 | 层 | 美术 | 作用 |
 | --- | --- | --- |
 | `Background` | `avatar_frame_background_phd.png` | 底板，**头像的底色**就是它；进队染绿 / 不进队染红（`self_modulate`） |
-| `Clip` → `Portrait` | `PortraitComposer.portrait_texture()` | 取景窗（`clip_contents`）+ 整身立绘，300×300 **原位**贴上去 |
+| `Clip` → `Portrait` | `PortraitComposer.portrait_texture()` | 取景窗（`clip_contents`）+ 整身立绘，按 `PORTRAIT_SCALE` 折算后**原位**铺开 |
 | `Frame` | `avatar_frame_phd.png` | 方框，压在最上 |
 
 - **不需要自动居中**：立绘按自己的坐标系铺满整个头像框（腿、矮人的帽檐都还在），
   只有取景窗里那一块露出来 —— 人物在框里的位置只由**立绘本身**决定，
-  所以整个控件里没有一句取景 / 居中计算。
+  所以整个控件里没有一句取景 / 居中的计算。
+  （唯一的例外是**水平方向**：取景窗自己的中心在 x=153，而立绘画布的中心在 x=300，
+  两个原点直接对齐会让人偏在窗口右侧 —— 所以横向按「画布中心 == 窗口中心」摆，
+  见 `FramedAvatar._portrait_center_offset_x()`；纵向不动，脸在画布上的高低是各画各的。）
 - **超出边框的部分自动截掉**是 `Clip.clip_contents` 干的：窗口摆在 `AvatarFrame.WINDOW`
-  （方框内沿围出来的透明区，实测量出来的），立绘按 `-窗口原点` 垫进去，
-  于是「画布上的 (26,23)」正好落在窗口左上角；窗口外的像素一律不画。
-- 三张图是**同一个坐标系**的，所以换尺寸只走 `FramedAvatar.set_pixel_size()`：
+  （方框内沿围出来的透明区，实测量出来的），立绘横向按上面的居中规则摆、
+  纵向按 `-窗口原点` 垫进去；窗口外的像素一律不画。
+- ⚠️ **两套画布尺寸必须显式换算**（`AvatarFrame.PORTRAIT_SCALE`）：立绘重画成 600×675
+  之后，若不折算就按 1:1 铺进 300×300 的框里，取景窗只框得到画布左上角那一小块 ——
+  脸和眼睛全在窗口外面，看上去就是「头像过小、只露出左上角」。自检盯着这个数。
+- 立绘矩形用的拉伸是 `STRETCH_SCALE`（**铺满**算好的矩形），不是 `keep_aspect_centered`：
+  后者会让贴图在矩形里居中留边，「画布原点 = 立绘矩形原点」这个前提就不成立了，
+  `-窗口原点` 的垫法随之错位。
+- 三层是**同一个坐标系**的，所以换尺寸只走 `FramedAvatar.set_pixel_size()`：
   控件边长换成 px，三层按 `px / 300` 一起缩放，立绘与窗口的相对位置不动。
 - 右下角的名额空位**就是同一个 `FramedAvatar`**：`set_candidate(null)` 只留底板和方框
   （空位），填进去的人用同一套配色（绿）。

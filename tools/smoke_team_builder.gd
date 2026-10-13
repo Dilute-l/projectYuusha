@@ -316,28 +316,43 @@ func _check_avatar_frame(
 	_check(frame.texture != null and frame.texture.resource_path == AvatarFrame.FRAME_PATH,
 			"方框用的是 %s" % AvatarFrame.FRAME_PATH.get_file())
 
-	# 立绘 = 整张 300x300 画布（没有取景、没有裁圆、没有缩放）
+	# 立绘 = 整张立绘画布（没有取景、没有裁圆、没有缩放）；尺寸是**立绘自己的**画布常量
 	var portrait: TextureRect = avatar.get_node("Clip/Portrait")
 	var texture := avatar.portrait_texture()
 	_check(texture != null, "这一位铺上了立绘")
 	_check(texture != null and texture == PortraitComposer.portrait_texture(who),
 			"立绘来自 PortraitComposer.portrait_texture()（和面试同一套部件图）")
-	_check(texture != null and texture.get_size() == Vector2(AvatarFrame.CANVAS, AvatarFrame.CANVAS),
+	_check(texture != null and texture.get_size() == Vector2(
+				PortraitComposer.CANVAS, PortraitComposer.CANVAS_H),
 			"立绘是**整张画布**原位贴的，没有被缩放 / 取景（%s）" % (
 				texture.get_size() if texture != null else Vector2.ZERO))
 	if absent != null:
 		_check(texture != PortraitComposer.portrait_texture(absent),
 				"不同候选人的立绘不是同一张")
 
-	# 取景窗：clip_contents 的窗口按 AvatarFrame 的常量摆；立绘按 -窗口原点 垫进去
+	# 取景窗：clip_contents 的窗口按 AvatarFrame 的常量摆
 	var window := AvatarFrame.window_rect(float(CandidateEntry.AVATAR_SIZE))
 	var clip := avatar.clip_control()
 	_check(clip.clip_contents, "取景窗开了 clip_contents（框外的像素画不出来）")
 	_check(clip.position.is_equal_approx(window.position)
 			and clip.size.is_equal_approx(window.size),
 			"取景窗落在 AvatarFrame.window_rect()（%s %s）" % [clip.position, clip.size])
-	_check(portrait.position.is_equal_approx(-window.position),
-			"立绘按 -窗口原点 垫进去 → **不居中**，位置只由立绘自己决定（%s）" % portrait.position)
+
+	# 水平**居中**：立绘画布的中心必须落在取景窗的中心上（横向不偏）。
+	# 立绘里的人都画在画布正中，所以这条成立 = 画面里的人是居中的。
+	var portrait_center := portrait.position.x + portrait.size.x * 0.5
+	var window_center := window.position.x + window.size.x * 0.5
+	_check(is_equal_approx(portrait_center, window_center),
+			"立绘画布在取景窗里**水平居中**（画布中心 %.1f == 窗口中心 %.1f）" % [
+				portrait_center, window_center])
+	# 两边的留白相等（上一条的直观等价写法）。
+	# ⚠️ 这两个值在 160px 的头像上是**负的**：立绘折算后宽 192 > 窗口宽 135，
+	#   居中就意味着两侧各被窗口盖掉一截（对称），这是「画布比窗口大」的正常结果，
+	#   不是版面错 —— 所以只断言左右相等，不断言正负。
+	var left_gap := portrait.position.x - window.position.x
+	var right_gap := window.position.x + window.size.x - (portrait.position.x + portrait.size.x)
+	_check(is_equal_approx(left_gap, right_gap),
+			"立绘左右两侧露出的余量相等（左 %.1f / 右 %.1f）" % [left_gap, right_gap])
 	_check(portrait.size.x > window.size.x and portrait.size.y > window.size.y,
 			"立绘比取景窗大 → 超出边框的部分交给裁切切掉（立绘 %s / 窗口 %s）" % [
 				portrait.size, window.size])

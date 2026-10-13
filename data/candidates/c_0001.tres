@@ -1,12 +1,13 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://bxefm6k8tg5mj"]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://bi0gh17kquu8g"]
 
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="1_t5hr5"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="1_t5hr5"]
 [ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_03i2x"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="3_03i2x"]
 [ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_uhahd"]
 [ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_c5buv"]
 [ext_resource type="Resource" path="res://data/traits/hot_blooded.tres" id="5_jqw4j"]
 [ext_resource type="Resource" path="res://data/traits/greedy.tres" id="6_6pftd"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/resume_stamp_phd.png" id="7_stamp"]
 
 [sub_resource type="Resource" id="Resource_uhahd"]
 script = ExtResource("2_03i2x")
@@ -37,6 +38,9 @@ traits = Array[ExtResource("4_c5buv")]([ExtResource("5_jqw4j"), ExtResource("6_6
 experience = Array[ExtResource("2_03i2x")]([SubResource("Resource_uhahd"), SubResource("Resource_c5buv")])
 skill = Array[ExtResource("2_03i2x")]([SubResource("Resource_jqw4j")])
 team_declaration = "PLACEHOLDER DECLARATION 01"
+portrait_eye = 101
+portrait_mouth = 101
 judgment = "placeholder judgement （c_0001）"
-portrait_eye = 2
-portrait_mouth = 3
+resume_stamp = ExtResource("7_stamp")
+portrait_hair = 101
+portrait_hat = 0

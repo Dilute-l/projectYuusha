@@ -39,3 +39,7 @@ skill = Array[ExtResource("2_1wpqe")]([SubResource("Resource_abyum")])
 team_declaration = "PLACEHOLDER DECLARATION 10"
 portrait_race = &"st"
 judgment = "placeholder judgement （c_0010）"
+portrait_eye = 101
+portrait_hair = 101
+portrait_mouth = 101
+portrait_hat = 101

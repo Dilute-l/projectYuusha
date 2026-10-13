@@ -30,7 +30,8 @@ var _phase: int = DayPhase.Phase.DAY_BRIEFING
 @onready var _waterbutton: TextureButton = get_node_or_null("WaterButton") as TextureButton
 @onready var _handbook: Handbook = get_node_or_null("Handbook") as Handbook
 @onready var _notice_board: TextureButton = get_node_or_null("NoticeBoard") as TextureButton
-@onready var _popup: DialoguePopup = get_node_or_null("Popup") as DialoguePopup
+# ⚠️ 这里**没有** Popup：牌子是 `dialoguer.tscn` 的子节点，接线在 dialoguer.gd 里
+#    （任何用到 Dialoguer 的场景自动具备这个能力）。面试这一层不必也不该再拿一份。
 
 ## 本阶段做完了。day_loop 挂载本场景时会把它接到 advance() 上。
 signal phase_finished()
