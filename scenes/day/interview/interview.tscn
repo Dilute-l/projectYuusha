@@ -14,10 +14,10 @@
 [ext_resource type="Texture2D" uid="uid://dxwh63d2bke8b" path="res://assets/art/interview/yes.png" id="10_wtybp"]
 [ext_resource type="BitMap" uid="uid://dl03ppkuvvo6y" path="res://assets/art/interview/yes.tres" id="11_k2e4n"]
 [ext_resource type="Texture2D" uid="uid://deffmax7f528e" path="res://assets/art/interview/no.png" id="12_wtybp"]
-[ext_resource type="BitMap" uid="uid://dsg0dr5kglx7m" path="res://assets/art/interview/itv_nah_phd.tres" id="13_h3fcf"]
 [ext_resource type="Texture2D" uid="uid://y8i38h1dk0jt" path="res://assets/art/interview/water.png" id="14_k2e4n"]
 [ext_resource type="PackedScene" uid="uid://dyj06ie8ocu0" path="res://scenes/day/interview/handbook.tscn" id="14_xqjd5"]
 [ext_resource type="Texture2D" uid="uid://bywxyuu1omr5i" path="res://assets/art/interview/water_hover.png" id="15_4uqih"]
+[ext_resource type="BitMap" uid="uid://dl0m0lj0amihi" path="res://assets/art/interview/no.tres" id="16_k2e4n"]
 [ext_resource type="BitMap" uid="uid://2ugj346p8bwc" path="res://assets/art/interview/water.tres" id="16_wtybp"]
 
 [sub_resource type="BitMap" id="BitMap_wtybp"]
@@ -91,7 +91,7 @@ offset_right = 2320.0
 offset_bottom = 977.0
 scale = Vector2(0.72, 0.72)
 texture_normal = ExtResource("12_wtybp")
-texture_click_mask = ExtResource("13_h3fcf")
+texture_click_mask = ExtResource("16_k2e4n")
 
 [node name="PaintingButton" type="TextureButton" parent="." unique_id=426063779]
 layout_mode = 0
