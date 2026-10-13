@@ -1000,8 +1000,9 @@ data/days/day_XX.tres
 
 - **左边列的是「今天通过面试的人」**（`GameState.passed_ids` 的顺序），不是当天全部出场者：
   面试的「录用」就是玩家的第一次筛选，组队是在**通过者里**挑满今天这一队（§12.7）。
-- **立绘不取景、不居中**：`PortraitComposer.portrait_texture()` 给的是 300×300 的整张画布，
-  头像框按自己的坐标系原位铺上去，露出来多少由取景窗决定（§12.4）。
+- **立绘不取景、不居中**：`PortraitComposer.portrait_texture()` 给的是整张立绘画布
+  （`600×675`），头像框按 `AvatarFrame.PORTRAIT_SCALE` 折算进自己的坐标系后原位铺上去，
+  露出来多少由取景窗决定（§12.4）。
 - **右半边复用 `resume.tscn`，位置靠「同一个场景」而不是靠对齐代码**：纸面用的是绝对偏移，
   所以把它实例化到组队场景里，位置与面试**逐像素相同**。`smoke_team_builder` 会把两边的
   栏目矩形与底纸位置拿来比，以后谁动了偏移都会当场红。
@@ -1036,21 +1037,32 @@ data/days/day_XX.tres
 
 ### 12.4 方头像框是怎么叠的
 
-一套三张同坐标系的 300×300 图（`AvatarFrame` 是它们的唯一出处）：
+头像框自己是**一套三张同坐标系的 300×300 图**（`AvatarFrame` 是它们的唯一出处）；
+立绘是**另一套坐标系**（`PortraitComposer.CANVAS × CANVAS_H` = 600×675），
+两者差一个 `AvatarFrame.PORTRAIT_SCALE = 300 / 600 = 0.5`：
 
 | 层 | 美术 | 作用 |
 | --- | --- | --- |
 | `Background` | `avatar_frame_background_phd.png` | 底板，**头像的底色**就是它；进队染绿 / 不进队染红（`self_modulate`） |
-| `Clip` → `Portrait` | `PortraitComposer.portrait_texture()` | 取景窗（`clip_contents`）+ 整身立绘，300×300 **原位**贴上去 |
+| `Clip` → `Portrait` | `PortraitComposer.portrait_texture()` | 取景窗（`clip_contents`）+ 整身立绘，按 `PORTRAIT_SCALE` 折算后**原位**铺开 |
 | `Frame` | `avatar_frame_phd.png` | 方框，压在最上 |
 
 - **不需要自动居中**：立绘按自己的坐标系铺满整个头像框（腿、矮人的帽檐都还在），
   只有取景窗里那一块露出来 —— 人物在框里的位置只由**立绘本身**决定，
-  所以整个控件里没有一句取景 / 居中计算。
+  所以整个控件里没有一句取景 / 居中的计算。
+  （唯一的例外是**水平方向**：取景窗自己的中心在 x=153，而立绘画布的中心在 x=300，
+  两个原点直接对齐会让人偏在窗口右侧 —— 所以横向按「画布中心 == 窗口中心」摆，
+  见 `FramedAvatar._portrait_center_offset_x()`；纵向不动，脸在画布上的高低是各画各的。）
 - **超出边框的部分自动截掉**是 `Clip.clip_contents` 干的：窗口摆在 `AvatarFrame.WINDOW`
-  （方框内沿围出来的透明区，实测量出来的），立绘按 `-窗口原点` 垫进去，
-  于是「画布上的 (26,23)」正好落在窗口左上角；窗口外的像素一律不画。
-- 三张图是**同一个坐标系**的，所以换尺寸只走 `FramedAvatar.set_pixel_size()`：
+  （方框内沿围出来的透明区，实测量出来的），立绘横向按上面的居中规则摆、
+  纵向按 `-窗口原点` 垫进去；窗口外的像素一律不画。
+- ⚠️ **两套画布尺寸必须显式换算**（`AvatarFrame.PORTRAIT_SCALE`）：立绘重画成 600×675
+  之后，若不折算就按 1:1 铺进 300×300 的框里，取景窗只框得到画布左上角那一小块 ——
+  脸和眼睛全在窗口外面，看上去就是「头像过小、只露出左上角」。自检盯着这个数。
+- 立绘矩形用的拉伸是 `STRETCH_SCALE`（**铺满**算好的矩形），不是 `keep_aspect_centered`：
+  后者会让贴图在矩形里居中留边，「画布原点 = 立绘矩形原点」这个前提就不成立了，
+  `-窗口原点` 的垫法随之错位。
+- 三层是**同一个坐标系**的，所以换尺寸只走 `FramedAvatar.set_pixel_size()`：
   控件边长换成 px，三层按 `px / 300` 一起缩放，立绘与窗口的相对位置不动。
 - 右下角的名额空位**就是同一个 `FramedAvatar`**：`set_candidate(null)` 只留底板和方框
   （空位），填进去的人用同一套配色（绿）。

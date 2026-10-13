@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="5_asawf"]
 [ext_resource type="Texture2D" uid="uid://csok7wd54o1wn" path="res://assets/art/interview/handbook_phd.png" id="5_h3fcf"]
 [ext_resource type="BitMap" uid="uid://4wg2b4fu0ffy" path="res://assets/art/interview/noticebd_phd.tres" id="5_ytunt"]
-[ext_resource type="PackedScene" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
+[ext_resource type="PackedScene" uid="uid://cu45yv8cffejs" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
 [ext_resource type="BitMap" uid="uid://x3y8g1h1mu3e" path="res://assets/art/interview/handbook_phd.tres" id="6_q4rqa"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_asawf"]
@@ -32,13 +32,24 @@ scale = Vector2(0.5086342, 0.50863427)
 texture = ExtResource("2_fa8i0")
 centered = false
 
+[node name="WaterButton" type="TextureButton" parent="." unique_id=2140988842]
+layout_mode = 0
+offset_left = -509.0
+offset_top = 1.0
+offset_right = 1757.0
+offset_bottom = 1275.0
+scale = Vector2(0.51, 0.51)
+texture_normal = ExtResource("14_k2e4n")
+texture_hover = ExtResource("15_4uqih")
+texture_click_mask = ExtResource("16_wtybp")
+
 [node name="Interviewee" parent="." unique_id=1881224001 instance=ExtResource("6_asawf")]
 layout_mode = 0
 offset_left = 400.0
 offset_top = 350.0
 offset_right = 400.0
 offset_bottom = 350.0
-scale = Vector2(1.5, 1.5)
+scale = Vector2(0.8, 0.8)
 
 [node name="TablePhd" type="Sprite2D" parent="." unique_id=1819501187]
 scale = Vector2(0.50863415, 0.5086342)
@@ -82,17 +93,6 @@ scale = Vector2(0.72, 0.72)
 texture_normal = ExtResource("12_wtybp")
 texture_click_mask = ExtResource("13_h3fcf")
 
-[node name="WaterButton" type="TextureButton" parent="." unique_id=2140988842]
-layout_mode = 0
-offset_left = -509.0
-offset_top = 1.0
-offset_right = 1757.0
-offset_bottom = 1275.0
-scale = Vector2(0.51, 0.51)
-texture_normal = ExtResource("14_k2e4n")
-texture_hover = ExtResource("15_4uqih")
-texture_click_mask = ExtResource("16_wtybp")
-
 [node name="PaintingButton" type="TextureButton" parent="." unique_id=426063779]
 layout_mode = 0
 offset_left = -509.0
@@ -112,8 +112,8 @@ layout_mode = 0
 visible = false
 layout_mode = 0
 
+[connection signal="pressed" from="WaterButton" to="." method="_on_water_button_pressed"]
 [connection signal="pressed" from="HandbookButton" to="." method="_on_handbook_button_pressed"]
 [connection signal="pressed" from="NoticeBoard" to="." method="_on_notice_board_pressed"]
 [connection signal="pressed" from="Approved" to="." method="_on_approved_pressed"]
 [connection signal="pressed" from="Nah" to="." method="_on_nah_pressed"]
-[connection signal="pressed" from="WaterButton" to="." method="_on_water_button_pressed"]

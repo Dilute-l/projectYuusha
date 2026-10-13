@@ -32,3 +32,7 @@ skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
 team_declaration = "我是我们村里最好的战士，还有村里最好的剑！"
 judgment = "法斯特的战斗水平还不错，而且出人意料的勇敢。"
 resume_stamp = ExtResource("6_stamp")
+portrait_eye = 101
+portrait_hair = 101
+portrait_mouth = 101
+portrait_hat = 0

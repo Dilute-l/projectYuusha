@@ -3,16 +3,18 @@ extends Control
 
 ## 一个**头像框头像**（ARCHITECTURE.md §12.4）：底板 + 裁切过的整身立绘 + 方框。
 ##
-## 三层都是同一套 300x300 坐标系的美术（常量与换算见 `AvatarFrame`）：
+## 三层的摆放都以「头像框自己的 300x300 坐标系」为准（常量与换算见 `AvatarFrame`）：
 ##
 ##     Background ── 底板，实心；**头像的底色**就是它，进队染绿 / 不进队染红
 ##     Clip ──────── 取景窗（`clip_contents`），窗口外的像素一律不画
-##       └ Portrait  候选人的整身立绘，300x300 **原位**贴上去，不缩放不居中
+##       └ Portrait  候选人的整身立绘（`PortraitComposer.portrait_texture()`），
+##                   按 `AvatarFrame.PORTRAIT_SCALE` 折算进本坐标系后**原位**铺开
 ##     Frame ─────── 方框，压在最上
 ##
-## ⚠️ 「超出边框的部分自动截掉」就是 Clip 干的这件事：立绘按自己的坐标系铺满整个
-##   头像框（腿、矮人的帽子边都还在），只有取景窗里那一块露出来 —— 所以整个头像
-##   不需要任何居中 / 取景计算，人物在框里的位置只由**立绘本身**决定。
+## ⚠️ 「超出边框的部分自动截掉」就是 Clip 干的这件事：立绘按自己的坐标系铺开
+##   （腿、矮人的帽檐都还在），只有取景窗里那一块露出来 —— 纵向不做任何取景 / 居中计算，
+##   人物在框里的高低只由**立绘本身**决定；横向只做一件事：
+##   让**立绘画布中心对上取景窗中心**（见 `_layout_layers()`，否则人会偏在窗口右边）。
 ##
 ## ⚠️ 本控件不认数据、不写状态：喂它一位候选人 + 一个底色，它就画出来。
 ##   「谁能进队」是规则（TeamValidator），「谁被选了」在 GameState（§0）。
@@ -109,8 +111,11 @@ func _refresh() -> void:
 func _refresh_portrait() -> void:
 	if _portrait == null:
 		return
-	# 整身立绘：300x300 原位，**不取景也不裁圆**（§12.4）
+	# 整身立绘：按自己的画布原位铺开，**不取景也不裁圆**（§12.4）
 	_portrait.texture = PortraitComposer.portrait_texture(candidate)
+	# 换人 / 第一次拿到贴图之后把矩形再算一遍：尺寸依赖画布常量，与贴图本身无关，
+	# 但空位 → 有人的切换必须让新贴图落在**算好的**那个矩形里。
+	_layout_layers(_render_size())
 
 
 func _refresh_tint() -> void:
@@ -148,13 +153,37 @@ func _layout_layers(px: float) -> void:
 	_frame.position = Vector2.ZERO
 	_frame.size = Vector2(px, px)
 
-	# 取景窗：方框内沿围出来的那一块；立绘按 -窗口原点 垫进去 ——
-	# 于是「画布上的 (26,23)」正好落在窗口的左上角，人物位置与画布一一对应。
+	# 取景窗：方框内沿围出来的那一块。
 	var window := AvatarFrame.window_rect(px)
 	_clip.position = window.position
 	_clip.size = window.size
-	_portrait.position = -window.position
-	_portrait.size = Vector2(px, px)
+
+	# 立绘有自己的画布（PortraitComposer.CANVAS × CANVAS_H），先按 k 折算成控件尺寸。
+	var k := px / float(AvatarFrame.CANVAS) * AvatarFrame.PORTRAIT_SCALE
+	var portrait_size := Vector2(PortraitComposer.CANVAS, PortraitComposer.CANVAS_H) * k
+
+	# ⚠️ **画布中心对窗口中心**，不是「两个左上角对齐」。
+	#
+	# 立绘里的人物都画在立绘画布的正中（各部件 bbox 中心 x ≈ 288~304，即画布中心 300），
+	# 而取景窗自己的中心在头像框坐标系的 x = 26 + 254/2 = 153 —— 拿两个原点对齐，
+	# 画布中心就会落在窗口右侧 71% 的地方（160px 的头像上偏右约 28px），看着就是「人偏在右边」。
+	# 错开多少 = (窗口宽 - 立绘折算后的宽) / 2，按头像框坐标系算，与渲染边长 px 无关。
+	#
+	# 纵向仍然按窗口原点垫进去：脸在画布上的高度是各画各的（矮人那张脸就在画布最底部，
+	# 是他「大帽子」的既定观感，见 AvatarFrame.PORTRAIT_SCALE），不做任何自动垂直居中。
+	var offset_x := _portrait_center_offset_x(window, portrait_size)
+	_portrait.position = Vector2(offset_x, -window.position.y)
+	_portrait.size = portrait_size
+	# 贴图**铺满**这个矩形（而不是 keep_aspect_centered：那样贴图会在矩形里居中留边，
+	# 于是「画布原点」不再等于立绘矩形的原点，按 -窗口原点 垫进去的算法就错位了）。
+	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
+
+
+## 让「立绘画布中心」落在「取景窗中心」所需的水平位移（控件坐标）。
+##
+## 自检直接对这个不变量下断言（画布中心 == 窗口中心），改版面时不会悄悄偏回去。
+func _portrait_center_offset_x(window: Rect2, portrait_size: Vector2) -> float:
+	return window.position.x + (window.size.x - portrait_size.x) * 0.5
 
 
 func _notification(what: int) -> void:

@@ -114,10 +114,21 @@ func rest_position() -> Vector2:
 	return _rest_position
 
 
-## 立绘整身的半宽：部件都画在同一张 300x300 的画布上、Sprite2D 居中摆放，
+## 立绘整身的半宽：部件都画在同一张 `CANVAS × CANVAS_H` 的画布上、Sprite2D 居中摆放，
 ## 所以整身宽度就是画布宽，再乘上节点缩放。
+##
+## ⚠️ 必须用立绘**自己的**画布常量（`PortraitComposer.CANVAS`）：它是 600，
+##   不是头像框那套 300 的画布。写错就等于「立绘只走了一半就停住」——
+##   左边还露着半个人，因为这函数是 offscreen_*_x() 唯一用来算「走多远」的量。
 func portrait_half_width() -> float:
 	return PortraitComposer.CANVAS * 0.5 * absf(scale.x)
+
+
+## 走出画面时**再多走**这么多像素（§13）。
+##
+## 「刚好走光」在演出里是不够的：这条 Tween 与「演出结束」之间差一帧（见 §5.6），
+## 差一帧就少走一点点，边缘上还会挂着几像素的人影 / 袖口。多给一段余量最稳。
+const OFFSCREEN_MARGIN := 160.0
 
 
 ## 画面右边外面：整身刚好完全离开画面的那个 x。
@@ -128,9 +139,11 @@ func offscreen_right_x() -> float:
 	return _local_x_at_edge(1.0) + portrait_half_width()
 
 
-## 画面左边外面：同样的算法，方向相反。
+## 画面左边外面：同样的算法，方向相反，**再多走 OFFSCREEN_MARGIN**（见那个常量）。
+##
+## 只影响「走出去」：走进来的起点用的是 offscreen_right_x()，两边互不牵连。
 func offscreen_left_x() -> float:
-	return _local_x_at_edge(-1.0) - portrait_half_width()
+	return _local_x_at_edge(-1.0) - portrait_half_width() - OFFSCREEN_MARGIN
 
 
 ## 把「画面某一边的边线」换算成本节点父坐标系里的 x。

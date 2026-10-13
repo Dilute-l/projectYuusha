@@ -75,17 +75,22 @@ extends Resource
 #   portrait_race = &"hu" → hu_body_phd.png
 #   portrait_eye  = 2     → tall_eye_phd2.png
 
-## 种族，对应 assets/art/portrait/{race}_body_phd.png 的前缀（hu / el / st）
+## 种族，对应 assets/art/portrait/{race}_body.png 的前缀（hu / el / st）
 @export var portrait_race: StringName = &"hu"
 
-## 眼睛差分编号 1..3（仅 hu / el 使用，st 忽略）
-@export var portrait_eye: int = 1
+## 部件编号一律是**四位数字**：<组><组内编号>（101 就是文件名里的 "0101"）。
+##
+##   eye / hair   组 01 = 男、02 = 女、99 = 特殊     仅 hu / el 使用，st 忽略
+##   mouth        组 01 = 通用、99 = 特殊            所有种族共用
+##   hat          组 01 = 矮人、02 = 其他、99 = 特殊
+##
+## 占位数据一律 101。完整规则见 scripts/util/portrait_composer.gd。
+@export var portrait_eye: int = 101
 
-## 头发差分编号 1..3（仅 hu / el 使用，st 忽略）
-@export var portrait_hair: int = 1
+@export var portrait_hair: int = 101
 
-## 嘴巴差分编号 1..3（仅 hu / el 使用，st 忽略）
-@export var portrait_mouth: int = 1
+@export var portrait_mouth: int = 101
 
-## 帽子差分编号 1..3（仅 st 使用，其余种族忽略）
-@export var portrait_hat: int = 1
+## 帽子：**可选件**。0 = 不戴帽子（除矮人外默认如此）；
+## 矮人填 101（= hat_0101）就戴上，换帽子只改后两位。
+@export var portrait_hat: int = 0
