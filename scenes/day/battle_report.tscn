@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dknvg2u31014o"]
 
-[ext_resource type="Texture2D" uid="uid://bxwueyowabxw1" path="res://assets/art/battle_report/driver_phd.png" id="1_m5q85"]
 [ext_resource type="Script" uid="uid://d1flxfdqte65y" path="res://scenes/day/battle_report.gd" id="1_x4kxj"]
-[ext_resource type="Texture2D" uid="uid://byc2u8r2w06dk" path="res://assets/art/battle_report/car_bkg_phd.png" id="2_exidj"]
+[ext_resource type="Texture2D" uid="uid://dvehvxgvxn0h" path="res://assets/art/battle_report/driver_night.png" id="2_tg3lx"]
+[ext_resource type="Texture2D" uid="uid://ckvbep5arqj42" path="res://assets/art/battle_report/cart.png" id="3_hrn5s"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="3_x4kxj"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="4_exidj"]
 [ext_resource type="Texture2D" uid="uid://d2qtbc8es4shp" path="res://assets/art/paper.png" id="4_tg3lx"]
@@ -26,11 +26,13 @@ one_shot = true
 autostart = true
 
 [node name="DriverPhd" type="Sprite2D" parent="." unique_id=1249870580]
-texture = ExtResource("1_m5q85")
+scale = Vector2(0.50863415, 0.5086342)
+texture = ExtResource("2_tg3lx")
 centered = false
 
 [node name="CarBkgPhd" type="Sprite2D" parent="." unique_id=1426394412]
-texture = ExtResource("2_exidj")
+scale = Vector2(0.5086342, 0.50863427)
+texture = ExtResource("3_hrn5s")
 centered = false
 
 [node name="BattleReportPhd" type="Sprite2D" parent="." unique_id=489911544]
@@ -97,7 +99,7 @@ text = "总分："
 layout_mode = 0
 
 [node name="ColorNight" type="CanvasModulate" parent="." unique_id=2032092794]
-color = Color(0.6623526, 0.7189713, 0.98323464, 1)
+color = Color(0.7965096, 0.8327613, 0.99017817, 1)
 
 [node name="Dialoguer" parent="." unique_id=408599518 instance=ExtResource("4_exidj")]
 visible = false
