@@ -99,6 +99,9 @@ func _check_legacy_data() -> void:
 	_check(liar.true_wisdom() == 15, "没写的 wisdom → 照简历走（15）")
 	_check(liar.claimed_attribute(&"strength") == 20, "claimed_attribute 读到的是纸面上那个数（20）")
 	_check(CandidateResource.ATTRIBUTE_KEYS.size() == 3, "属性键一共三个（strength / intelligence / wisdom）")
+	# 等级是**隐藏属性**：它不上简历纸，所以没有「简历值」那一半，也就不该混进这套机制
+	_check(not CandidateResource.ATTRIBUTE_KEYS.has(&"level"),
+			"等级（level）不在「简历值 vs 实际值」这套里（它是隐藏属性，§3.1）")
 	for key in CandidateResource.ATTRIBUTE_KEYS:
 		_check(liar.claimed_attribute(key) == liar.true_attribute(key) or key == &"strength",
 				"除被改写的那一项外，%s 的实际值与简历值一致" % key)

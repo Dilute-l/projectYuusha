@@ -167,6 +167,7 @@ res://
 class_name CandidateResource extends Resource
 @export var id: StringName
 @export var display_name: String
+@export var level: int = 1                      # 等级：**隐藏属性**，不上简历纸（见下）
 @export var strength: int = 0                   # 力量：**简历上写的**（他自称的）
 @export var intelligence: int = 0               # 智力：同上
 @export var wisdom: int = 0                     # 感知：同上
@@ -194,12 +195,13 @@ class_name CandidateResource extends Resource
 
 | 字段 | 含义 | 备注 |
 | --- | --- | --- |
+| `level` | 等级 | **隐藏属性：不上简历纸**（见下）。与职业共同构成「常理上限」，是手册常识那一侧的锚点；老 `.tres` 里没这一行 = 1 级 |
 | `strength` / `intelligence` / `wisdom` | 力量 / 智力 / 感知 | **简历上写的那三个数** = 他自称的身板，玩家在纸上看到的就是它（见下） |
 | `true_attributes` | 实际属性 | `{ "strength": int, "intelligence": int, "wisdom": int }`。**只写和简历不一样的那几项**；空 = 实际就是简历值 |
 | `race` | 种族 | `RaceDef`，见 §3.3；`data/races/{human,elf,dwarf}.tres` |
 | `job` | 职业 | `JobDef`，见 §3.3 |
 | `gender` | 性别 | **单个 `StringName`**（`&"男"` / `&"女"`）。曾写成 `Array[StringName]`，那是笔误 —— 那会让所有候选人这一栏长得一模一样 |
-| `age` | 年龄 | 简历上那一栏。旧的 `level` 字段已删除，「常理上限」现在由属性 + 职业 + 手册常识共同承担 |
+| `age` | 年龄 | 简历上那一栏。旧的 `level` 字段曾随「属性承担常理上限」一并删除，现在以**隐藏属性**的身份回来了（见上） |
 | `traits` | 特质 | `Array[TraitDef]`，可含多项；相性计算输入（§6.4） |
 | `experience` | 个人履历与奖项 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
 | `skill` | 专长 | 同上。**与 `experience` 共用一套扁平序号**，见 §10.6 |
@@ -241,19 +243,27 @@ candidate.true_strength()                  #  4 → 真正进结算的那个数
 > 于是每个字段都要维护两份、还得记住哪一份是真的。现在只有**一个偏差字典**，
 > 没有偏差的人连字段都不存在 —— 旧机制就是这么烂掉的。
 
+> **等级（`level`）为什么不在上面这张表里**：它也是「属性」，但它是**隐藏属性**（§3.1 字段表）——
+> 简历纸上根本没有它那一栏，于是不存在「纸上写的 vs 实际有的」这一对，`claimed_*` 那一半无从谈起。
+> 它就是一个普通字段，读它的人直接写 `member.level`（叙事规则的条件里就是这么用的）。
+> **别把它塞进 `true_attributes`**：那是个「偏差字典」，而它无偏可偏。
+> 这也和上面「为什么不用隐藏字段」不矛盾 —— 那条反对的是「把整套真相复制一份」，
+> 而不是「某一个字段本来就不给玩家看」。
+
 #### 自检（`smoke_true_attributes`）
 
 ```
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_true_attributes.tscn
 ```
 
-27 项，盯四件事：**老格式兼容**（`data/candidates/` 里没写 `true_attributes` 的每一位，
+28 项，盯五件事：**老格式兼容**（`data/candidates/` 里没写 `true_attributes` 的每一位，
 三项实际值都必须等于简历值 —— 判据是「那一行没写」，不是「不许有人吹牛」，
 所以以后真给某位候选人填上偏差，这条不会误红）、**只写一项**（另两项照简历走）、
 **两头各自读对**（把真 `resume.tscn` 实例化出来验纸面上是简历值、不是实际值；
 `CombatResolver.powerCaculation()` 验结算按实际值算分）、
 **工具与引擎的格式契约**（`candidate_generator.html` 写出去的那行字典字面量，
-交给 `str_to_var()` 真解析一遍）。全绿退出码 0。
+交给 `str_to_var()` 真解析一遍）、**隐藏属性别掺和**（`level` 不在 `ATTRIBUTE_KEYS` 里 ——
+它不上纸，没有「简历值」那一半）。全绿退出码 0。
 
 ### 3.2 简历条目（ResumeEntry）
 
@@ -282,7 +292,8 @@ data/asks/c_0001_1.json
 段级 `config` 全部照用，不需要任何额外机制。
 
 面试交互见 §6.2：玩家点击某一条 → 播出该条的 json（先问、后答）；是否可信，由玩家结合
-`strength / intelligence / wisdom / race / job / traits` 与手册常识自行判断。
+`strength / intelligence / wisdom / race / job / traits` 与手册常识自行判断
+（**等级不在这串里**：它是隐藏属性，玩家看不到，只能靠追问与常理去估 —— §3.1）。
 
 
 
@@ -402,7 +413,7 @@ signal run_finished(ending_id: StringName)
 2. 玩家点击某一条追问，播出该条的 `ResumeEntry.ask_path` 指的那份 json；
    序号 → 文件这一层统一走 `Resume.ask_path_of(candidate, entry_index)`（**约定只写在那一处**）；
 3. 玩家对照候选人的 `strength / intelligence / wisdom / race / job / traits` 与手册常识，
-   自行判断这条描述与回答是否可信。
+   自行判断这条描述与回答是否可信。（**等级是隐藏属性**，不在这串里 —— §3.1。）
 
 > **② 已实现**（`Interview` 阶段内）：点词条 → 菜单「追问」→ `resume.gd` 广播
 > `EventBus.resume_entry_asked(candidate_id, entry_index)` → `interview.gd` 拿到
@@ -1045,7 +1056,7 @@ var asked_entries: Dictionary = {}
 
 | 目录 | 粒度 | 装什么 |
 | --- | --- | --- |
-| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`，另有 `c_0101.tres`） | 姓名、种族（引用 `data/races/*.tres`）、职业（引用 `data/jobs/*.tres`）、性别、年龄、三项属性（**简历值**）、**实际属性**（`true_attributes`，只写偏差项，§3.1）、特质（引用 `data/traits/*.tres`）、**个人履历与奖项**（`experience`）、**专长**（`skill`）、**组队宣言**（`team_declaration`）、**简历印章**（`resume_stamp`，§10.6）、**拼装立绘配方**；每条履历/专长 = 描述 + 追问 json 的路径（内联 `sub_resource`，跟着本人走） |
+| `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`，另有 `c_0101.tres`） | 姓名、**等级**（`level`，隐藏属性，不上简历纸，§3.1）、种族（引用 `data/races/*.tres`）、职业（引用 `data/jobs/*.tres`）、性别、年龄、三项属性（**简历值**）、**实际属性**（`true_attributes`，只写偏差项，§3.1）、特质（引用 `data/traits/*.tres`）、**个人履历与奖项**（`experience`）、**专长**（`skill`）、**组队宣言**（`team_declaration`）、**简历印章**（`resume_stamp`，§10.6）、**拼装立绘配方**；每条履历/专长 = 描述 + 追问 json 的路径（内联 `sub_resource`，跟着本人走） |
 | `data/races/` | **一个种族一个文件**（`human` / `elf` / `dwarf`） | `RaceDef`：`id` / `display_name` / `description`。与立绘配方代号对应：`hu`→human、`el`→elf、`st`→dwarf |
 | `data/asks/` | **一条追问一份 json**（`c_0001_1.json` … `c_0025_3.json`，外加每人的 `<id>_status.json`） | 一份就是「一段对话」，格式与 `data/dialogue.json` 里的一段完全一致，所以 `Typer` 那套逐字显示 / 点击推进照用 |
 | `data/asks/` | **一条追问一个文件**（`c_0001_1.json` … 共 75 份） | 那一条的追问对话本身：行数组，每行 `{ speaker_name, text }`，格式同 `data/dialogue.json` 的一段 |
@@ -1084,6 +1095,7 @@ data/days/day_XX.tres
 - 换简历文案 / 加一条词条 / 调属性 → 编辑器里点开对应的 `data/candidates/*.tres`。
   **要让他吹牛**（纸上写的 ≠ 实际有的）就填那个 `true_attributes` 字典，只写和简历不一样的那几项
   （§3.1）—— 没填的人两个数相等，等于没吹。
+- **改等级**（隐藏属性，不上简历纸）→ 同一个文件里的 `level`，默认 1。
 - **改追问台词** → 点开那一条的 `ask_path` 指的 `data/asks/*.json`。写手可以完全不碰 `.tres`：
   说话人、行数、停顿时长（段级 `config`）都在 json 里。
 - **加一条追问** → `data/asks/` 下新建一份 json，再回候选人档案里把这一条的 `ask_path` 指过去。
@@ -1104,6 +1116,7 @@ data/days/day_XX.tres
 名单里的每个人都能在 `data/candidates/` 里查到、每条简历都齐了描述 + `ask_path` 两样、
 **每位候选人的每条追问 json 都真的存在且能解析**（75 份，路径写错 / 文件忘提交 / json 写坏都在这里炸）、
 **每位候选人都自带一段抬头文案**，以及 `GameState` 开局 / 换天时名单确实跟着换。
+候选人那**一条隐藏属性**（`level`）也在这一节兜底：每位都得 ≥ 1（默认 1，谁都不该填成 0 / 负数）。
 
 属性那一层的「简历值 vs 实际值」另有专门的 `smoke_true_attributes`（§3.1 尾）——
 它不查内容写得对不对，只查**两个数各自被谁读**：纸面读简历值、结算读实际值、老数据不受影响。

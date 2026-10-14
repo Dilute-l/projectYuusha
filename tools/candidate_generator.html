@@ -87,6 +87,8 @@
    「真实属性」那三栏是**真正进结算的**。后者只在「和简历不一样」时才填 ——
    留空表示实际 = 简历，.tres 里连 true_attributes 这一行都不写
    （ARCHITECTURE.md §3.1）。
+
+   等级（level）是**隐藏属性**：照写进 .tres，但不上简历纸，也没有「简历值 / 实际值」两说。
    ───────────────────────────────────────────────────────────────────────── */
 
 const SCRIPTS = {
@@ -123,6 +125,7 @@ function blankCandidate(n) {
   return {
     id: "c_" + String(n).padStart(4, "0"),
     display_name: "", strength: 10, intelligence: 10, wisdom: 10,
+    level: 1,                         // 等级：**隐藏属性**，不上简历纸（CandidateResource.level）
     // 真实属性：只有「和简历不一样」的那几项才填，"" = 与简历一致。
     // 界面上是三个独立的框 —— 它们各自对应 .tres 里那个字典的一项。
     true_attributes: { strength: "", intelligence: "", wisdom: "" },
@@ -170,6 +173,7 @@ function render() {
   basic.append(
     field("id（c_0001）", c.id, (v) => c.id = v.trim()),
     field("姓名 display_name", c.display_name, (v) => c.display_name = v),
+    field("等级 level（隐藏，不上简历纸）", c.level, (v) => c.level = intOf(v), "number"),
     field("力量 strength（简历上写的）", c.strength, (v) => c.strength = intOf(v), "number"),
     field("智力 intelligence（简历上写的）", c.intelligence, (v) => c.intelligence = intOf(v), "number"),
     field("感知 wisdom（简历上写的）", c.wisdom, (v) => c.wisdom = intOf(v), "number"),
@@ -368,6 +372,9 @@ function buildTres(c) {
   L.push('script = ExtResource("' + ids.script + '")');
   L.push("id = " + sn(c.id));
   L.push("display_name = " + q(c.display_name));
+  // 等级：隐藏属性，但**照样写出来** —— 它在 .tres 里看得见（策划要按它配叙事规则），
+  // 只是不上简历纸。不写的话就落回默认值 1，看不出「这位是几级」。
+  L.push("level = " + c.level);
   L.push("strength = " + c.strength);
   L.push("intelligence = " + c.intelligence);
   L.push("wisdom = " + c.wisdom);

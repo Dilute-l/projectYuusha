@@ -195,6 +195,20 @@ func _check_candidate_data() -> void:
 			declarations_ok = false
 	_check(declarations_ok, "每位候选人都自带一段组队宣言")
 
+	# 等级是**隐藏属性**（§3.1）：不上简历纸，但数据里必须有 —— 默认 1，
+	# 谁都不该填成 0 / 负数（那是「忘了填」或「填错了」，不是「没有等级」）。
+	var levels_ok := true
+	var lowest := 0
+	for id in DataDB.get_ids(&"candidates"):
+		var candidate := DataDB.get_candidate(id)
+		if candidate == null:
+			continue
+		if lowest == 0 or candidate.level < lowest:
+			lowest = candidate.level
+		if candidate.level < 1:
+			levels_ok = false
+	_check(levels_ok, "每位候选人的等级都 ≥ 1（最低 %d；等级不上简历纸，见 §3.1）" % lowest)
+
 	# 每天都要有写死的名单，slots 不能超过当天人数，名单里的人必须都在 data/candidates/ 里
 	var days_ok := true
 	var slots_ok := true

@@ -11,6 +11,18 @@ extends Resource
 
 @export var display_name: String
 
+## 等级：这位冒险者**真正的**水平（与职业共同构成「常理上限」，是手册常识那一侧的锚点）。
+##
+## ⚠️ **隐藏属性 —— 不上简历纸**。简历上那三围是「他自己写的」，等级不写给他：
+## 玩家看到的只有属性 / 职业 / 特质与手册，等级得靠追问和常理去估。
+## 所以它**不在 true_attributes 那套机制里**（那套管的是「纸面上写的数 vs 实际数」，
+## 而等级压根没有纸面上那一半 —— 别顺手把它塞进那个字典）。
+##
+## 用途：结算与叙事规则这类「需要知道这人到底几级」的地方
+## （`data/narrative/*.tres` 的条件就是拿 `member.level` 写的，见 scripts/resources/narrative_rule.gd）。
+## 默认 1：**老 .tres 里没有这一行 = 一级**，现有 26 份数据一行都不用改。
+@export var level: int = 1
+
 ## 三项属性 —— **简历上写的那三个数**（玩家在纸上看到的就是它，
 ## 也是他自称的身板）。真正进结算的是 true_attributes，见下。
 @export var strength: int = 0        # 力量

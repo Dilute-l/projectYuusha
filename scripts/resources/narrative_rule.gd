@@ -7,6 +7,11 @@ extends Resource
 
 ## 条件表达式，例如：
 ## "member.level < 3 and member.strength + member.intelligence + member.wisdom < 30"
+##
+## `member` 是一位 CandidateResource（字段名直接当属性用）：
+##   · `member.strength` 那一组是**简历上写的**数，`member.true_strength()` 那组才是实际值（§3.1）；
+##   · `member.level`（等级）是**隐藏属性** —— 玩家在简历上看不到它，
+##     所以「这人的等级配不上他吹的履历」这类条件只能在这里判，别指望纸上写着。
 @export_multiline var when: String = ""
 
 ## 占位符文案，例如：
