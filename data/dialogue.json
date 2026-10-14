@@ -36,7 +36,7 @@
 	{ "speaker_name": "阿板", "text": "Mysteries wind~" }
   ],
 	"Watercooler": [
-	{ "speaker_name": "饮水机", "text": "散发出一股强大的气场。" },
+	{ "speaker_name": "饮水机", "sound": "silent", "text": "散发出一股强大的气场。" },
 	{ "speaker_name": "饮水机", "text": "没人知道为什么在一个剑与魔法的世界中会有这东西。" }
   ],
 	"Watercooler_Night": [

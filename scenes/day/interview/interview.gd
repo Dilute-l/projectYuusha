@@ -22,6 +22,12 @@ extends Control
 ## 当前阶段（DayPhase.Phase）
 var _phase: int = DayPhase.Phase.DAY_BRIEFING
 
+## 点饮水机时播的音效。扩展名按**磁盘上的真实大小写**写（.WAV 是大写）：
+## 写成 .wav 在 Windows 上照样能播，但 Godot 会警告
+## 「Case mismatch … This file will not open when exported to other case-sensitive platforms」，
+## 导出到 Linux / macOS 就会真的没声音。
+const WATER_PATH: String = "res://assets/sound/water.WAV"
+
 @onready var _resume: Resume = get_node_or_null("Resume") as Resume
 @onready var _interviewee: Interviewee = get_node_or_null("Interviewee") as Interviewee
 @onready var _approved: TextureButton = get_node_or_null("Approved") as TextureButton
@@ -794,4 +800,5 @@ func _on_water_button_pressed() -> void:
 	if not _dialoguer.typer.load_dialogue("Watercooler"):
 		return
 	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
+	AudioService.play_sfx(WATER_PATH)
 	_dialoguer.play()

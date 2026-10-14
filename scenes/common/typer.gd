@@ -47,6 +47,20 @@ const SOUND_FILES: Dictionary = {
 	&"su": "susie",
 }
 
+## 「这一句完全不要音效」的标记值。
+##
+## 写在 sound 字段上（行级或段级 config 都认）：
+##
+##     { "speaker_name": "旁白", "sound": "silent", "text": "（沉默）" }
+##
+## 它**不是** SOUND_FILES 里的一个键 —— 它不是「另一个音效文件」，
+## 而是「一个都不播」。所以不进映射表，单独当哨兵值处理：
+## 进了 SOUND_FILES 反而会让 _resolve_sound() 去找一个不存在的 .wav 并警告。
+##
+## 和 sound_enabled = false 的区别：那是整台打字机一起关；这个是**只关这一句**，
+## 其余句子照常响。和 is_silent_char 的区别：那是「这些字符不响、别的照响」。
+const SILENT_SOUND: StringName = &"silent"
+
 # ---------------------------------------------------------------------------
 # 动作语法：不发声的字符（SILENT_CHAR）
 # ---------------------------------------------------------------------------
@@ -645,6 +659,24 @@ func _read_config_sound(cfg: Dictionary) -> StringName:
 	return name
 
 
+## 段级 / 行级共用的音效名解析：返回名字，或 SILENT_SOUND（这一句不发声）。
+##   - 合法音效名            → 它自己
+##   - SILENT_SOUND          → SILENT_SOUND
+##   - 空 / null / 未知名字  → fallback（调用方一般传 DEFAULT_SOUND）
+##
+## 未知名字给 fallback 而不是原样返回，是为了不让一个写错的名字变成
+## 「整段静音」——那样很难查（_resolve_sound 会在每个字上报一次警告）。
+func _resolve_sound_name(value: Variant, fallback: StringName) -> StringName:
+	if value == null:
+		return fallback
+	var name := StringName(String(value).strip_edges())
+	if name == &"":
+		return fallback
+	if name == SILENT_SOUND or SOUND_FILES.has(name):
+		return name
+	return fallback
+
+
 ## 把 JSON 数字转成正的 float；缺失或非法一律返回 0.0（表示「未指定」）
 func _as_positive_float(value: Variant) -> float:
 	if value is float or value is int:
@@ -693,15 +725,9 @@ func start_line(index: int) -> void:
 		if ld > 0.0:
 			char_duration = ld
 
-	# 音效同理：先复位到本段基准，再让本行的 sound 临时覆盖（只影响这一句）
-	char_sound = _base_sound
-	var line_sound: Variant = line.get("sound")
-	if line_sound != null and not String(line_sound).is_empty():
-		var ls := StringName(String(line_sound))
-		if SOUND_FILES.has(ls):
-			char_sound = ls
-		else:
-			push_warning("[Typer] 行内音效名「%s」未知，沿用本段音效「%s」" % [ls, _base_sound])
+	# 音效同理：先复位到本段基准，再让本行的 sound 临时覆盖（只影响这一句）。
+	# _resolve_sound_name 认三种：合法音效名 / silent（本句不发声）/ 未写（回退本段）。
+	char_sound = _resolve_sound_name(line.get("sound"), _base_sound)
 
 	# 一次性写入完整文本，再用 visible_characters 控制露出进度
 	text = _full_text
@@ -877,9 +903,11 @@ func _digits_at(text: String, from: int) -> String:
 	return out
 
 
-## 该字符是否应该发声：默认音效开启、且不在静音集合里
+## 该字符是否应该发声：默认音效开启、且这一句没被标成 silent、且不在静音集合里
 func is_voiced_char(char: String) -> bool:
 	if not sound_enabled or char.is_empty():
+		return false
+	if char_sound == SILENT_SOUND:
 		return false
 	return not is_silent_char(char)
 
@@ -906,6 +934,9 @@ func _resolve_silent_chars(cfg: Dictionary) -> String:
 ## 所以不需要自己管理 AudioStreamPlayer。
 func _play_char_sound() -> bool:
 	if not sound_enabled:
+		return false
+	# 这一句被标成 silent：一个字都不响（不是「播放失败」，所以不算错误）
+	if char_sound == SILENT_SOUND:
 		return false
 	var stream := _resolve_sound(char_sound)
 	if stream == null:
@@ -989,14 +1020,15 @@ func _normalize_line(entry: Dictionary) -> Dictionary:
 	if duration > 0.0:
 		line["char_duration"] = duration
 	# 行级音效（可选）。同样没写就不放这个键，开始播时回退到段级音效。
+	# silent 是哨兵值（这一句不发声），不是 SOUND_FILES 里的音效名，单独放行。
 	var sound: Variant = entry.get("sound")
 	if sound != null:
 		var sname := StringName(String(sound).strip_edges())
-		if SOUND_FILES.has(sname):
+		if sname == SILENT_SOUND or SOUND_FILES.has(sname):
 			line["sound"] = sname
 		elif not sname.is_empty():
-			push_warning("[Typer] 行内音效名「%s」未知，已忽略（可用：%s）" % [
-				sname, ", ".join(SOUND_FILES.keys())])
+			push_warning("[Typer] 行内音效名「%s」未知，已忽略（可用：%s，或 %s）" % [
+				sname, ", ".join(SOUND_FILES.keys()), SILENT_SOUND])
 	# 行级弹窗（可选）：值是 PopupOverlay 要显示的子节点名，例如 "AwardPhd"。
 	# 没写就不放这个键 ——「这一句不弹东西」和「弹一个名字是空串的」是两回事。
 	var popup_name := String(entry.get("popup", "")).strip_edges()
