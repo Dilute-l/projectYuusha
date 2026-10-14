@@ -283,7 +283,7 @@ func _run() -> void:
 	# ---- 13. 新一天：两条候选人 / 回忆 / 名额拦截 ----
 	await _check_new_day(vp)
 
-	# ---- 悬停高亮：只剩一个淡黄色矩形，没有描边 ----
+	# ---- 悬停高亮：只剩一个灰色矩形，没有描边（哪款灰见 smoke_hover_gray）----
 	_check_hover_style()
 
 
@@ -677,10 +677,10 @@ func _check_over_quota_guard(builder: Node, candidates: Array[CandidateResource]
 # ---------------------------------------------------------------------------
 
 
-## 悬停高亮 = 只有一个淡黄色矩形，没有描边。
+## 悬停高亮 = 只有一个灰色矩形，没有描边（全游戏共用同一款，见 smoke_hover_gray）。
 ## 直接量 StyleBox（不截图）：换个 .tres 就会在这儿响，不依赖渲染结果。
 func _check_hover_style() -> void:
-	var hover := load("res://ui/styles/resume_token_hover.tres") as StyleBoxFlat
+	var hover := load("res://ui/styles/hover_gray.tres") as StyleBoxFlat
 	_check(hover != null, "词条的悬停样式能加载")
 	if hover == null:
 		return

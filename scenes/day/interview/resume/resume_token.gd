@@ -7,7 +7,10 @@ extends Button
 ##   - 正文走 Button 自身的 text + 自动换行，Button 会自己算最小高度，
 ##     放进 VBoxContainer 不用固定高度，长句子也不会被裁掉；
 ##   - 悬停高亮是纯 theme_override_styles 做的（normal / hover 两个 StyleBox），
-##     不需要脚本插手，脚本里没有一处 _on_mouse_entered。
+##     **不需要脚本插手，脚本里没有一处 _on_mouse_entered。**
+##     其中 hover 那一份是**全游戏共用的** `ui/styles/hover_gray.tres`
+##     （简历 / 战报 / 设置三处同一款灰，见 ARCHITECTURE.md §10.6）——
+##     想改高亮的颜色就去改那个文件，别在这里烘一个自己的。
 ##
 ## ⚠️ 点击效果在**别处**：本控件只发 selected，由 resume.gd 订阅后在旁边弹出
 ##   词条菜单（「追问」按钮在里面）—— 见 §10.7。
