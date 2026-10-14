@@ -22,7 +22,7 @@ const WIDE_CANVAS := Vector2i(1600, 900)
 
 ## resume.tscn 里预摆的那枚印章用的贴图。期望值从**文件名**来，不抄场景里的 uid ——
 ## 换图时这里跟着改一行就够了，改不动就说明换的不是这一张。
-const STAMP_TEXTURE_PATH := "res://assets/art/interview/resume/resume_stamp_phd.png"
+const STAMP_TEXTURE_PATH := "res://assets/art/interview/resume/stamp/resume_stamp_real.png"
 
 var _failures: Array[String] = []
 var _checks: int = 0

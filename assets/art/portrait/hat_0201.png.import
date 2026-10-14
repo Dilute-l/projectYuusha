@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cd7wsjw4cuvnq"
-path="res://.godot/imported/resume_stamp_phd.png-7bb656a16bed3e0a0675af08e2b533d1.ctex"
+uid="uid://d2flha7yhdsat"
+path="res://.godot/imported/hat_0201.png-787eff0957ee454035dc6d4cf34eb848.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/interview/resume/resume_stamp_phd.png"
-dest_files=["res://.godot/imported/resume_stamp_phd.png-7bb656a16bed3e0a0675af08e2b533d1.ctex"]
+source_file="res://assets/art/portrait/hat_0201.png"
+dest_files=["res://.godot/imported/hat_0201.png-787eff0957ee454035dc6d4cf34eb848.ctex"]
 
 [params]
 

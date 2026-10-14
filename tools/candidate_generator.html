@@ -96,8 +96,9 @@ const PORTRAIT_RACES = ["hu", "el", "st"];    // 立绘配方代号（hu 人 / e
 /* 简历印章。加一张新章 = 把 .png 丢进 STAMP_DIR，再把**文件名（不带扩展名）**加进 STAMPS。
    和上面 RACES / JOBS 一样是写死的短名单 —— 手打路径打错的话，Godot 载入时只会
    静默少一个 ext_resource（纸上不盖章），很难查。 */
-const STAMP_DIR = "res://assets/art/interview/resume/";
-const STAMPS = ["resume_stamp_phd"];
+const STAMP_DIR = "res://assets/art/interview/resume/stamp/";
+const STAMPS = ["resume_stamp_real", "resume_stamp_fake1", "resume_stamp_fake2",
+                "resume_stamp_fake3", "resume_stamp_fake4"];
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, props = {}, kids = []) => {

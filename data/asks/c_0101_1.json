@@ -6,6 +6,7 @@
 	{
 		"speaker_name": "法斯特",
 		"text": "我觉得我是",
-		"popup": "AwardPhd"
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
 	}
 ]

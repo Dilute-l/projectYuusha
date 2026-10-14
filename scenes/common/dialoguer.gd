@@ -116,17 +116,24 @@ func set_candidate(candidate: CandidateResource) -> void:
 	_candidate = candidate
 
 
-## 某一**句开始播** → 按这一行的 "popup" 键把对应的牌子亮出来。
+## 某一**句开始播** → 按这一行的 "popup" / "popup_stamp" 键把牌子亮出来。
 ##
-## 键的取值是「牌子下面哪个子节点」（例如 "AwardPhd"）；没写或写空就不弹。
-## 字号 / 位置全在 Popup.tscn 里，本函数只负责「亮哪一块 + 填什么字」。
+##   popup        牌子下面哪个子节点（例如 "AwardPhd"）；没写或写空就不弹。
+##   popup_stamp  牌子上盖哪枚章（"resume_stamp_fake1" 之类，看 DialoguePopup.STAMP_NAMES）；
+##                写 "none" = 这一句明确不盖，没写这个键 = 沿上一句 / 场景默认。
+##
+## 字号 / 位置全在 Popup.tscn 里，本函数只负责「亮哪一块 + 填什么字 + 盖哪枚章」。
 func _on_line_started(index: int, _text: String) -> void:
 	if _popup == null:
 		return
 	var line: Dictionary = {}
 	if index >= 0 and index < typer.lines.size():
 		line = typer.lines[index]
-	_popup.show_for(StringName(String(line.get("popup", "")).strip_edges()), _candidate)
+	_popup.show_for(
+		StringName(String(line.get("popup", "")).strip_edges()),
+		_candidate,
+		StringName(String(line.get("popup_stamp", "")).strip_edges()),
+	)
 
 
 ## 这一句**打完字了**。这里**故意什么都不做**。

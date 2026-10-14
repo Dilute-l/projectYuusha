@@ -65,8 +65,14 @@
     <div id="segs"></div>
     <p class="hint">
       每行的可选字段：<b>popup</b>（这一句亮起 Popup 里哪个子节点，例如 <code>AwardPhd</code>；
-      空着=不弹）、<b>sound</b>（行内音效名）、<b>charDuration</b>（这一行的字间隔秒数）。<br>
-      三者留空就<b>不会</b>写进 json —— 和 <code>typer.gd::_normalize_line()</code> 的取舍一致。
+      空着=不弹）、<b>popupStamp</b>（这一句牌子上盖哪枚章，见下）、
+      <b>sound</b>（行内音效名）、<b>charDuration</b>（这一行的字间隔秒数）。<br>
+      留空就<b>不会</b>写进 json —— 和 <code>typer.gd::_normalize_line()</code> 的取舍一致。
+      <b>popupStamp</b> 还要额外满足「这一行有 popup」：牌子没亮，章没处可盖。<br>
+      印章三个状态的写法：<b>跟随上一句</b> = 不写这个键；<b>明确不盖</b> = <code>"none"</code>；
+      <b>盖某一张</b> = 选 <code>STAMP_NAMES</code> 里那个名字（图在
+      <code>assets/art/interview/resume/stamp/</code>）。名字写错时 Godot 侧会 <code>push_warning</code>
+      并<b>不盖章</b> —— 白名单在 <code>popup.gd</code> 的 <code>STAMP_NAMES</code>，两边要一起加。
     </p>
   </div>
   <div class="pane">
@@ -84,8 +90,17 @@
 "use strict";
 
 // ── 数据模型 ────────────────────────────────────────────────────────────────
-// segments: [ { id: "段名", lines: [ {speaker, text, popup, sound, charDuration} ] } ]
+// segments: [ { id: "段名", lines: [ {speaker, text, popup, popupStamp, sound, charDuration} ] } ]
 let segments = [];
+
+/* 牌子上的印章：值 = DialoguePopup.STAMP_NAMES 里的名字（写进 json 的 popup_stamp 键）。
+   短名单写死在这里，和 code 里的 STAMP_NAMES 是同一份 —— 手打路径写错的话，
+   Godot 侧只会静默少一枚章（牌子照弹，就是不盖章），数据里根本看不出来。
+   加一张新章 = 把 .png 丢进 STAMP_DIR + 这里加一行 + popup.gd 的 STAMP_NAMES 加一行。 */
+const STAMP_DIR = "res://assets/art/interview/resume/stamp/";
+const STAMP_NAMES = ["resume_stamp_real", "resume_stamp_fake1", "resume_stamp_fake2",
+                     "resume_stamp_fake3", "resume_stamp_fake4"];
+const STAMP_NONE = "none";   // 哨兵：这一句明确不盖章（与「没写这个键」不同）
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, props = {}, kids = []) => {
@@ -107,7 +122,7 @@ function render() {
         oninput: (e) => { seg.id = e.target.value; update(); } }),
       el("span", { className: "hint", textContent: seg.lines.length + " 行" }),
       el("button", { className: "tiny", textContent: "+ 行", onclick: () => {
-        seg.lines.push({ speaker: "", text: "", popup: "", sound: "", charDuration: "" });
+        seg.lines.push({ speaker: "", text: "", popup: "", popupStamp: "", sound: "", charDuration: "" });
         render();
       }}),
       el("button", { className: "tiny", textContent: "删段", onclick: () => {
@@ -117,9 +132,29 @@ function render() {
 
     const wrap = el("div", { className: "seg" }, [head]);
     seg.lines.forEach((ln, li) => {
+      // 印章下拉：只有这一行真的弹牌子（popup 非空）时才亮 —— 牌子都没亮，章无处可盖。
+      const stampSel = el("select", {
+        title: "popup_stamp：这一句牌子上盖哪枚章（" + STAMP_DIR + "）",
+        onchange: (e) => { ln.popupStamp = e.target.value; update(); },
+      }, [
+        el("option", { value: "", textContent: "印章：跟随上一句 / 场景默认", selected: !ln.popupStamp }),
+        el("option", { value: STAMP_NONE, textContent: "印章：明确不盖", selected: ln.popupStamp === STAMP_NONE }),
+        ...STAMP_NAMES.map((n) => el("option", {
+          value: n, textContent: "印章：" + n, selected: ln.popupStamp === n,
+        })),
+      ]);
+      stampSel.disabled = ln.popup.trim() === "";
+
       const meta = el("div", { className: "meta" }, [
         el("input", { type: "text", value: ln.popup, placeholder: "popup（子节点名，可空）",
-          oninput: (e) => { ln.popup = e.target.value; update(); } }),
+          oninput: (e) => {
+            ln.popup = e.target.value;
+            // 没弹牌子 = 用不上印章，顺手把这个键清掉，免得 json 里留下一句
+            // 看着像生效、实际从没被读过的 popup_stamp。
+            if (ln.popup.trim() === "") ln.popupStamp = "";
+            render();
+          } }),
+        stampSel,
         el("input", { type: "text", value: ln.sound, placeholder: "sound（可空）",
           oninput: (e) => { ln.sound = e.target.value; update(); } }),
         el("input", { type: "text", value: ln.charDuration, placeholder: "char_duration（可空）",
@@ -153,6 +188,9 @@ function render() {
 function lineObject(ln) {
   const o = { speaker_name: ln.speaker, text: ln.text };
   if (ln.popup.trim() !== "") o.popup = ln.popup.trim();
+  // popup_stamp 只在**这一行真的弹牌子**时写：牌子没亮的话，Godot 侧这个键根本不会被读，
+  // 写进去只会让后来的人以为它生效了。
+  if (ln.popup.trim() !== "" && ln.popupStamp.trim() !== "") o.popup_stamp = ln.popupStamp.trim();
   if (ln.sound.trim() !== "") o.sound = ln.sound.trim();
   const d = parseFloat(ln.charDuration);
   if (!Number.isNaN(d) && d > 0) o.char_duration = d;
@@ -192,7 +230,7 @@ function update() {
 
 // ── 动作 ────────────────────────────────────────────────────────────────────
 $("#addSeg").onclick = () => {
-  segments.push({ id: "", lines: [{ speaker: "", text: "", popup: "", sound: "", charDuration: "" }] });
+  segments.push({ id: "", lines: [{ speaker: "", text: "", popup: "", popupStamp: "", sound: "", charDuration: "" }] });
   render();
 };
 
@@ -247,6 +285,7 @@ $("#fileInput").onchange = async (e) => {
     speaker: String(o.speaker_name ?? o.speaker ?? ""),
     text: String(o.text ?? o.dialogue ?? ""),
     popup: String(o.popup ?? ""),
+    popupStamp: String(o.popup_stamp ?? ""),
     sound: String(o.sound ?? ""),
     charDuration: o.char_duration != null ? String(o.char_duration) : "",
   });
@@ -269,8 +308,9 @@ $("#fileInput").onchange = async (e) => {
 segments = [{
   id: "day1_briefing",
   lines: [
-    { speaker: "面试官", text: "下一位。", popup: "", sound: "", charDuration: "" },
-    { speaker: "棍木", text: "请看这个。", popup: "AwardPhd", sound: "", charDuration: "" },
+    { speaker: "面试官", text: "下一位。", popup: "", popupStamp: "", sound: "", charDuration: "" },
+    { speaker: "棍木", text: "请看这个。", popup: "AwardPhd", popupStamp: "resume_stamp_fake1",
+      sound: "", charDuration: "" },
   ],
 }];
 render();

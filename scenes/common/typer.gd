@@ -1029,9 +1029,15 @@ func _normalize_line(entry: Dictionary) -> Dictionary:
 		elif not sname.is_empty():
 			push_warning("[Typer] 行内音效名「%s」未知，已忽略（可用：%s，或 %s）" % [
 				sname, ", ".join(SOUND_FILES.keys()), SILENT_SOUND])
-	# 行级弹窗（可选）：值是 PopupOverlay 要显示的子节点名，例如 "AwardPhd"。
+	# 行级弹窗（可选）：值是 Popup 要显示的子节点名，例如 "AwardPhd"。
 	# 没写就不放这个键 ——「这一句不弹东西」和「弹一个名字是空串的」是两回事。
 	var popup_name := String(entry.get("popup", "")).strip_edges()
 	if not popup_name.is_empty():
 		line["popup"] = popup_name
+	# 行级弹窗上的印章（可选）：值是印章名（见 DialoguePopup.STAMP_NAMES），
+	# 例如 "resume_stamp_fake1"；写 "none" = 这一句明确不盖章。
+	# 本键**只在同句写了 popup 时才有意义**（牌子都没亮，章往哪儿盖）。
+	var stamp_name := String(entry.get("popup_stamp", "")).strip_edges()
+	if not stamp_name.is_empty():
+		line["popup_stamp"] = stamp_name
 	return line

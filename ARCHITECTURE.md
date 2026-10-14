@@ -577,9 +577,15 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 
 ```gdscript
 # data/candidates/c_0001.tres
-resume_stamp = ExtResource("7_stamp")   # → assets/art/interview/resume/resume_stamp_phd.png
+resume_stamp = ExtResource("7_stamp")   # → assets/art/interview/resume/stamp/resume_stamp_real.png
 # 没写这一行的候选人 → 不盖章
 ```
+
+> **图案目录只有一个**：`assets/art/interview/resume/stamp/`，里面是
+> `resume_stamp_<real|fakeN>.png`。文件名就是「这张章是真是假」的记号 ——
+> `real` 是真章（「行」字印），`fake1..4` 是假章。**加一张新章 = 丢一个 .png 进去**，
+> 然后按需要把它写进候选人的 `resume_stamp`（简历）或对话行的 `popup_stamp`（牌子）。
+> 没有 `_phd` 后缀那种占位命名了。
 
 `resume.gd::_apply_stamp()` 是它唯一的落点，规则只有一条：
 
@@ -599,8 +605,52 @@ resume_stamp = ExtResource("7_stamp")   # → assets/art/interview/resume/resume
   而「节点名没对上」的后果是**印章静默消失**（`_apply_stamp` 找不到节点就直接返回），
   是最难查的一类 bug。两个名字都没有时 `_ready()` 会 `push_error`。
 - 数据样本：`data/candidates/c_0001.tres` 是**唯一**填了章的候选人，其余 25 位都留空。
-- `Popup.tscn` 里还有一枚同名印章（`AwardPhd/ResumeStampPhd`），那是**对话小牌子**上的装饰，
-  和这一枚走的是两条路 —— 它归 `DialoguePopup` 管，不看 `resume_stamp`。
+
+#### 牌子上的印章（`DialoguePopup`）：同一套图，但**由台词决定**
+
+`Popup.tscn` 上还站着一枚章（`PopupStamp`），盖在**对话小牌子** `AwardPhd` 的位置上。
+它和简历那枚**共用同一批图**，但「显不显示、盖哪张」的来源完全不同：
+
+| | 简历那枚（`ResumeStamp`） | 牌子这枚（`PopupStamp`） |
+| --- | --- | --- |
+| 谁决定 | **候选人数据** `CandidateResource.resume_stamp` | **对话那一行** 的 `popup_stamp` 键 |
+| 落点 | `resume.gd::_apply_stamp()` | `popup.gd::_apply_stamp()` |
+| 粒度 | 一个人一枚（整局固定） | 一句台词一枚（同一人可换） |
+
+```jsonc
+// data/asks/c_0101_1.json —— 某一行
+{ "speaker_name": "法斯特", "text": "我觉得我是",
+  "popup": "AwardPhd",                      // 先亮牌子，印章才有地方盖
+  "popup_stamp": "resume_stamp_real" }      // 再决定这一句盖哪张
+```
+
+`popup_stamp` 有**三个状态**，缺一个都表达不了完整的意图：
+
+| 写法 | 这一句的章 |
+| --- | --- |
+| `"popup_stamp": "resume_stamp_fake1"` | 换上这张并显示（名字必须在 `DialoguePopup.STAMP_NAMES` 里） |
+| `"popup_stamp": "none"` | **明确不盖**（`DialoguePopup.STAMP_NONE`） |
+| 不写这个键 | **跟随上一句 / 场景默认**（`show_for()` 进门前先把状态记下来再放回去） |
+
+- **为什么要 `"none"` 这个哨兵**：另外两档是「盖某张」和「沿用上一句」，
+  没有它就写不出「这一段后面不盖章了」—— 只能靠「再盖一张透明图」这种歪招。
+- **为什么白名单写死在代码里**（`STAMP_NAMES`）：路径写错在 Godot 里只会**静默少一张图**，
+  数据里根本看不出来。白名单让错写在运行期当场 `push_warning`，顺带让两个生成器有确定的候选项。
+  **加一张新章 = 丢 .png 进 `STAMP_DIR` + `STAMP_NAMES` 加一行 + 生成器那两处短名单各加一行。**
+- **`popup_stamp` 只在同一行写了 `popup` 时才有意义**（牌子都没亮，章往哪儿盖）：
+  `typer._normalize_line()` 两个键各自独立保留，但生成器在下拉框上就挡住了这种情况。
+- **章槽挂在「牌子自己」底下**（`AwardPhd/PopupStamp`，**不是**牌子控件根节点下）：
+  章的位置是写死的节点偏移（`(541,410)`，正落在牌面里），所以每块牌子各自带自己的章槽，
+  跟着自己的版面走。**加一块新牌子 = 在它底下放一个 `PopupStamp` 子节点**，
+  它就跟自己那块牌子的版面走了；新牌子不盖章就什么都不用放。
+  共用一个根下的槽会踩两个坑（都是自检当场抓出来的）：
+  ① 「这一句没写 `popup_stamp`」的**沿用**语义会跨牌子生效 —— 换牌子时把上一块的章
+	 按旧位置盖到新牌子上；② 牌子收起来时章自己的 `visible` 还是 true（父节点盖着看不出来），
+	 谁把牌子重新显示出来它就诈尸。所以 `hide_all()` 是**递归**的，换绑时还要把旧槽的
+	 `texture` 一起摘干净（「空就是空」，和简历那枚同一条规矩）。
+- **这块牌子没有章槽、数据却写了 `popup_stamp`** → `push_warning` 且不盖（不会去盖别人家的槽）。
+- 位置 / 缩放 / `centered` 同样**不碰**（写在 `Popup.tscn` 上），换一张尺寸不同的章不用改代码。
+- 自检见下面的 `smoke_dialogue_popup`。
 
 #### 词条：两个列表共用一套「扁平序号」
 
@@ -621,6 +671,31 @@ static func ask_path_of(candidate, entry_index) -> String    # 序号 → 追问
 
 `interview.gd`（真的去问）与 `team_builder.gd`（重播回忆）都调 `ask_path_of()` ——
 **「序号怎么算」这条约定只写在那一处**，两边不必各自记住它。
+
+#### 自检（`smoke_dialogue_popup`）
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_dialogue_popup.tscn
+```
+
+25 → 35 项，专门盯**牌子上的印章**这条链路（它属于「静默消失 / 静默串台」型功能：
+名字写错、节点改名、图搬家、换了牌子，画面上只是多一枚或少一枚章，隔着对话框根本看不出来）：
+
+- `STAMP_NAMES` 里每一张章都真的有对应贴图、真章假章都在名单里；
+- 不在白名单里的名字**取不到图**（返回 null，绝不猜路径）；
+- 牌子本体：章槽挂在牌子自己底下、根节点下**没有**共用槽、刚挂上去什么都不显示、
+  还没显示任何牌子时**不预先绑槽**；
+- `show_for` 三个状态各验一条：写了名字就盖那张、`"none"` 明确不盖（连图一起摘干净）、
+  不写这个键就**沿用上一句**已经盖上的那张；
+- 名字写错时**宁可空着也不拿上一张凑**；换一句不弹牌子 → 牌子与章一起收；
+- **跨牌子不串台**（临时造一块 `NoticeBoardPhd`）：换到没有章槽的牌子时，
+  上一块的章既不显示、`texture` 也被摘干净，写 `popup_stamp` 也不会盖到别人家的槽上；
+  换回来时 `AwardPhd` 自己的槽照旧可用；
+- 填字规则：牌子上的 `Name` 跟着候选人走，不喂候选人时不改字；
+- **数据链路**：`data/asks/*.json` 里凡写了 `popup` 的行，`popup_stamp` 必须在白名单里
+  —— 挡的是「生成器里选了个名字、Godot 侧还没加」这种两边不同步的错。
+
+全绿退出码 0。
 
 #### 状态区也是可追问的（序号 -1）
 
@@ -1039,7 +1114,8 @@ data/days/day_XX.tres
 
 头像框自己是**一套三张同坐标系的 300×300 图**（`AvatarFrame` 是它们的唯一出处）；
 立绘是**另一套坐标系**（`PortraitComposer.CANVAS × CANVAS_H` = 600×675），
-两者差一个 `AvatarFrame.PORTRAIT_SCALE = 300 / 600 = 0.5`：
+两者差一个 `AvatarFrame.PORTRAIT_SCALE = 0.6`（取 0.6 而不是刚好对折的 0.5：
+取景窗是「头肩像」画幅，脸占窗口约 3/4 宽最像原来那版；0.5 会小一圈、0.75 起发梢就被裁到）：
 
 | 层 | 美术 | 作用 |
 | --- | --- | --- |
@@ -1086,8 +1162,8 @@ data/days/day_XX.tres
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_team_builder.tscn
 ```
 
-124 项：左半边只列通过者（被否掉的不出现）、头像框三张美术的来源与取景窗几何、
-**立绘按 −窗口原点 原位贴（不居中）且比窗口大**（= 超出的部分真的会被裁掉）、
+125 项：左半边只列通过者（被否掉的不出现）、头像框三张美术的来源与取景窗几何、
+**立绘按 `PORTRAIT_SCALE` 折算后铺进取景窗、且画布中心与窗口中心对齐（横向居中）**、
 **头像框与空位确实按 `AVATAR_SIZE` / `SLOT_SIZE` 渲染**、
 一进来右半边是空的、点头像才铺简历、**按钮的树序在头像之前**（藏起来时真被压住）、
 **收起来时按钮矩形完全落在头像矩形内 / 展开后各留 14px 压着框边**、
