@@ -11,10 +11,30 @@ extends Resource
 
 @export var display_name: String
 
-## 三项属性（玩家可见，作为对照简历描述的判断依据）
+## 三项属性 —— **简历上写的那三个数**（玩家在纸上看到的就是它，
+## 也是他自称的身板）。真正进结算的是 true_attributes，见下。
 @export var strength: int = 0        # 力量
 @export var intelligence: int = 0    # 智力
 @export var wisdom: int = 0          # 感知
+
+## 真实属性：**这具身板实际有多少**（取值一律走 true_attribute / true_strength 这组助手）。
+##
+## 有了它，简历上写的和实际的就是两回事：`strength` 是「他自己写在纸上的」，
+## 这里是他「真有」的。玩家看不到这一份 —— 他只能靠追问、手册常识和常理去猜。
+##
+## 格式：{ "strength": int, "intelligence": int, "wisdom": int }
+##   · 键就是上面那三个字段名（String / StringName 都认，`&"strength"` 一样查得到）；
+##   · **只写要改的那几项** —— 只在力量上吹了牛就写 { "strength": 4 }，
+##     另两项没写，就照简历走；
+##   · 空字典（默认）= 一个字都没吹，实际值就是简历值。
+##
+## .tres 里的写法（**没吹牛就一行都不写**，和 resume_stamp 同一条规矩 ——
+## 默认值本来也是 {}，写个空字典进去只会让 diff 变脏）：
+##   true_attributes = { "strength": 4, "wisdom": 12 }
+##
+## 谁负责哪一头：纸上的字读 strength（resume.gd），结算读 true_strength()
+## （combat_resolver.gd）。判断真伪的活不在本文件里 —— 本文件只提供「两个数都拿得到」。
+@export var true_attributes: Dictionary = {}
 
 ##种族
 @export var race: RaceDef
@@ -94,3 +114,56 @@ extends Resource
 ## 帽子：**可选件**。0 = 不戴帽子（除矮人外默认如此）；
 ## 矮人填 101（= hat_0101）就戴上，换帽子只改后两位。
 @export var portrait_hat: int = 0
+
+# ---------------------------------------------------------------------------
+# 属性取值（简历值 vs 实际值）
+# ---------------------------------------------------------------------------
+#
+# 「纸上写的」与「真有」怎么区分，**只在这几个函数里定** —— 别处一律不许自己写
+# `true_attributes.get(...)`：那样一来「没写这项 = 照简历走」这条兜底就会散到各处，
+# 哪天改了规则必然漏掉几处（旧版 HiddenProfile 就是这么烂掉的）。
+
+## 三项属性的键名。也是 true_attributes 的键，取值助手都收它。
+const ATTRIBUTE_KEYS: Array[StringName] = [&"strength", &"intelligence", &"wisdom"]
+
+
+## 简历上写的那一项（玩家在纸上看到的就是它）。
+## 不认识键时返回 0 并告警 —— 静默返回 0 会让人以为「他就是 0 力量」。
+func claimed_attribute(key: StringName) -> int:
+	match StringName(key):
+		&"strength":
+			return strength
+		&"intelligence":
+			return intelligence
+		&"wisdom":
+			return wisdom
+	push_warning("[CandidateResource] 没有这个属性：%s" % key)
+	return 0
+
+
+## 实际生效的那一项。**没写 / 写得不成数 = 照简历走**（兼容老格式：老 .tres 里
+## 根本没有 true_attributes，那就是「实际 = 简历」）。
+func true_attribute(key: StringName) -> int:
+	var raw: Variant = true_attributes.get(StringName(key), null)
+	if raw is int or raw is float:
+		return int(raw)
+	if raw != null:
+		# 填了个「不是数」的东西：宁可退回简历值，也不要拿一个莫名其妙的数去结算
+		push_warning("[CandidateResource] true_attributes.%s 不是数字（%s），按简历值算"
+				% [key, raw])
+	return claimed_attribute(key)
+
+
+## 实际力量 —— 结算 / 战报读的是这个，不是 `strength`（纸上的那个）
+func true_strength() -> int:
+	return true_attribute(&"strength")
+
+
+## 实际智力
+func true_intelligence() -> int:
+	return true_attribute(&"intelligence")
+
+
+## 实际感知
+func true_wisdom() -> int:
+	return true_attribute(&"wisdom")

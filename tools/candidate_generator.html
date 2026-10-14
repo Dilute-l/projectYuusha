@@ -82,6 +82,11 @@
    简历印章：`.tres` 里的 resume_stamp 由下面的 STAMP_DIR / STAMPS 拼出来，
    选「（不盖章）」就**不写这一行** —— CandidateResource.resume_stamp 默认是 null，
    不写就是不盖（resume.gd::_apply_stamp 的规则，见 ARCHITECTURE.md §10.6）。
+
+   属性有两个数：力量 / 智力 / 感知那三栏是**简历上写的**（他自称的），
+   「真实属性」那三栏是**真正进结算的**。后者只在「和简历不一样」时才填 ——
+   留空表示实际 = 简历，.tres 里连 true_attributes 这一行都不写
+   （ARCHITECTURE.md §3.1）。
    ───────────────────────────────────────────────────────────────────────── */
 
 const SCRIPTS = {
@@ -92,6 +97,12 @@ const SCRIPTS = {
 const RACES = ["dwarf", "elf", "human"];      // data/races/*.tres
 const JOBS  = ["cleric", "fighter", "mage"];  // data/jobs/*.tres
 const PORTRAIT_RACES = ["hu", "el", "st"];    // 立绘配方代号（hu 人 / el 精灵 / st 矮人）
+
+/* true_attributes 的键。就是力量 / 智力 / 感知那三个字段名，一个不多一个不少 ——
+   键名对不上时 Godot 那边会当「没写这项」处理（CandidateResource.true_attribute），
+   不报错、静默照简历走，所以这里写死短名单，别让人手打。 */
+const ATTR_KEYS = ["strength", "intelligence", "wisdom"];
+const ATTR_LABELS = { strength: "真实力量", intelligence: "真实智力", wisdom: "真实感知" };
 
 /* 简历印章。加一张新章 = 把 .png 丢进 STAMP_DIR，再把**文件名（不带扩展名）**加进 STAMPS。
    和上面 RACES / JOBS 一样是写死的短名单 —— 手打路径打错的话，Godot 载入时只会
@@ -112,6 +123,9 @@ function blankCandidate(n) {
   return {
     id: "c_" + String(n).padStart(4, "0"),
     display_name: "", strength: 10, intelligence: 10, wisdom: 10,
+    // 真实属性：只有「和简历不一样」的那几项才填，"" = 与简历一致。
+    // 界面上是三个独立的框 —— 它们各自对应 .tres 里那个字典的一项。
+    true_attributes: { strength: "", intelligence: "", wisdom: "" },
     race: "human", job: "fighter", gender: "男", age: 20,
     traits: "",                       // 逗号分隔的 data/traits/*.tres 文件名
     portrait_race: "hu", portrait_eye: 1, portrait_hair: 1, portrait_mouth: 1, portrait_hat: 1,
@@ -156,11 +170,18 @@ function render() {
   basic.append(
     field("id（c_0001）", c.id, (v) => c.id = v.trim()),
     field("姓名 display_name", c.display_name, (v) => c.display_name = v),
-    field("力量", c.strength, (v) => c.strength = intOf(v), "number"),
-    field("智力", c.intelligence, (v) => c.intelligence = intOf(v), "number"),
-    field("感知", c.wisdom, (v) => c.wisdom = intOf(v), "number"),
+    field("力量 strength（简历上写的）", c.strength, (v) => c.strength = intOf(v), "number"),
+    field("智力 intelligence（简历上写的）", c.intelligence, (v) => c.intelligence = intOf(v), "number"),
+    field("感知 wisdom（简历上写的）", c.wisdom, (v) => c.wisdom = intOf(v), "number"),
+    trueAttrField(c, "strength"),
+    trueAttrField(c, "intelligence"),
+    trueAttrField(c, "wisdom"),
     field("年龄", c.age, (v) => c.age = intOf(v), "number"),
   );
+  // 一个横跨整行的说明：上面那三栏「真实…」是本工具最容易填错的地方
+  basic.appendChild(el("p", { className: "hint", style: "grid-column:1/-1",
+    textContent: "真实属性 = 结算实际用的值（true_attributes）。留空 = 与简历一致，"
+      + "生成的 .tres 里连这一行都不写；只有和简历不一样的那几项才填。" }));
   const sel = (label, value, setter, options) => {
     const wrap = el("div");
     wrap.appendChild(el("label", { textContent: label }));
@@ -217,6 +238,17 @@ function render() {
 }
 
 function intOf(v) { const n = parseInt(v, 10); return Number.isNaN(n) ? 0 : n; }
+
+/* 「真实属性」输入框。**留空 = 与简历一致** —— 也就是不写 true_attributes 的这一项。
+   三项都留空就整行都不写，所以「没撒谎」的候选人生成出来与老生成器逐个字节一致。 */
+function trueAttrField(c, key) {
+  const wrap = el("div");
+  wrap.appendChild(el("label", { textContent: ATTR_LABELS[key] + "（true_attributes." + key + "）" }));
+  wrap.appendChild(el("input", { type: "number", value: c.true_attributes[key],
+    placeholder: "留空 = 与简历一致",
+    oninput: on((v) => c.true_attributes[key] = v.trim()) }));
+  return wrap;
+}
 
 /* 简历印章选单。空值 = 不盖章（.tres 里那一行都不写）。 */
 function stampField(c) {
@@ -339,6 +371,14 @@ function buildTres(c) {
   L.push("strength = " + c.strength);
   L.push("intelligence = " + c.intelligence);
   L.push("wisdom = " + c.wisdom);
+  // true_attributes：**只写真要改的那几项**（键 = 上面那三个字段名）。
+  // 一项都没改就**一行都不写** —— 它的默认值就是 {}，写个空字典进去
+  // 只会让「没撒谎」的 .tres 与老生成器不一致。
+  const attrs = fakedOf(c);
+  if (attrs.length) {
+    L.push("true_attributes = { " +
+           attrs.map((k) => q(k) + ": " + intOf(c.true_attributes[k])).join(", ") + " }");
+  }
   L.push('race = ExtResource("' + ids.race + '")');
   L.push('job = ExtResource("' + ids.job + '")');
   L.push("gender = " + sn(c.gender));
@@ -403,9 +443,17 @@ function renderSide() {
 
   const ids = candidates.map((x) => x.id);
   const dup = ids.filter((v, i) => ids.indexOf(v) !== i);
-  $("#msg").textContent = dup.length ? "⚠ id 重复：" + [...new Set(dup)].join("、")
-                                     : candidates.length + " 位候选人";
+  // 「谁吹了牛」在名字栏里一眼能看到：吹 = 有 true_attributes 这一行
+  const liars = candidates.filter(fakedOf).length;
+  $("#msg").textContent = dup.length
+    ? "⚠ id 重复：" + [...new Set(dup)].join("、")
+    : candidates.length + " 位候选人" + (liars ? "（其中 " + liars + " 位在属性上吹了牛）" : "");
   $("#msg").className = dup.length ? "warn" : "ok";
+}
+
+/* 这位候选人填了哪几项真实属性（空数组 = 没吹牛，.tres 里不会有 true_attributes） */
+function fakedOf(c) {
+  return ATTR_KEYS.filter((k) => c.true_attributes[k] !== "");
 }
 
 function download(name, text) {

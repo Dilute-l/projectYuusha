@@ -71,15 +71,19 @@ static func resolve(day_index: int, member_ids: Array[StringName]) -> BattleRepo
 	return report
 
 ##后续要加入根据特质决定个人分数的地方，在这里加入对tempower的计算就好
-static func powerCaculation(member)->int:
+##
+## ⚠️ 读的是**实际属性**（`true_strength()` 那一组），不是简历上写的 `member.strength`：
+## 纸上的数是他自称的，结算只认真身板（§3.1）。没写 true_attributes 的人两者相等，
+## 所以老数据一行都不用改。
+static func powerCaculation(member: CandidateResource) -> int:
 	var tempower: int = 0
 	match member.job.id:
 		&"job.fighter":
-			tempower += member.strength * 10
+			tempower += member.true_strength() * 10
 		&"job.mage":
-			tempower += member.intelligence * 10
+			tempower += member.true_intelligence() * 10
 		&"job.cleric":
-			tempower += member.wisdom * 10
+			tempower += member.true_wisdom() * 10
 	return tempower
 	
 ##后需要加入根据羁绊队伍增减分可以在这里修改temptotal
