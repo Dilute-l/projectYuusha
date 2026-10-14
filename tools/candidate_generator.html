@@ -89,6 +89,10 @@
    （ARCHITECTURE.md §3.1）。
 
    等级（level）是**隐藏属性**：照写进 .tres，但不上简历纸，也没有「简历值 / 实际值」两说。
+
+   牌子印章：每行的追问对话可以多写一个 popup_stamp 键（值 = POPUP_STAMP_NAMES 里的名字），
+   盖在对话小牌子（Popup.tscn）上 —— 和简历那枚**共用同一批图**，
+   但由**台词**决定盖不盖、盖哪张（dialogue_generator.html 里是同一个下拉）。
    ───────────────────────────────────────────────────────────────────────── */
 
 const SCRIPTS = {
@@ -112,6 +116,12 @@ const ATTR_LABELS = { strength: "真实力量", intelligence: "真实智力", wi
 const STAMP_DIR = "res://assets/art/interview/resume/stamp/";
 const STAMPS = ["resume_stamp_real", "resume_stamp_fake1", "resume_stamp_fake2",
                 "resume_stamp_fake3", "resume_stamp_fake4"];
+
+/* 牌子印章（对话 json 的 popup_stamp 键）——和简历那枚**同一批图**，但短名单各写一份：
+   两边读的是同一个目录，但「简历上能盖哪些章」和「牌子上能盖哪些章」是两件事，将来可能分开。
+   ⚠️ 三处要一起加：这里 + popup.gd 的 STAMP_NAMES + dialogue_generator.html 的 STAMP_NAMES。 */
+const POPUP_STAMP_NAMES = STAMPS;
+const STAMP_NONE = "none";   // 哨兵：这一句明确不盖章（与「不写这个键」不同，见 §10.6）
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, props = {}, kids = []) => {
@@ -140,7 +150,7 @@ function blankCandidate(n) {
   };
 }
 function blankEntry() { return { description: "", lines: [blankLine(), blankLine()] }; }
-function blankLine(speaker = "", text = "") { return { speaker, text, popup: "" }; }
+function blankLine(speaker = "", text = "") { return { speaker, text, popup: "", popupStamp: "" }; }
 
 let candidates = [];
 let current = 0;
@@ -294,13 +304,39 @@ function entryFieldset(c, key, legend) {
 }
 
 function lineEditor(ln, arr, i) {
+  // 印章下拉：只有这一行真的弹牌子（popup 非空）时才亮 —— 牌子都没亮，章无处可盖。
+  const stampSel = el("select", {
+    title: "popup_stamp：这一句牌子上盖哪枚章（" + STAMP_DIR + "）",
+    style: "flex:0 0 150px",
+    onchange: (e) => { ln.popupStamp = e.target.value; refresh(); },
+  }, [
+    el("option", { value: "", textContent: "印章：跟随上一句", selected: !ln.popupStamp }),
+    el("option", { value: STAMP_NONE, textContent: "印章：明确不盖", selected: ln.popupStamp === STAMP_NONE }),
+    ...POPUP_STAMP_NAMES.map((n) => el("option", {
+      value: n, textContent: "印章：" + n, selected: ln.popupStamp === n,
+    })),
+  ]);
+  stampSel.disabled = ln.popup.trim() === "";
+
   return el("div", { className: "row", style: "margin:4px 0" }, [
     el("input", { type: "text", value: ln.speaker, placeholder: "说话人",
       oninput: on((v) => ln.speaker = v) }),
     el("input", { type: "text", value: ln.text, placeholder: "正文",
       oninput: on((v) => ln.text = v) }),
+    // ⚠️ 这里**不能**调 render()：那会重建整个表单，把正在打字的这个 input 换掉 ——
+    //    焦点、光标位置、中文输入法的候选状态全丢，表现就是「每敲一个字卡一下」。
+    //    popup 空不空只影响印章下拉的置灰状态，直接改那一个节点就够了。
     el("input", { type: "text", value: ln.popup, placeholder: "popup（可空）", style: "flex:0 0 130px",
-      oninput: on((v) => ln.popup = v) }),
+      oninput: (e) => {
+        ln.popup = e.target.value;
+        const off = ln.popup.trim() === "";
+        // 没弹牌子 = 用不上印章，顺手清掉，免得 json 里留一个永远不会被读的键
+        if (off) ln.popupStamp = "";
+        stampSel.disabled = off;
+        if (off) stampSel.value = "";
+        refresh();
+      } }),
+    stampSel,
     el("button", { className: "tiny", textContent: "删", onclick: () => { arr.splice(i, 1); render(); } }),
   ]);
 }
@@ -414,6 +450,9 @@ function buildTres(c) {
 function lineObject(ln) {
   const o = { speaker_name: ln.speaker, text: ln.text };
   if (ln.popup.trim() !== "") o.popup = ln.popup.trim();
+  // popup_stamp 只在**这一行真的弹牌子**时写：牌子没亮的话，Godot 侧这个键根本不会被读，
+  // 写进去只会让后来的人以为它生效了（和 dialogue_generator.html 同一套取舍）。
+  if (ln.popup.trim() !== "" && ln.popupStamp.trim() !== "") o.popup_stamp = ln.popupStamp.trim();
   return o;
 }
 function jsonText(lines) { return JSON.stringify(lines.map(lineObject), null, "\t") + "\n"; }
