@@ -18,9 +18,10 @@ extends Resource
 ## 所以它**不在 true_attributes 那套机制里**（那套管的是「纸面上写的数 vs 实际数」，
 ## 而等级压根没有纸面上那一半 —— 别顺手把它塞进那个字典）。
 ##
-## 用途：结算与叙事规则这类「需要知道这人到底几级」的地方
-## （`data/narrative/*.tres` 的条件就是拿 `member.level` 写的，见 scripts/resources/narrative_rule.gd）。
-## 默认 1：**老 .tres 里没有这一行 = 一级**，现有 26 份数据一行都不用改。
+## 用途：**个人战力就是拿它乘的** —— `主属性 × 等级 × 10`（combat_resolver.gd::powerCaculation）；
+## 叙事规则的条件也读它（`data/narrative/*.tres`，见 scripts/resources/narrative_rule.gd）。
+## 默认 1：**老 .tres 里没有这一行 = 一级**，现有 26 份数据一行都不用改
+## （等级 1 时战力与「没加等级」之前一模一样）。
 @export var level: int = 1
 
 ## 三项属性 —— **简历上写的那三个数**（玩家在纸上看到的就是它，

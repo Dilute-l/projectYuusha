@@ -178,9 +178,9 @@ func _check_resume_shows_claimed() -> void:
 	vp.queue_free()
 
 
-## 结算读的是**实际属性** —— 吹了牛的人在战报里只按真身板算分（§6.5）。
+## 结算读的是**实际属性**，并且**乘上等级** —— 吹了牛的人在战报里只按真身板算分（§6.5）。
 func _check_combat_uses_true() -> void:
-	print("[6.5] 战斗结算：读的是实际属性")
+	print("[6.5] 战斗结算：读实际属性，并且乘等级")
 	var job := DataDB.get_job(&"job.fighter")
 	_check(job != null and job.id == &"job.fighter", "取到 job.fighter（data/jobs/fighter.tres）")
 
@@ -188,13 +188,42 @@ func _check_combat_uses_true() -> void:
 	liar.job = job
 	liar.strength = 20
 	liar.true_attributes = { "strength": 4 }
+	_check(liar.level == 1, "没写 level 时就是 1 级（默认值，老数据靠它）")
 	_check(CombatResolver.powerCaculation(liar) == 40,
-			"战士按实际力量算分：4 × 10 = 40（不是简历的 20 × 10 = 200）")
+			"战士按实际力量算分：4 × 1 × 10 = 40（不是简历的 20 × 1 × 10 = 200）")
 
 	var honest := CandidateResource.new()
 	honest.job = job
 	honest.strength = 20
-	_check(CombatResolver.powerCaculation(honest) == 200, "没写 true_attributes → 照简历算（200）")
+	_check(CombatResolver.powerCaculation(honest) == 200, "没写 true_attributes → 照简历算（20 × 1 × 10）")
+
+	# 等级进公式：同一身板，几级就是几倍
+	var veteran := CandidateResource.new()
+	veteran.job = job
+	veteran.strength = 20
+	veteran.true_attributes = { "strength": 4 }
+	veteran.level = 3
+	_check(CombatResolver.powerCaculation(veteran) == 120, "3 级把分数乘上去：4 × 3 × 10 = 120")
+
+	var master := CandidateResource.new()
+	master.job = job
+	master.strength = 20
+	master.level = 5
+	_check(CombatResolver.powerCaculation(master) == 1000, "诚实的人照样乘：20 × 5 × 10 = 1000")
+
+	# 三个职业分支都得乘 —— 别只在剑士那条上改对
+	var primary_of := {
+		&"job.fighter": &"strength",
+		&"job.mage": &"intelligence",
+		&"job.cleric": &"wisdom",
+	}
+	for job_id in primary_of:
+		var member := CandidateResource.new()
+		member.job = DataDB.get_job(job_id)
+		member.set(primary_of[job_id], 7)
+		member.level = 4
+		_check(member.job != null and CombatResolver.powerCaculation(member) == 7 * 4 * 10,
+				"%s：主属性 7 × 4 级 × 10 = 280" % job_id)
 
 
 # ---------------------------------------------------------------------------

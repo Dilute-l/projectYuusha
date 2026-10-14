@@ -75,15 +75,21 @@ static func resolve(day_index: int, member_ids: Array[StringName]) -> BattleRepo
 ## ⚠️ 读的是**实际属性**（`true_strength()` 那一组），不是简历上写的 `member.strength`：
 ## 纸上的数是他自称的，结算只认真身板（§3.1）。没写 true_attributes 的人两者相等，
 ## 所以老数据一行都不用改。
+##
+## 公式：**主属性 × 等级 × 10**（主属性 = 职业对应的那一项）。
+##   · 等级是 `member.level` —— **隐藏属性**，玩家在简历上看不到（§3.1），
+##     所以「纸上写得漂亮但只有一级」的人，分数当场掉下来；
+##   · 等级 ≥ 1 由数据层兜底（smoke_m0 盯着，谁都不许填 0 / 负数），这里不做夹取 ——
+##     夹了只会把「数据填错了」这件事盖住。
 static func powerCaculation(member: CandidateResource) -> int:
 	var tempower: int = 0
 	match member.job.id:
 		&"job.fighter":
-			tempower += member.true_strength() * 10
+			tempower += member.true_strength() * member.level * 10
 		&"job.mage":
-			tempower += member.true_intelligence() * 10
+			tempower += member.true_intelligence() * member.level * 10
 		&"job.cleric":
-			tempower += member.true_wisdom() * 10
+			tempower += member.true_wisdom() * member.level * 10
 	return tempower
 	
 ##后需要加入根据羁绊队伍增减分可以在这里修改temptotal

@@ -256,11 +256,12 @@ candidate.true_strength()                  #  4 → 真正进结算的那个数
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_true_attributes.tscn
 ```
 
-28 项，盯五件事：**老格式兼容**（`data/candidates/` 里没写 `true_attributes` 的每一位，
+34 项，盯五件事：**老格式兼容**（`data/candidates/` 里没写 `true_attributes` 的每一位，
 三项实际值都必须等于简历值 —— 判据是「那一行没写」，不是「不许有人吹牛」，
 所以以后真给某位候选人填上偏差，这条不会误红）、**只写一项**（另两项照简历走）、
 **两头各自读对**（把真 `resume.tscn` 实例化出来验纸面上是简历值、不是实际值；
-`CombatResolver.powerCaculation()` 验结算按实际值算分）、
+`CombatResolver.powerCaculation()` 验结算按实际值算分**并乘等级** ——
+三个职业分支都验，一级的老数据分数一点没变）、
 **工具与引擎的格式契约**（`candidate_generator.html` 写出去的那行字典字面量，
 交给 `str_to_var()` 真解析一遍）、**隐藏属性别掺和**（`level` 不在 `ATTRIBUTE_KEYS` 里 ——
 它不上纸，没有「简历值」那一半）。全绿退出码 0。
@@ -440,6 +441,19 @@ signal run_finished(ending_id: StringName)
 
 ### 6.5 战报生成
 `combat_resolver.gd` 计算基础结果，`narrative_engine.gd` 用 `NarrativeRule` 把结果翻译成人话：
+
+**战力怎么算**（`combat_resolver.gd`，纯静态、不碰节点）：
+
+```
+个人战力 = 主属性 × 等级 × 10     主属性 = 职业对应的那一项（剑士→力量 / 法师→智力 / 牧师→感知）
+                                 等级   = CandidateResource.level（隐藏属性，见 §3.1）
+                                 属性读实际值（true_strength() 那一组），不是简历上写的那个数
+队伍战力 = Σ 个人战力             逐个相加，暂无相性 / 羁绊加成
+```
+
+> 就只有这两条：`breakdown` 里 `synergy` / `lie_penalty` / `event_bonus` / `luck` 目前都还是 0 占位（§6.6）。
+> 个人的扩展点在 `powerCaculation()`（特质之类加在这里），队伍的扩展点在 `finalPowerCaculation()`（羁绊之类）。
+> 等级是隐藏属性，所以「简历吹得漂亮、人其实只有一级」的分数会当场掉下来 —— 玩家看不见等级，只能靠追问与常识估。
 
 ```gdscript
 # data/narrative/claim_exposed.tres（示意）
