@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/day/interview/resume/resume_token_menu.tscn" id="4_menu"]
 [ext_resource type="FontFile" uid="uid://b8u6a2faqsh1d" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="5_yu2w1"]
 [ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="6_ltjbd"]
+[ext_resource type="StyleBox" path="res://ui/styles/hover_gray.tres" id="7_hover"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vkqoe"]
 
@@ -199,6 +200,7 @@ offset_bottom = 435.0
 theme_override_colors/font_disabled_color = Color(0.8750814, 0.8750814, 0.8750814, 0)
 theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
 theme_override_styles/normal = SubResource("StyleBoxEmpty_vkqoe")
+theme_override_styles/hover = ExtResource("7_hover")
 
 [node name="StrLabel" type="Label" parent="Status" unique_id=558376721]
 layout_mode = 0

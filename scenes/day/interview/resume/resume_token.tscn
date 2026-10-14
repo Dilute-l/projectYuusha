@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c30g1ll4c2ch5"]
 
 [ext_resource type="StyleBox" uid="uid://bn14dfgaycxc2" path="res://ui/styles/resume_token_normal.tres" id="1_xqu5p"]
-[ext_resource type="StyleBox" uid="uid://crx62o2g2680n" path="res://ui/styles/resume_token_hover.tres" id="2_w142m"]
+[ext_resource type="StyleBox" path="res://ui/styles/hover_gray.tres" id="2_w142m"]
 [ext_resource type="Script" uid="uid://cv4v3bhl5nmi1" path="res://scenes/day/interview/resume/resume_token.gd" id="3_n880a"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="4_silver"]
 

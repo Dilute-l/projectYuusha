@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scenes/day/interview/resume/resume_token_menu.gd" id="1_menu"]
 [ext_resource type="Texture2D" path="res://assets/art/interview/resume_token_menu_phd.png" id="2_panel"]
 [ext_resource type="StyleBox" path="res://ui/styles/resume_token_normal.tres" id="3_norm"]
-[ext_resource type="StyleBox" path="res://ui/styles/resume_token_hover.tres" id="4_hover"]
+[ext_resource type="StyleBox" path="res://ui/styles/hover_gray.tres" id="4_hover"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="5_silver"]
 
 [node name="ResumeTokenMenu" type="Control"]

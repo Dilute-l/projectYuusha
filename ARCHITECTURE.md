@@ -594,7 +594,38 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | `scenes/day/interview/resume/resume.gd` / `.tscn` | 简历整页 |
 | `scenes/day/interview/resume/resume_token.gd` / `.tscn` | 单条词条，根节点是 `Button`（`class_name ResumeToken`），对外信号 `selected(entry_index)` |
 | `scenes/day/interview/resume/resume_token_menu.gd` / `.tscn` | 词条旁的小菜单 |
-| `ui/styles/resume_token_normal.tres` · `resume_token_hover.tres` | 词条的 normal / hover 两个 StyleBox |
+| `ui/styles/resume_token_normal.tres` | 词条的 normal：无底色 + 一条下划线 |
+| `ui/styles/hover_gray.tres` | **全游戏共用的悬停高亮**（灰色圆角矩形）—— 简历 / 战报 / 设置三处都引它，见下 |
+
+#### 悬停高亮：全游戏只有一款（`ui/styles/hover_gray.tres`）
+
+**鼠标移到哪一栏，哪一栏就压一块半透明灰**，三个界面共用同一个 `.tres`：
+
+| 界面 | 会亮的栏 |
+| --- | --- |
+| 简历（本节） | 力量 / 智力 / 感知（`Status`）、个人履历与奖项的词条、专长的词条、词条菜单里的「追问」 |
+| 战报（§4 `battle_report.tscn`） | 「确认」 |
+| 设置（§14） | 「继续游戏」「退出游戏」 |
+
+- **颜色**：`Color(0.225, 0.225, 0.225, 0.6)` + 圆角 3，不描边。
+  取值就是把**属性值栏当年那款**抄了下来 —— 那会儿 `Status` 没写 hover 覆盖，走的是引擎默认主题的
+  Button hover；而词条用的是自己那份**暖黄**，于是同一张纸上两块高亮颜色不一样，三处观感也不统一。
+  现在它成了显式资源，另外两个界面引同一份。
+- **只有 hover 有底色**：normal 一律是空的（`StyleBoxEmpty`，或 `draw_center = false`）。
+  进界面就一片灰的话，那就不叫高亮了 —— 自检专门盯这一条。
+- **内边距（10 / 7）故意与 `resume_token_normal` 一模一样**：词条高度是 StyleBox 的
+  content margin 撑出来的，hover 那一帧换成别的内边距，整栏会在鼠标底下跳一下。
+  其它几处按钮都是写死的尺寸，不受影响（StyleBox 画的是整个控件矩形，内边距只管内容排版）。
+- **改颜色只改这一个文件**：三个场景各写一行 `theme_override_styles/hover = ExtResource(...)` 引它。
+  ⚠️ 在编辑器里点某个节点的那一栏，Godot 会**就地烘一个 `sub_resource`** 出来 —— 当时颜色还对，
+  但从此那个界面就脱钩了。所以自检查的是「**还引着同一个资源吗**」，不是「颜色碰巧一样」。
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_hover_gray.tscn
+```
+
+19 项：样式本身（颜色 / 圆角 / 不描边 / 内边距与词条 normal 一致）＋ 上表每一栏都引着同一份、
+且 normal 不画底色。全绿退出码 0。
 
 #### 版面：一栏一个 Container
 
@@ -1516,8 +1547,10 @@ SettingPage (CanvasLayer, layer = 100) [setting_page.gd]
 | **继续游戏** | 退出按钮的**正上方**（同宽、左缘对齐、间隔 20px） | 就是 `close()` —— 收起设置页接着玩 |
 | **退出游戏** | 画布正中 | 见下：第一下弹提醒，第二下才退出 |
 
-两颗按钮都是同一套观感（`Silver.ttf` + 三个 `StyleBoxEmpty`，和主菜单那几个文字按钮一致），
+两颗按钮都是同一套观感（`Silver.ttf` + normal / pressed 两个 `StyleBoxEmpty`，和主菜单那几个文字按钮一致），
 都 `focus_mode = 0`：不然点过一次之后按空格 / 回车会把它再触发一遍。
+**悬停高亮引的是全游戏共用的那一份**（`ui/styles/hover_gray.tres`，§10.6）——
+和简历页的属性值栏、战报页的「确认」同一款灰，原来这两颗按钮悬停时什么都没画。
 
 > 「继续游戏」和 Esc、和再点一次设置按钮走的是**同一个 `close()`**（§14.3），
 > 顺手也会把退出确认作废 —— 三条退路的行为完全一致。
