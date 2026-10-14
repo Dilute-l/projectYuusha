@@ -221,6 +221,9 @@ func _fill_fields(candidate: CandidateResource) -> void:
 	_set_label(_class_value, candidate.job.display_name if candidate.job != null else "")
 	_set_label(_gender_value, String(candidate.gender))
 	_set_label(_age_value, str(candidate.age))
+	# ⚠️ 这三项读的是**简历上写的那三个数**（`candidate.strength` / …），
+	#    **不是** `candidate.true_strength()` —— 纸上的是他自己填的，可能吹了牛；
+	#    真实值只进结算（combat_resolver.gd），从不往纸面上摆（§3.1）。
 	_set_label(_str_value, str(candidate.strength))
 	_set_label(_int_value, str(candidate.intelligence))
 	_set_label(_wis_value, str(candidate.wisdom))
