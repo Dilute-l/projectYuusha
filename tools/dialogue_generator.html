@@ -146,13 +146,19 @@ function render() {
       stampSel.disabled = ln.popup.trim() === "";
 
       const meta = el("div", { className: "meta" }, [
+        // ⚠️ 这里调 update()（只重画右侧 json），**不能**调 render()（重建整个段列表）：
+        //    重建会把正在打字的这个 input 换掉 —— 焦点、光标、输入法候选状态全丢，
+        //    表现就是「每敲一个字卡一下」。popup 空不空只影响下面那个下拉的置灰，直接改它。
         el("input", { type: "text", value: ln.popup, placeholder: "popup（子节点名，可空）",
           oninput: (e) => {
             ln.popup = e.target.value;
+            const off = ln.popup.trim() === "";
             // 没弹牌子 = 用不上印章，顺手把这个键清掉，免得 json 里留下一句
             // 看着像生效、实际从没被读过的 popup_stamp。
-            if (ln.popup.trim() === "") ln.popupStamp = "";
-            render();
+            if (off) ln.popupStamp = "";
+            stampSel.disabled = off;
+            if (off) stampSel.value = "";
+            update();
           } }),
         stampSel,
         el("input", { type: "text", value: ln.sound, placeholder: "sound（可空）",

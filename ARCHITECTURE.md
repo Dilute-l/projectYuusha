@@ -636,7 +636,9 @@ resume_stamp = ExtResource("7_stamp")   # → assets/art/interview/resume/stamp/
   没有它就写不出「这一段后面不盖章了」—— 只能靠「再盖一张透明图」这种歪招。
 - **为什么白名单写死在代码里**（`STAMP_NAMES`）：路径写错在 Godot 里只会**静默少一张图**，
   数据里根本看不出来。白名单让错写在运行期当场 `push_warning`，顺带让两个生成器有确定的候选项。
-  **加一张新章 = 丢 .png 进 `STAMP_DIR` + `STAMP_NAMES` 加一行 + 生成器那两处短名单各加一行。**
+  **加一张新章 = 丢 .png 进 `STAMP_DIR` + 下面三处短名单各加一行**：`popup.gd` 的
+  `STAMP_NAMES`、`tools/dialogue_generator.html` 的 `STAMP_NAMES`、
+  `tools/candidate_generator.html` 的 `POPUP_STAMP_NAMES`（后两个是同一个下拉，各存一份）。
 - **`popup_stamp` 只在同一行写了 `popup` 时才有意义**（牌子都没亮，章往哪儿盖）：
   `typer._normalize_line()` 两个键各自独立保留，但生成器在下拉框上就挡住了这种情况。
 - **章槽挂在「牌子自己」底下**（`AwardPhd/PopupStamp`，**不是**牌子控件根节点下）：
