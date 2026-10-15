@@ -28,7 +28,6 @@ offset_left = 557.0
 offset_top = 152.0
 offset_right = 1000.0
 offset_bottom = 222.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 48
 vertical_alignment = 2

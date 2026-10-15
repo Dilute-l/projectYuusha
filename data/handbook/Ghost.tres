@@ -7,7 +7,8 @@ script = ExtResource("1_ghost")
 id = &"ghost"
 category = &"monster"
 title = "幽灵"
-body = "栖息地：墓地、以及任何死过人的地方
+body = "
+栖息地：墓地、以及任何死过人的地方
 战斗方式：附身人类、穿墙、尖啸
 弱点：神术、光亮"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"
