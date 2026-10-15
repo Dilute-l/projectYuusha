@@ -3,7 +3,8 @@ extends Control
 
 ## 手册浮层（ARCHITECTURE.md §4 / §10.4）：玩家判断简历真伪的常识依据。
 ##
-## 做四件事：**组装可翻阅的条目列表**、**翻页**、**显示当前页**、**开着时把别处的输入挡掉**。
+## 做四件事：**组装可翻阅的条目列表**、**翻页**、**铺当前页**（标题 + 正文）、
+## **开着时把别处的输入挡掉**。
 ##
 ## ⚠️ 本控件不持有真身，只持有一份**视图快照**：
 ##   条目数据 → DataDB（data/handbook/*.tres）
@@ -23,10 +24,10 @@ const ICON_DIR := "res://assets/art/interview/Handbook/"
 ## 想调手感只改这一个数字。
 const PAGE_HITBOX_SIDE := 200
 
-## 正文字体。
+## 标题与正文的字体。
 ##
-## ⚠️ 不设它的话正文**一个字都看不见** —— 引擎默认字体没有中文字形
-## （实测 fallback_font.has_char("史") == false），而 HandbookEntry.body 是中文。
+## ⚠️ 不设它的话标题和正文**一个字都看不见** —— 引擎默认字体没有中文字形
+## （实测 fallback_font.has_char("史") == false），而 HandbookEntry.title / body 都是中文。
 ## 项目里 Silver.ttf 是带中文字形的（has_char("史") == true），所以先用它。
 ## 想换字体只改这一行；更好的做法是把 Silver 设成项目默认字体
 ## （ProjectSettings: gui/theme/custom_font），那样所有中文 UI 一起好 —— 但那会
@@ -34,12 +35,15 @@ const PAGE_HITBOX_SIDE := 200
 ##
 ## 注：**字号与颜色不在这里** —— 它们是版面的组成部分，写在 handbook.tscn 的
 ## Theme Overrides 上（代码里再覆盖一次会让 Inspector 的调整失效）。
+## ⚠️ 但字体本身必须在这里挂：Theme Overrides 里只写得出字号，写不出「换一个字体」，
+## 而默认字体没有中文字形（标题是中文，会整条消失）。
 const CONTENT_FONT_PATH := "res://assets/fonts/Silver.ttf"
 
 ## 本界面关闭了。上层（interview.gd）据此恢复别的操作。
 signal closed()
 
 @onready var _icon: Sprite2D = get_node_or_null("HandbookIcon") as Sprite2D
+@onready var _title: Label = get_node_or_null("HandbookTitle") as Label
 @onready var _content: RichTextLabel = get_node_or_null("HandbookContent") as RichTextLabel
 @onready var _next_page: TextureButton = get_node_or_null("nextpage") as TextureButton
 @onready var _last_page: TextureButton = get_node_or_null("lastpage") as TextureButton
@@ -65,22 +69,27 @@ func _ready() -> void:
 	# bbcode_enabled 默认是 false —— 不打开的话标签会原样显示成一堆方括号。
 	if _content != null:
 		_content.bbcode_enabled = true
-		_apply_content_font()
+	_apply_fonts()
 
 	_install_input_blocker()
 	_install_page_hitboxes()
 	visible = false
 
 
-## 给正文挂上带中文字形的字体（理由见 CONTENT_FONT_PATH）。
+## 给标题与正文挂上带中文字形的字体（理由见 CONTENT_FONT_PATH）。
+##
+## 两处都要挂，而且是**只在这里挂字体、不在这里改字号**：
+## 换字体 Theme Overrides 表达不了，字号则是版面 —— 见 handbook.tscn。
 ## 字体缺失就报错、退回默认字体 —— 默认字体画不出中文，但至少不会崩。
-func _apply_content_font() -> void:
-	if _content == null:
-		return
-	if ResourceLoader.exists(CONTENT_FONT_PATH):
-		_content.add_theme_font_override("normal_font", load(CONTENT_FONT_PATH))
-	else:
+func _apply_fonts() -> void:
+	if not ResourceLoader.exists(CONTENT_FONT_PATH):
 		push_error("[Handbook] 找不到正文字体：%s（退回默认字体，中文会画不出来）" % CONTENT_FONT_PATH)
+		return
+	var font: Font = load(CONTENT_FONT_PATH)
+	if _content != null:
+		_content.add_theme_font_override("normal_font", font)
+	if _title != null:
+		_title.add_theme_font_override("font", font)
 
 
 ## 全屏「挡板」：本界面开着时，鼠标点到哪儿都穿不到下面的场景去。
@@ -213,13 +222,14 @@ func _find_page(entry_id: StringName) -> int:
 # ---------------------------------------------------------------------------
 
 
-## 翻开第 index 页（会自动夹进合法范围），并铺上图标与正文。
+## 翻开第 index 页（会自动夹进合法范围），并铺上图标、标题与正文。
 func _show_page(index: int) -> void:
 	if _entries.is_empty():
 		return
 	_index = clampi(index, 0, _entries.size() - 1)
 	var entry := _entries[_index]
 	_apply_icon(entry.id)
+	_apply_title(entry.title)
 	_apply_body(entry.body)
 	_refresh_page_buttons()
 
@@ -259,6 +269,14 @@ func _apply_icon(entry_id: StringName) -> void:
 		_icon.texture = null
 		return
 	_icon.texture = load(path)
+
+
+## 标题。字号 / 颜色 / 位置都是版面，写在 handbook.tscn 的 Theme Overrides 上；
+## 这里只负责把当前条目的名字放上去（换页要跟着换，不然会停在上一条的名字上）。
+func _apply_title(title: String) -> void:
+	if _title == null:
+		return
+	_title.text = title
 
 
 func _apply_body(body: String) -> void:

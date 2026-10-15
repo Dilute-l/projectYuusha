@@ -7,8 +7,9 @@ script = ExtResource("1_sufcl")
 id = &"orc"
 category = &"monster"
 title = "兽人"
-body = "1.啊好像，好像有兽人来袭
-2.经典模组兽人与饼
-3.不是那个毛茸茸兽人"
+body = "Waghhhhhhhhhhhh——
+栖息地：靠近人类聚居地的荒野
+战斗方式：集群战术，以部落为单位狩猎
+弱点：低下的智力"
 unlock_condition = "day>=3"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

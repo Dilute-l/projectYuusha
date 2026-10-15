@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HandbookEntry" format=3 uid="uid://baeliox5ib3ce"]
+
+[ext_resource type="Script" uid="uid://by0tcgfmhfwsq" path="res://scripts/resources/handbook_entry.gd" id="1_mimic"]
+
+[resource]
+script = ExtResource("1_mimic")
+id = &"mimic"
+category = &"monster"
+title = "拟身怪"
+body = "听说有的精灵活了几千年还不知道怎么分辨拟身怪……哦对了这本手册是拟身怪哦。你不知道？我真不信。
+栖息地：地底、地下城、迷宫
+战斗方式：诱骗人打开然后吞食、拟足
+弱点：缓慢的移动速度"
+metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

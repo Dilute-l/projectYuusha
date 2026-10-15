@@ -427,6 +427,17 @@ signal run_finished(ending_id: StringName)
 `data/handbook/` 的条目承担两件事：
 给出魔物弱点、同时给出**常识基线**（例如"初级剑士不可能单人讨伐食人魔"），让撒谎能被推理而不是靠猜。
 
+**页序 = 解锁账本的顺序**（`RunState.handbook_unlocked` 这个有序数组，页码就是下标）：
+`GameState.record_handbook_unlocks()` 把新满足条件的条目按「条件最早成立的天数 → id 字典序」补登，
+新解锁的排在最后一页；**登记即既成事实**，条件日后变假也不移除、不重排。
+注意排序键是 `id`（`ghost`/`goblin`…）而不是中文 `title` —— 同一天解锁的条目，顺序由 id 决定。
+（旧存档里已登记的条目保持原位，改 id 只影响新开局。）
+
+**版面**：`HandbookTitle`（48 号）压在 `HandbookContent`（32 号）正上方，两者都靠右半页的
+白色书写区（x 557 起）。字号 / 颜色是版面，写在 `handbook.tscn` 的 Theme Overrides 上；
+**字体**则在代码里挂（`handbook.gd` 的 `CONTENT_FONT_PATH`）—— Theme Overrides 表达不了「换字体」，
+而引擎默认字体没有中文字形，标题和正文都会整条消失。
+
 **翻页按钮的可点区域比图形大**（`handbook.gd` 的 `PAGE_HITBOX_SIDE`）：`nextpage` / `lastpage`
 两个 `TextureButton` 的 rect 都是整块 1152×648 画布（贴图就是整张图），判定完全由
 `texture_click_mask` 决定。美术切好的那张 mask 精确到笔画本身（next 65×52、last 66×39），

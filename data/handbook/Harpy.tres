@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HandbookEntry" format=3 uid="uid://by2wjwc4i5w62"]
+
+[ext_resource type="Script" uid="uid://by0tcgfmhfwsq" path="res://scripts/resources/handbook_entry.gd" id="1_harpy"]
+
+[resource]
+script = ExtResource("1_harpy")
+id = &"harpy"
+category = &"monster"
+title = "鸟妖"
+body = "听说鸟妖们很喜欢吃带有恶魔血统的小孩，但是那些小孩到底有什么特别的？
+栖息地：海边、山丘
+战斗方式：使用歌声诱惑人类，爪击
+弱点：耳塞、沉默魔法"
+metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

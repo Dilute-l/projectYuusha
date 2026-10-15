@@ -7,7 +7,8 @@ script = ExtResource("1_y04vp")
 id = &"slime"
 category = &"monster"
 title = "史莱姆"
-body = "1.史莱姆
-2.史莱姆莱史
-3.among us"
+body = "某种由腐蚀性凝胶组成的巨大活体生物，其威胁性大于你所预估的程度，会制裁一切没做好准备的人。
+栖息地：森林，地下的潮湿处
+战斗方式：潜伏，突袭，将人吞入后消化腐蚀
+弱点：体内的核心"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

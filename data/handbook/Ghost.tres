@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HandbookEntry" format=3 uid="uid://bqcdqqmvtt0md"]
+
+[ext_resource type="Script" uid="uid://by0tcgfmhfwsq" path="res://scripts/resources/handbook_entry.gd" id="1_ghost"]
+
+[resource]
+script = ExtResource("1_ghost")
+id = &"ghost"
+category = &"monster"
+title = "幽灵"
+body = "栖息地：墓地、以及任何死过人的地方
+战斗方式：附身人类、穿墙、尖啸
+弱点：神术、光亮"
+metadata/_custom_type_script = "uid://by0tcgfmhfwsq"
