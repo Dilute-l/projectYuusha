@@ -8,6 +8,9 @@
 [ext_resource type="BitMap" uid="uid://bckdx83o03y5m" path="res://assets/art/interview/Handbook/handbook_nextpg_phd.tres" id="6_s4pqe"]
 [ext_resource type="Texture2D" uid="uid://cfxargkx8jd6p" path="res://assets/art/interview/Handbook/handbook_lastpg_phd.png" id="7_wx0wo"]
 [ext_resource type="BitMap" uid="uid://cvxqxpkg43oog" path="res://assets/art/interview/Handbook/handbook_lastpg_phd.tres" id="8_foxst"]
+[ext_resource type="StyleBox" path="res://ui/styles/hover_gray.tres" id="9_hover"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_quit"]
 
 [node name="Handbook" type="Control" unique_id=2016442786]
 layout_mode = 3
@@ -41,14 +44,28 @@ offset_bottom = 578.0
 theme_override_colors/default_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/normal_font_size = 32
 
-[node name="quit" type="TextureButton" parent="." unique_id=702544987]
+[node name="quit" type="Button" parent="." unique_id=702544987]
 layout_mode = 0
-offset_left = 1012.99994
-offset_top = 143.99998
-offset_right = 1141.0
-offset_bottom = 272.0
-scale = Vector2(0.48, 0.48)
-texture_normal = ExtResource("3_spygj")
+offset_left = 1013.0
+offset_top = 144.0
+offset_right = 1075.0
+offset_bottom = 206.0
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxEmpty_quit")
+theme_override_styles/hover = ExtResource("9_hover")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_quit")
+
+[node name="QuitIcon" type="TextureRect" parent="quit" unique_id=1600873142]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_spygj")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="nextpage" type="TextureButton" parent="." unique_id=1130353836]
 layout_mode = 0

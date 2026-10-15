@@ -645,13 +645,14 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 
 #### 悬停高亮：全游戏只有一款（`ui/styles/hover_gray.tres`）
 
-**鼠标移到哪一栏，哪一栏就压一块半透明灰**，三个界面共用同一个 `.tres`：
+**鼠标移到哪一栏，哪一栏就压一块半透明灰**，四个界面共用同一个 `.tres`：
 
 | 界面 | 会亮的栏 |
 | --- | --- |
 | 简历（本节） | 力量 / 智力 / 感知（`Status`）、个人履历与奖项的词条、专长的词条、词条菜单里的「追问」 |
 | 战报（§4 `battle_report.tscn`） | 「确认」 |
 | 设置（§14） | 「继续游戏」「退出游戏」 |
+| 手册（§6.3 `handbook.tscn`） | 右上角的退出键（`quit`） |
 
 - **颜色**：`Color(0.225, 0.225, 0.225, 0.6)` + 圆角 3，不描边。
   取值就是把**属性值栏当年那款**抄了下来 —— 那会儿 `Status` 没写 hover 覆盖，走的是引擎默认主题的
@@ -662,16 +663,25 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 - **内边距（10 / 7）故意与 `resume_token_normal` 一模一样**：词条高度是 StyleBox 的
   content margin 撑出来的，hover 那一帧换成别的内边距，整栏会在鼠标底下跳一下。
   其它几处按钮都是写死的尺寸，不受影响（StyleBox 画的是整个控件矩形，内边距只管内容排版）。
-- **改颜色只改这一个文件**：三个场景各写一行 `theme_override_styles/hover = ExtResource(...)` 引它。
+- **改颜色只改这一个文件**：四个场景各写一行 `theme_override_styles/hover = ExtResource(...)` 引它。
   ⚠️ 在编辑器里点某个节点的那一栏，Godot 会**就地烘一个 `sub_resource`** 出来 —— 当时颜色还对，
   但从此那个界面就脱钩了。所以自检查的是「**还引着同一个资源吗**」，不是「颜色碰巧一样」。
+- ⚠️ **只有 `Button` 画得出这个高亮**：手册右上角那颗退出键原来是 `TextureButton`，
+  而 `TextureButton` **根本没有 hover 样式**（默认主题里 `has_stylebox("hover", "TextureButton")`
+  是 `false`）—— 它只有一整套贴图，`theme_override_styles/hover` 挂上去一点用都没有。
+  想和别处一样，只能把节点换成 `Button`（高亮由它画），**叉的贴图交给它底下的
+  `QuitIcon`（`TextureRect`）画** —— 父节点先画、子节点后画，叉正好压在高亮之上；
+  `QuitIcon` 必须 `mouse_filter = IGNORE`，否则它会把退出键的点击吞掉。
+  顺带把那个 `scale = 0.48` 去掉了：缩放过的 `Control` 尺寸与命中区很容易对不上，
+  现在控件矩形（62×62）就是叉的可视范围 —— 与改之前实测的 61.44 一样大，
+  高亮框也正好落在这一块（自检盯的就是这几条）。
 
 ```
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_hover_gray.tscn
 ```
 
-19 项：样式本身（颜色 / 圆角 / 不描边 / 内边距与词条 normal 一致）＋ 上表每一栏都引着同一份、
-且 normal 不画底色。全绿退出码 0。
+24 项：样式本身（颜色 / 圆角 / 不描边 / 内边距与词条 normal 一致）＋ 上表每一栏都引着同一份、
+且 normal 不画底色（手册那两栏还验了节点类型与 `QuitIcon` 不吃鼠标）。全绿退出码 0。
 
 #### 版面：一栏一个 Container
 

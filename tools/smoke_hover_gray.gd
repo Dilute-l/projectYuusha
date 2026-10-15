@@ -6,7 +6,7 @@ extends Node
 ##   & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_hover_gray.tscn
 ##   全绿退出码 0；有失败项退出码 1。
 ##
-## 为什么值得一条测试：简历页、战报页、设置页是**三个各自独立的场景文件**，
+## 为什么值得一条测试：简历页、战报页、设置页、手册是**四个各自独立的场景文件**，
 ## 高亮靠它们在 .tscn 里各写一行 `theme_override_styles/hover` 来引用同一份样式。
 ## 而在编辑器里点一下某个节点的那一栏，Godot 很容易**就地烘一个 sub_resource** 出来 ——
 ## 那一刻颜色还一样、看着没坏，但从此三个界面各走各的，改一处另外两处不会跟。
@@ -27,6 +27,7 @@ const EXPECTED_CORNER := 3
 const RESUME := preload("res://scenes/day/interview/resume/resume.tscn")
 const BATTLE := preload("res://scenes/day/battle_report.tscn")
 const SETTING := preload("res://scenes/common/setting_page.tscn")
+const HANDBOOK := preload("res://scenes/day/interview/handbook.tscn")
 
 var _failures: Array[String] = []
 var _checks: int = 0
@@ -54,6 +55,7 @@ func _run() -> void:
 	_check_resume(hover)
 	_check_battle_report(hover)
 	_check_setting_page(hover)
+	_check_handbook(hover)
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +114,28 @@ func _check_setting_page(hover: StyleBox) -> void:
 	_check_anchor(setting.get_node_or_null("Page/ContinueButton"), hover, "继续游戏")
 	_check_anchor(setting.get_node_or_null("Page/ExitButton"), hover, "退出游戏")
 	setting.free()
+
+
+## 手册右上角那颗退出键。
+##
+## ⚠️ 它原来是个 `TextureButton` —— 而 `TextureButton` **根本没有 hover 样式**
+## （默认主题里 `has_stylebox("hover", "TextureButton")` 是 false，它只有一整套贴图），
+## 所以想要和别处一样的高亮，只能把它换成 `Button`：高亮由 `Button` 画，叉的贴图
+## 交给它底下的 `QuitIcon`（TextureRect）画 —— 父节点先画、子节点后画，叉正好压在高亮上面。
+## 顺带把原来那个 `scale = 0.48` 去掉了：缩放过的 Control 尺寸与命中区容易对不上，
+## 现在控件矩形（62×62）就是叉的可视范围，和改之前实测的 61.44 一样大。
+func _check_handbook(hover: StyleBox) -> void:
+	print("[6.3] 手册")
+	var handbook := HANDBOOK.instantiate()
+	var quit := handbook.get_node_or_null("quit")
+	_check_anchor(quit, hover, "右上角的退出键")
+	_check(quit is Button, "退出键是 Button（TextureButton 画不了悬停高亮）")
+	# 叉的贴图挂在子节点上，而且不能吃鼠标：吃了就点不动退出键了
+	var icon := handbook.get_node_or_null("quit/QuitIcon") as Control
+	_check(icon != null and (icon as TextureRect).texture != null, "退出键底下有画叉的 QuitIcon")
+	_check(icon != null and icon.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"QuitIcon 不吃鼠标（否则它会把退出键的点击吞掉）")
+	handbook.free()
 
 
 ## 一个「栏」：悬停画共用高亮，且**只有悬停才画** —— normal 不能自带底色，
