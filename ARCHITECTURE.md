@@ -511,7 +511,17 @@ priority = 10
 }
 ```
 
-路径：`user://saves/slot_{n}.json`，另存一份 `user://saves/auto.json` 用于每日开始自动存档。
+路径：`user://saves/slot_{n}.json`，另存一份 `user://saves/auto.json` 用于**每天开始**的自动存档。
+
+- **存档目录在 `user://` 下**（Windows：`%APPDATA%\Godot\app_userdata\Yuusha\saves`），
+  **不在 `res://` 里**：导出之后 `res://` 是只读的，往那儿写迟早写不进去。
+  所以 `.gitignore` 里那条 `saves/` 平时是空转的，它兜的是「user 目录被指进项目里」
+  （自检就是这么干的，见 §15.4）与调试时手动拷回来的那几份。
+- **这个 JSON 不裁剪**：用户要的是「过去几天的分数 + 今天的天数」，而存档里
+  本来就还有录用名单 / flag / 手册解锁 / 阶段 —— 它们都是「接着玩」必需的（§10.3：
+  只有 `run_state` 进档，本日过程量靠种子重放）。**加字段就往 `RunState` 上加**，
+  `version` 是给读档时的兼容判断用的（`from_dict()` 缺字段一律取默认值）。
+- 谁在什么时候写：见 §15.1；怎么读回来接着玩：见 §15.2。
 
 ---
 
@@ -563,7 +573,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | `GameState` | `start_new_run(seed)` / `apply_run_state(state)` / `clear_run()`；`get_day()` / `advance_day()` / `is_last_day()`；`get_phase()` / `set_phase(DayPhase.Phase)`；`record_day_score()` / `get_total_score()`；`hire()` / `issue_verdict()` / `get_passed_ids()`；`get_flag()` / `set_flag()` / `add_flag()`；`unlock_handbook_entry()`；`set_current_candidates()` / `set_current_team()` |
 | `DataDB` | `get_job/candidate/race/trait/monster/handbook_entry/event(id)`、`get_day_config(day)`、`get_narrative_rules()`、`get_interaction_table()`、`search_handbook(keyword)`、`get_ids(kind)` / `count(kind)` / `reload()` |
 | `RngService` | `start_run(seed)`、`day_seed(day)`、`day_rng(day)`、`stream(name)`；便捷封装 `randi_in` / `randf_in` / `chance` / `pick` / `pick_many` / `shuffled` / `weighted_pick` |
-| `SaveService` | `autosave()` / `load_auto()`、`save_to_slot(n)` / `load_from_slot(n)`、`has_any_save()` / `has_slot(n)` / `delete_slot(n)` / `list_slots()` / `peek(path)`；`to_dict(RunState)` / `from_dict(Dictionary)` |
+| `SaveService` | `autosave()` / `load_auto()`、`save_to_slot(n)` / `load_from_slot(n)`、`latest_save()` / `load_latest()`、`has_any_save()` / `has_slot(n)` / `delete_slot(n)` / `list_slots()` / `peek(path)`；`to_dict(RunState)` / `from_dict(Dictionary)` |
 | `AudioService` | `play_bgm()` / `stop_bgm()`、`play_sfx()`、`set_master_volume()` / `set_bgm_volume()` / `set_sfx_volume()` / `set_volumes()`；BGM/SFX 总线缺失时自动创建 |
 | `SceneRouter` | `goto_scene(key)` / `goto_path(path)` / `go_back()` / `reload_current()` / `goto_main_menu()`、`scene_path_for(key)` / `current_scene_key()` / `history()`、`set_fade_duration(s)` |
 
@@ -606,7 +616,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 
 | 场景 | 脚本 | 职责 |
 | --- | --- | --- |
-| `scenes/menu/main_menu.tscn` | `main_menu.gd` | **项目启动场景**（`application/run/main_scene`）。Startgame → `GameState.start_new_run()` + `SceneRouter.goto_scene("day_loop")`；Exitgame 二次点击确认退出 |
+| `scenes/menu/main_menu.tscn` | `main_menu.gd` | **项目启动场景**（`application/run/main_scene`）。Startgame → `GameState.start_new_run()` + `SceneRouter.goto_scene("day_loop")`；Continuegame → `SaveService.load_latest()` + 同一个跳转（没存档时按钮是灰的，§15.2）；Exitgame 二次点击确认退出 |
 | `scenes/day/day_loop.tscn` | `day_loop.gd` | 每日流程容器：订阅 `day_phase_changed` 换阶段子场景；`advance()` 向 `DayDirector` 问下一步；进入每天时自动存档 |
 | `scenes/ending/ending.tscn` | `ending.gd` | 十天的落点：占位显示累计分 + 「返回主菜单」，对外发 `restart_requested` |
 | `scenes/boot/boot.tscn` | `boot.gd` | 备用入口：DataDB 兜底检查 → 主菜单。当前**不是**启动场景，要开场演出时把 `run/main_scene` 改回来即可 |
@@ -1651,3 +1661,156 @@ func _on_exit_pressed() -> void:
 
 > 画布同样塞进 1152×648 的 `SubViewport` 里测（理由见 §10.6）；`day_loop` 那几条是
 > **真的把 `day_loop.tscn` 实例化出来**再查的，不是查 `.tscn` 文本。
+
+---
+
+## 15. 存档与「继续游戏」
+
+> **每天开始自动存一份**；主菜单上那颗「继续游戏」读**最新**的那份接着玩，
+> 一份存档都没有时它是灰的。存档结构见 §7。
+
+### 15.1 每天开始：自动存档
+
+| 时机 | 落点 |
+| --- | --- |
+| 进每日流程 | `day_loop.gd._ready()` → `SaveService.autosave()` |
+| 换天（第 2..10 天） | `GameState.advance_day()` 发 `day_started` → `day_loop.gd._on_day_started()` → `SaveService.autosave()` |
+
+- 两处都是「**这一天开始了**」这一刻存下来的，所以文件里 `day` 就是今天、
+  `phase` 是当天的起点（`DAY_BRIEFING`）、`scores` 里是**前面几天**已经挣下的分 ——
+  玩家接着玩是从**这一天开头**开始，不是从按下存档的某一秒。
+- **第 1 天为什么要在 `_ready()` 里补一次**：开局时 `start_new_run()` 就发过 `day_started` 了，
+  那一刻 `day_loop` 还没进树，收不到（和 §10.5 那条注释是同一件事）。
+- 一天里再往下走**不再存**（阶段切换不存）：「每天」就是用户要的粒度，
+  存太密会把「今天刚开始」这个干净的起点冲掉。
+- 写盘只有 `SaveService._write()` 一处；没有进行中的一局时它只警告不写（§7）。
+
+> **打通关之后那份存档怎么算**：第 10 天走完进结局时，磁盘上那份还停在**第 10 天的起点**
+> （最后一次写盘就是那天开始）。所以从结局回主菜单，「继续游戏」是亮的，按下去会重玩第 10 天。
+> 要不要在结局时把那份存档收掉，等结局流程（`ending_resolver`）做完再定 ——
+> 现在**不动玩家磁盘上的东西**：擅自删档比「多留一份」难补救得多。
+
+### 15.2 主菜单的「继续游戏」
+
+树里叫 `ContinuegameText`，观感与 `StartgameText` / `ExitgameText` 完全一套（Silver.ttf 60 号 +
+四个 `StyleBoxEmpty`），接线照旧写在 `.tscn` 的 `[connection]` 里。
+
+```
+进主菜单 ─ _ready() ─ _refresh_continue_button()
+                        └─ button.disabled = not SaveService.has_any_save()
+
+按下 ─ _on_continuegame_pressed()
+        ├─ SaveService.load_latest() 为真 → SceneRouter.goto_scene("day_loop")
+        └─ 为假（一份都没有 / 读坏了）→ 什么都不做，只把按钮重刷一遍
+```
+
+- **亮不亮看的是「磁盘上有没有存档」**（`has_any_save()`：自动存档，或任何一个手动槽位）。
+  本场景是被 `SceneRouter` 重新实例化的，所以**每次进主菜单都会按当下的磁盘重刷一次** ——
+  打完一局回到主菜单时，那颗按钮的灰是新的。
+- **「最新」按文件修改时间算**（`SaveService.latest_save()`），自动存档与手动槽位**一起参与比较**：
+  现在只有自动存档在写，以后加了「存档 / 读档」界面也不用回来改这里。
+  时间相同时（同一秒里写了两份）**自动存档优先** —— 它每天都在更新，手动槽位不该在一秒之内把它挤掉。
+- ⚠️ **读不出来时绝不能开一局新的**：`load_latest()` 返回 false 时处理函数直接返回。
+  玩家点的是「继续」不是「新游戏」，顺手 `start_new_run()` 等于把那份存档骗掉。
+  按钮这时**仍然是亮的**（文件在，坏没坏要按下去才知道），所以这条守卫必须有 —— 自检专门盯它。
+- ⚠️ **失败时不碰 `GameState`**：`load_latest()` 只在真读出东西之后才 `apply_run_state()`（§7）。
+
+#### 那五行为什么这么排
+
+版面照着 **1152×648 画布摆绝对偏移**；`Menu1.png` 在中间是一整片**空白纸**（实测纸面
+x 360〜800、y 120〜620，纸上没有任何画好的行），字全是 Godot 画上去的 ——
+所以位置只受「别和别的字撞上」约束。渲染一帧量出来的墨迹（怎么量的见 §15.4）：
+
+| 行 | 墨迹 y | 与上一行的间距 |
+| --- | --- | --- |
+| 警告:勇者数量已超过路边野狗—— | 166..194 | — |
+| 败犬勇者太多了！ | 226..286 | 31 |
+| **继续游戏**（新） | **320..357** | 33（离标题远一点，见下） |
+| 开始游戏 | 370..407 | **12** |
+| 制作人员名单 | 420..457 | **12** |
+| 退出游戏 | 470..507 | **12** |
+| 点我查看nz今天又干了什么 | 551..584 | 43（另一颗小按钮，不在这串里） |
+
+- **四行菜单项一律 12px 行距**：墨迹上沿相隔正好 **50**（320 / 370 / 420 / 470），
+  墨迹高 38px，于是行距处处相等。为这一条把原来那两行各挪了一点：
+  `Credits` 418→420、`ExitgameText` 471→470（它们原来彼此差 53、与上一行差 48，本来就不齐）。
+- **离标题留了 33px**（比 12 大得多）：这样 `继续游戏` 读起来是**列表的第一行**，
+  而不是标题的附属。再往上贴就会和「败犬勇者太多了！」黏成一团。
+- ⚠️ **树序有硬要求**：`Button` 的**矩形**（67px 高）比墨迹（38px）大得多，四行的矩形本来就
+  互相压着（`继续游戏` 的 320..387 压住 `开始游戏` 的 370..437），而谁抢到鼠标**只看树序**
+  （GUI 拾取从树尾往前找，§12.3）：
+
+  | 必须满足 | 否则 |
+  | --- | --- |
+  | `ContinuegameText` 排在 `Title` / `Title2` **之后** | 点「继续游戏」的上半边会去触发标题那颗音效按钮 |
+  | `ContinuegameText` 排在 `StartgameText` **之前** | 点「开始游戏」的上半边会去读档 —— 玩家以为在开新局，其实被读回了旧档 |
+  | `ExitgameText` 排在 `Credits` **之后** | 点「退出游戏」的上半边会跳去制作人员名单（**这个毛病本来就有**，这次顺手修了） |
+
+  这三条由 `smoke_save_continue` 的 `[7]` 逐行盯着：往 root viewport 真的发一次鼠标移动，
+  再问 `gui_get_hovered_control()`，量的是**每一行墨迹上沿往下 2px** 那一点归谁 ——
+  也就是重叠区最容易出事的地方。「看得见的那一行，点下去必须也是它」。
+- 置灰靠 `font_disabled_color` + `theme_override_styles/disabled`（同样是空的 `StyleBoxEmpty`）；
+  只设颜色不设 disabled 样式的话，会退回引擎默认主题那个灰框（§10.6 里同一套做法）。
+
+### 15.3 自检
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_save_continue.tscn
+```
+
+55 项，跑的是**真的主菜单 / 真的 `day_loop`**（自检逻辑挂在 root 下的常驻 runner 上，
+因为中途要真的切场景，理由同 `smoke_m0`）：
+
+- 存档路径在 `user://` 下（不在只读的 `res://` 里），并且 `.gitignore` 里挡着 `saves/`；
+- **进每日流程就有存档**，里面 `day` / `scores` / `version` / `run_seed` / `phase` 都在；
+- 走完第 1 天 → 第 2 天开始时的存档记的是**第 2 天**，且第 1 天的分留在 `scores` 里；
+- 没存档时按钮**置灰**，而且直接发 `pressed`（绕过 `disabled`）也**不切场景、不开新局**；
+- 有存档时按钮是亮的，按下去读回**存档里那一局**（天数 / 种子 / 往日分数都对得上）、
+  落到每日流程，且那天的自动存档还是同一天（没被打回第 1 天）；
+- 「最新」跟着**文件修改时间**走：后写的槽位赢过先写的自动存档；只剩手动槽位时也认得它；
+- 坏档：按「继续游戏」不切场景、不开新局；
+- **版面与点击归属**：四行菜单项等距（墨迹上沿差 50 = 行距 12），且逐行点「墨迹上沿往下 2px」
+  都归它自己（§15.2 那三条树序要求就是靠这几项守住的）。
+
+> ⚠️ 它**会临时接管** `user://` 下的自动存档与三个手动槽位（开头备份、结尾原样还原）。
+> 中途被打断的话，桌面上会留着自检造的那几份。
+
+> ⚠️ 测「最新」那一段**必须先离开每日流程**：那边还挂着 `day_loop` 的话，
+> `advance_day()` 会顺手再自动存一次（§15.1 的换天存档点），刚写好的槽位就成不了最新的那份。
+
+### 15.4 怎么量版面 / 怎么让 user:// 落进项目里
+
+受受限沙箱与 CI 的环境限制，`user://` 落在项目目录之外时写不进去，存档那几项会**必然报红**
+（§10.4 那条老注解说的就是这个）。跑之前把 `APPDATA` 指到项目里即可：
+
+```powershell
+$env:APPDATA = Join-Path <项目根> "tmp_userdata"
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_save_continue.tscn
+```
+
+`OS.get_user_data_dir()` 读的就是 `APPDATA` 这个环境变量（Windows 上 `user://` =
+`%APPDATA%\Godot\app_userdata\<项目名>\`），所以覆盖它不需要引擎侧的任何开关。
+`tmp_userdata/` 与里面那份 `saves/` 都不进版本库 —— `.gitignore` 里那一条 `saves/` 兜的正是这里。
+
+> **量版面**（§15.2 那张表）走的是另一条路：拿一个临时场景把真主菜单渲染一帧，
+> `get_viewport().get_texture().get_image().save_png()` 存下来，再逐行数**非纸面像素**
+> 分出每一行的墨迹带。
+>
+> 之所以非得这么量：`font.get_string_size()` 给的是**行盒**（ascent 38 + descent 29 = 67，
+> 正好等于按钮矩形高），真正画出来的墨迹只有 38px —— 只看行盒会以为 5 行字挤成一团，
+> 只看墨迹又会漏掉「矩形比墨迹大、会抢鼠标」那一条。两个数都要。
+>
+> 还有一条：**跟着鼠标的那只手（`Haohan`）会随机盖在纸上**，量之前得先摘掉它，
+> 否则整片纸都是「墨」，带与带之间全连在一起。摘的时候用 `free()` 而不是 `queue_free()`：
+> 后者要到帧末才落地，截图那一帧它可能还画着。
+
+> **量「点哪儿归谁」**（§15.2 那三条树序要求）截不出来，得真发事件：
+> `Viewport.push_input(event, true)`（`in_local_coords = true`，坐标就是画布坐标），
+> 再问 `gui_get_hovered_control()`。走的是鼠标**移动**而不是按下 —— 拾取结果才是归属，
+> 而且**置灰的按钮照样会挡住下面的按钮**（`disabled` 只管按不按得动，不管拾取），
+> 顺手就把「没存档时那颗灰按钮会不会挡住『开始游戏』」一并验了。
+>
+> ⚠️ **事件要发给 root viewport，别发给 `SubViewport`**：实测把主菜单挂进一个 1152×648 的
+> `SubViewport` 里推事件，拾取结果全是「无」—— 菜单树根那个 `Control` 的尺寸是 **0×0**
+> （它只有 `anchors_preset = 0` 的偏移，没人给它撑尺寸），拾取在那一层就断了。
+> 挂到 root 下（和它平时当 `current_scene` 时一样）一切正常，所以自检里用的是 root。

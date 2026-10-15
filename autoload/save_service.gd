@@ -118,6 +118,48 @@ func peek(path: String) -> Dictionary:
 	}
 
 # ---------------------------------------------------------------------------
+# 最新的一份存档（主菜单「继续游戏」走这条）
+# ---------------------------------------------------------------------------
+
+
+## 最新的一份存档：`{ "path": String, "slot": int }`；一份都没有时返回空字典。
+##
+## 「最新」按**文件修改时间**算，自动存档与手动槽位**一起参与比较** ——
+## 现在只有自动存档在写（每天开始时一份），以后加了手动存档 / 多存档槽也不用改这里。
+##
+## 时间相同时（同一秒里写了两份）**自动存档优先**：它每天都在更新，
+## 手动槽位是玩家自己按出来的，不该在一秒之内把它挤掉。
+func latest_save() -> Dictionary:
+	var best: Dictionary = {}
+	var best_time: int = -1
+	if has_auto_save():
+		best = { "path": GameConfig.AUTO_SAVE_PATH, "slot": AUTO_SLOT }
+		best_time = FileAccess.get_modified_time(GameConfig.AUTO_SAVE_PATH)
+	for slot in range(1, GameConfig.MAX_SAVE_SLOTS + 1):
+		var path := GameConfig.slot_path(slot)
+		if not FileAccess.file_exists(path):
+			continue
+		var modified := FileAccess.get_modified_time(path)
+		if modified > best_time:
+			best_time = modified
+			best = { "path": path, "slot": slot }
+	return best
+
+
+## 读取**最新的**那份存档并接管 GameState。
+##
+## 一份存档都没有、或者最新那份读不出来（损坏 / 半截）时返回 false，
+## 并且**绝不动 GameState** —— 调用方（主菜单「继续游戏」）据此决定要不要跳场景：
+## 「读不出来」绝不能顺手开一局新的，那等于把玩家那份存档骗掉了。
+func load_latest() -> bool:
+	var latest := latest_save()
+	if latest.is_empty():
+		EventBus.save_loaded.emit(AUTO_SLOT, false)
+		return false
+	return _load(String(latest["path"]), int(latest["slot"]))
+
+
+# ---------------------------------------------------------------------------
 # 槽位管理
 # ---------------------------------------------------------------------------
 

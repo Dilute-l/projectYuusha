@@ -1,9 +1,42 @@
 extends Control
 
-## 主菜单（ARCHITECTURE.md §4）：新游戏 / 退出。
+## 主菜单（ARCHITECTURE.md §4）：新游戏 / 继续游戏 / 退出。
 ## 只做显示与输入：开局走 GameState，跳转走 SceneRouter。
 
+## 「继续游戏」按钮的节点名（置灰与接线都认它）
+const CONTINUE_BUTTON: String = "ContinuegameText"
+
 var _exit_confirming := false
+
+
+func _ready() -> void:
+	_refresh_continue_button()
+
+
+## 「继续游戏」有没有东西可读 —— 没有就置灰（ARCHITECTURE.md §15）。
+##
+## 每次进主菜单都会重刷（本场景是被 SceneRouter 重新实例化的），
+## 所以「打完一局回到主菜单」时按钮上的灰是按当下磁盘上的存档算的。
+func _refresh_continue_button() -> void:
+	var button := get_node_or_null(CONTINUE_BUTTON) as Button
+	if button == null:
+		push_error("[MainMenu] 找不到「继续游戏」按钮：%s" % CONTINUE_BUTTON)
+		return
+	button.disabled = not SaveService.has_any_save()
+
+
+## 「继续游戏」：读**最新**那一份存档接着玩，**不从头开始**。
+##
+## 读不出来（存档损坏 / 刚刚被删掉）时什么都不做，只把按钮重刷一遍：
+## 这一下绝不能退化成「开一局新的」——玩家点的是继续，不是新游戏。
+func _on_continuegame_pressed() -> void:
+	if SceneRouter.is_transitioning:
+		return
+	_cancel_exit_confirm()
+	if not SaveService.load_latest():
+		_refresh_continue_button()
+		return
+	SceneRouter.goto_scene(&"day_loop")
 
 
 func _on_typertest_pressed() -> void:

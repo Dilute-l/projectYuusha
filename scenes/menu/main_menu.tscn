@@ -47,6 +47,14 @@
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_41tvm"]
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_contn"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_contp"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_conth"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_contd"]
+
 [node name="MainMenu" type="Control" unique_id=913117480]
 layout_mode = 3
 anchors_preset = 0
@@ -89,36 +97,6 @@ scale = Vector2(3.6, 3.6)
 texture_normal = ExtResource("3_hj162")
 texture_click_mask = ExtResource("4_xn6kt")
 
-[node name="StartgameText" type="Button" parent="." unique_id=943792285]
-layout_mode = 0
-offset_left = 486.0
-offset_top = 370.0
-offset_right = 676.0
-offset_bottom = 437.0
-theme_override_colors/font_color = Color(0.891585, 0.48765498, 5.7756904e-07, 1)
-theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
-theme_override_fonts/font = ExtResource("7_isoef")
-theme_override_font_sizes/font_size = 60
-theme_override_styles/normal = SubResource("StyleBoxEmpty_qgo02")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_vovv2")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_1k4da")
-text = "开始游戏"
-
-[node name="ExitgameText" type="Button" parent="." unique_id=794199868]
-layout_mode = 0
-offset_left = 484.0
-offset_top = 471.0
-offset_right = 674.0
-offset_bottom = 538.0
-theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
-theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
-theme_override_fonts/font = ExtResource("7_isoef")
-theme_override_font_sizes/font_size = 60
-theme_override_styles/normal = SubResource("StyleBoxEmpty_4i75y")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_p1nwe")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_prbor")
-text = "退出游戏"
-
 [node name="Title" type="Button" parent="." unique_id=792540628]
 layout_mode = 0
 offset_left = 284.0
@@ -149,12 +127,44 @@ theme_override_styles/pressed = SubResource("StyleBoxEmpty_27h4x")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_isoef")
 text = "警告:勇者数量已超过路边野狗——"
 
+[node name="ContinuegameText" type="Button" parent="." unique_id=1387214506]
+layout_mode = 0
+offset_left = 486.0
+offset_top = 320.0
+offset_right = 676.0
+offset_bottom = 387.0
+theme_override_colors/font_color = Color(0.891585, 0.48765498, 5.7756904e-07, 1)
+theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
+theme_override_colors/font_disabled_color = Color(0.55, 0.52, 0.48, 1)
+theme_override_fonts/font = ExtResource("7_isoef")
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxEmpty_contn")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_contp")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_conth")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_contd")
+text = "继续游戏"
+
+[node name="StartgameText" type="Button" parent="." unique_id=943792285]
+layout_mode = 0
+offset_left = 486.0
+offset_top = 370.0
+offset_right = 676.0
+offset_bottom = 437.0
+theme_override_colors/font_color = Color(0.891585, 0.48765498, 5.7756904e-07, 1)
+theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
+theme_override_fonts/font = ExtResource("7_isoef")
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxEmpty_qgo02")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_vovv2")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_1k4da")
+text = "开始游戏"
+
 [node name="Credits" type="Button" parent="." unique_id=844051336]
 layout_mode = 0
 offset_left = 440.0
-offset_top = 418.0
+offset_top = 420.0
 offset_right = 725.0
-offset_bottom = 485.0
+offset_bottom = 487.0
 theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
 theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
 theme_override_fonts/font = ExtResource("7_isoef")
@@ -163,6 +173,21 @@ theme_override_styles/normal = SubResource("StyleBoxEmpty_1bhjn")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_bbqo6")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_d4hu8")
 text = "制作人员名单"
+
+[node name="ExitgameText" type="Button" parent="." unique_id=794199868]
+layout_mode = 0
+offset_left = 484.0
+offset_top = 470.0
+offset_right = 674.0
+offset_bottom = 537.0
+theme_override_colors/font_color = Color(0.8901961, 0.4862745, 0, 1)
+theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
+theme_override_fonts/font = ExtResource("7_isoef")
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxEmpty_4i75y")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_p1nwe")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_prbor")
+text = "退出游戏"
 
 [node name="PlaceHolderButton" type="Button" parent="." unique_id=774604693]
 layout_mode = 0
@@ -222,6 +247,7 @@ offset_right = -8.0
 [connection signal="pressed" from="Startgame" to="." method="_on_startgame_pressed"]
 [connection signal="pressed" from="Typertest" to="." method="_on_typertest_pressed"]
 [connection signal="pressed" from="StartgameText" to="." method="_on_startgame_pressed"]
+[connection signal="pressed" from="ContinuegameText" to="." method="_on_continuegame_pressed"]
 [connection signal="mouse_exited" from="ExitgameText" to="." method="_on_exitgame_mouse_exited"]
 [connection signal="pressed" from="ExitgameText" to="." method="_on_exitgame_pressed"]
 [connection signal="pressed" from="Title" to="." method="_on_title_pressed"]

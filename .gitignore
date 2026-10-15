@@ -1,3 +1,9 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# 存档：运行时生成，不进版本库（ARCHITECTURE.md §7）
+# 正常落在 user://（Windows 上是 %APPDATA%\Godot\app_userdata\Yuusha\saves），本来就在仓库外；
+# 这一条兜的是「user 目录被指进项目里」：自检 / CI 走的就是把 APPDATA 指到 tmp_userdata/（§15.4）。
+saves/
+tmp_userdata/
