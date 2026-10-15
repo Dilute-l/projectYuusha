@@ -27,9 +27,14 @@ const GAME_CANVAS := Vector2i(1152, 648)
 ## 退出确认用的那段对话 —— 与 setting_page.gd / main_menu.gd 同一个 id
 const EXIT_CONFIRM_DIALOGUE := "test1"
 
-## 设置按钮与设置页两张美术的期望尺寸
-const BUTTON_SIZE := Vector2(50, 50)
-const PAGE_SIZE := Vector2(1152, 648)
+## 设置按钮与设置页两张美术的期望尺寸。
+##
+## ⚠️ 这两个数跟着**美术文件本身**走，不跟屏幕观感走：
+##   按钮 `setting_button.jpg` 是 32×32（场景里 scale = 1.6 → 屏幕上 51.2px，那是版面，不是贴图）；
+##   整页 `setting_page.png` 是 2266×1274（靠 `expand_mode = 1` 撑满画布，所以也不用改版面）。
+##   换美术时**同步改这里 + 下面那两句断言里的文件名**，否则自检会替旧图喊冤。
+const BUTTON_SIZE := Vector2(32, 32)
+const PAGE_SIZE := Vector2(2266, 1274)
 
 var _failures: Array[String] = []
 var _checks: int = 0
@@ -104,22 +109,26 @@ func _run() -> void:
 	_check(setting_button.texture_normal != null, "设置按钮的贴图已加载")
 	if setting_button.texture_normal != null:
 		_check(setting_button.texture_normal.get_size() == BUTTON_SIZE,
-				"设置按钮用的是 setting_button_phd.png（%s）" % setting_button.texture_normal.get_size())
+				"设置按钮用的是 setting_button.jpg（%s）" % setting_button.texture_normal.get_size())
 	_check(page_phd.texture != null, "设置页的贴图已加载")
 	if page_phd.texture != null:
 		_check(page_phd.texture.get_size() == PAGE_SIZE,
-				"设置页用的是 setting_page_phd.png（%s）" % page_phd.texture.get_size())
+				"设置页用的是 setting_page.png（%s）" % page_phd.texture.get_size())
 
 	# ---- 常规状态：只有那颗按钮可见 ----
 	_check(not page.visible, "常规状态：设置页不可见")
 	_check(setting_button.visible, "常规状态：只有设置按钮可见")
 	_check(not setting.is_open(), "is_open() 在常规状态返回 false")
 
-	# ---- 按钮的位置与大小：左上角、原生尺寸 ----
+	# ---- 按钮的位置与大小：左上角、贴图原生尺寸 × 场景里的 scale ----
 	_check(setting_button.get_global_rect().position == Vector2.ZERO,
 			"设置按钮贴在画布左上角（%s）" % setting_button.get_global_rect().position)
-	_check(setting_button.get_global_rect().size == BUTTON_SIZE,
-			"设置按钮按原生 50x50 画（不缩放）")
+	# 屏幕上的大小 = 贴图原生尺寸 × scale（1.6）。这里比的是**渲染结果**，
+	# 所以不能直接拿 BUTTON_SIZE 比 —— 那是贴图尺寸。
+	var shown := BUTTON_SIZE * setting_button.scale
+	_check(setting_button.get_global_rect().size.is_equal_approx(shown),
+			"设置按钮按 %s 贴图 × scale %.1f 画（%s）" % [
+				BUTTON_SIZE, setting_button.scale.x, setting_button.get_global_rect().size])
 	_check(setting_button.position.x >= 0.0 and setting_button.position.y >= 0.0,
 			"设置按钮没有跑出画布")
 

@@ -6,14 +6,11 @@
 [ext_resource type="Texture2D" uid="uid://bmklpqtm7m21y" path="res://assets/art/setting/setting_button.jpg" id="4_8nos1"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="5_font"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="6_haohan"]
+[ext_resource type="StyleBox" path="res://ui/styles/hover_gray.tres" id="7_hover"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_normal"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pressed"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_h0jd4"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8nos1"]
 
 [node name="SettingPage" type="CanvasLayer" unique_id=2091389067]
 layer = 100
@@ -59,7 +56,7 @@ theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 60
 theme_override_styles/normal = SubResource("StyleBoxEmpty_normal")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_pressed")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_h0jd4")
+theme_override_styles/hover = ExtResource("7_hover")
 text = "继续游戏"
 
 [node name="ExitButton" type="Button" parent="Page" unique_id=89789391]
@@ -82,7 +79,7 @@ theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 60
 theme_override_styles/normal = SubResource("StyleBoxEmpty_normal")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_pressed")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_8nos1")
+theme_override_styles/hover = ExtResource("7_hover")
 text = "退出游戏"
 
 [node name="SettingButton" type="TextureButton" parent="." unique_id=2037565001]
