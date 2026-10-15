@@ -52,6 +52,9 @@
   <button class="primary" id="add">+ 新增候选人</button>
   <button id="dup">复制当前</button>
   <button id="del">删除当前</button>
+  <button id="loadFiles">读取 .tres / json…</button>
+  <button id="loadDir" hidden>从 data/ 读取…</button>
+  <input type="file" id="filePicker" accept=".tres,.res,.json,.txt" multiple hidden>
   <button id="saveDir" hidden>全部写入 data/…</button>
   <span id="msg" class="hint"></span>
 </header>
@@ -93,6 +96,12 @@
    牌子印章：每行的追问对话可以多写一个 popup_stamp 键（值 = POPUP_STAMP_NAMES 里的名字），
    盖在对话小牌子（Popup.tscn）上 —— 和简历那枚**共用同一批图**，
    但由**台词**决定盖不盖、盖哪张（dialogue_generator.html 里是同一个下拉）。
+
+   反过来也读得回来：「读取 .tres / json…」把一份已经存在的候选人拆回这个表单接着改
+   （解析在下面的「读取」一节）。**台词住在 asks/*.json 里、不在 .tres 里** ——
+   只选 .tres 就读不到台词，那几条的 json 会被标成「没读进来」，写回时**跳过**，
+   免得用空台词把人家真写的对话盖掉。想连台词一起读：把同一个人的 json 一并选上，
+   或者用「从 data/ 读取…」整个目录读（Chromium）。
    ───────────────────────────────────────────────────────────────────────── */
 
 const SCRIPTS = {
@@ -147,9 +156,12 @@ function blankCandidate(n) {
     experience: [blankEntry()],
     skill: [blankEntry()],
     statusLines: [blankLine(), blankLine()],
+    // 属性追问的台词读进来没有。**只有 import 出来的人才可能为 false**：
+    // 那时写回会**跳过** <id>_status.json，不然会用两行空台词盖掉人家真写的对话。
+    statusLoaded: true,
   };
 }
-function blankEntry() { return { description: "", lines: [blankLine(), blankLine()] }; }
+function blankEntry() { return { description: "", lines: [blankLine(), blankLine()], linesLoaded: true }; }
 function blankLine(speaker = "", text = "") { return { speaker, text, popup: "", popupStamp: "" }; }
 
 let candidates = [];
@@ -167,7 +179,7 @@ function refresh() { renderSide(); }
 function render() {
   const box = $("#form"); box.textContent = "";
   if (!candidates.length) {
-    box.appendChild(el("p", { className: "hint", textContent: "还没有候选人。点左上「+ 新增候选人」。" }));
+    box.appendChild(el("p", { className: "hint", textContent: "还没有候选人。点左上「+ 新增候选人」，或用「读取 .tres / json…」读一位已经存在的进来改。" }));
     renderSide(); return;
   }
   const c = candidates[current];
@@ -200,7 +212,15 @@ function render() {
     const wrap = el("div");
     wrap.appendChild(el("label", { textContent: label }));
     const s = el("select", { onchange: on(setter) });
-    for (const o of options) s.appendChild(el("option", { value: o, textContent: o, selected: o === value }));
+    // 读进来的文件里可能是名单外的值（新职业 / 新种族…）：给它补一个选项。
+    // 不补的话下拉框会**显示成第一个选项**，看着像数据已经被改了 —— 实际没改，更吓人。
+    const known = options.includes(value);
+    const list = known ? options : [value, ...options];
+    for (const o of list) {
+      const extra = o === value && !known;
+      const text = extra ? (o === "" ? "（空 · 原文件里的值不在名单里）" : o + "（不在名单里）") : o;
+      s.appendChild(el("option", { value: o, textContent: text, selected: o === value }));
+    }
     wrap.appendChild(s); return wrap;
   };
   basic.append(
@@ -270,8 +290,12 @@ function stampField(c) {
   wrap.appendChild(el("label", { textContent: "简历印章 resume_stamp" }));
   const s = el("select", { onchange: on((v) => c.resume_stamp = v) });
   s.appendChild(el("option", { value: "", textContent: "（不盖章）", selected: !c.resume_stamp }));
-  for (const name of STAMPS) {
-    s.appendChild(el("option", { value: name, textContent: name, selected: name === c.resume_stamp }));
+  // 读进来的文件可能盖着一张不在 STAMPS 里的章（新章还没加进短名单）：照样列出来，
+  // 否则下拉框显示「不盖章」而数据里还留着它 —— 看着像章被删了。
+  const names = c.resume_stamp && !STAMPS.includes(c.resume_stamp) ? [c.resume_stamp, ...STAMPS] : STAMPS;
+  for (const name of names) {
+    const extra = name === c.resume_stamp && !STAMPS.includes(name);
+    s.appendChild(el("option", { value: name, textContent: extra ? name + "（不在名单里）" : name, selected: name === c.resume_stamp }));
   }
   wrap.appendChild(s);
   wrap.appendChild(el("p", { className: "hint",
@@ -339,6 +363,260 @@ function lineEditor(ln, arr, i) {
     stampSel,
     el("button", { className: "tiny", textContent: "删", onclick: () => { arr.splice(i, 1); render(); } }),
   ]);
+}
+
+// ── 读取（.tres / json → 编辑器数据）────────────────────────────────────────
+//
+// 这个工具原本只会**写**：手填一位新人 → 吐出 .tres + 追问 json。
+// 现在它也会**读**：把一份已经存在的 data/candidates/*.tres 拆回编辑器的形状，
+// 改完再写回去。所以下面这一节是「反向的 buildTres」。
+//
+// ⚠️ 解析写成**纯函数**（不碰 DOM），因为它要面对的是 26 份**由 Godot 存出来的**真文件，
+//    和我们自己生成的那份不完全一样：
+//      · 属性顺序随 Godot 的存盘顺序（不是我们写出去的那个顺序）；
+//      · ext_resource 带 uid=，头部也有 uid=；
+//      · 等于默认值的属性**整行没有**（没写 strength 就是 0，不是模板里的 10）；
+//      · 字典 / 数组可能被 Godot 折成多行；
+//      · String 与 StringName 混用（"男" 与 &"男"）。
+//    所以这里不按行正则硬切，而是「扫 `键 = 值`，值允许跨行、按括号深度断句」。
+
+/* 只认这些**资源默认值**：文件里没写的键，就是 Godot 的资源默认值，不是本工具模板里的占位。
+   （模板里 strength 默认 10 / portrait_eye 默认 1，那是「新增一位」时的方便值。） */
+const RES_DEFAULTS = {
+  level: 1, strength: 0, intelligence: 0, wisdom: 0, age: 2,
+  gender: "男", portrait_race: "hu",
+  portrait_eye: 101, portrait_hair: 101, portrait_mouth: 101, portrait_hat: 0,
+};
+
+function basenameOf(p) { return String(p).split("/").pop(); }
+function stripExtOf(name) { return String(name).replace(/\.[^.]+$/, ""); }
+
+/* .tres 里的字符串字面量 → JS 字符串。\n \t \" \\ 一次过解掉（不来回解，免得 \\n 被吃两次）。 */
+function unescapeTres(s) {
+  return String(s).replace(/\\(.)/g, (m, ch) => (ch === "n" ? "\n" : ch === "t" ? "\t" : ch));
+}
+
+/* "abc" / &"abc" / 42 / null → 字符串（& 前缀是 StringName，读起来和 String 一样） */
+function tresString(raw) {
+  if (raw === undefined || raw === null) return "";
+  let s = String(raw).trim();
+  if (s === "null" || s === "") return "";
+  if (s[0] === "&") s = s.slice(1).trim();
+  if (s.length >= 2 && s[0] === '"' && s[s.length - 1] === '"') return unescapeTres(s.slice(1, -1));
+  return s;
+}
+
+function tresInt(raw, dflt = 0) {
+  const n = parseInt(String(raw === undefined || raw === null ? "" : raw).trim(), 10);
+  return Number.isNaN(n) ? dflt : n;
+}
+
+/* ExtResource("1_x") / SubResource("Resource_e0") → 那个 id */
+function tresRefId(raw) {
+  const m = String(raw || "").match(/(?:Ext|Sub)Resource\("([^"]+)"\)/);
+  return m ? m[1] : "";
+}
+
+/* Array[ExtResource("…")]([a, b]) → [a, b]
+   ⚠️ 只看 `](` **后面**那截：`Array[...]` 里的那个 ExtResource("…") 是**元素类型**（脚本），
+      不是内容 —— 早先按全文抓引用的话，traits 会凭空多出一个 trait_def.gd。 */
+function tresArrayRefs(raw) {
+  const s = String(raw || "");
+  const cut = s.indexOf("](");
+  const scope = cut >= 0 ? s.slice(cut + 2) : s;
+  return [...scope.matchAll(/(?:Ext|Sub)Resource\("([^"]+)"\)/g)].map((m) => m[1]);
+}
+
+/* { "strength": 4, &"wisdom": 12 } → { strength: 4, wisdom: 12 }（键的两种写法都认） */
+function tresDict(raw) {
+  const out = {};
+  for (const m of String(raw || "").matchAll(/&?"([^"]+)"\s*:\s*(-?[\d.]+)/g)) out[m[1]] = parseInt(m[2], 10);
+  return out;
+}
+
+/* 一份 .tres 的正文 → { ext: {id: path}, subs: {id: {键: 原样值}}, res: {键: 原样值}}
+   段的切法：`[xxx …]` 起一段，段里的行归它；ext_resource 是自带属性的单行段。 */
+function parseTresSections(text) {
+  const ext = {}, subs = {};
+  let res = {};
+  let cur = null;
+  const attrOf = (attrs, name) => {
+    // ⚠️ 必须要求属性名前面有空白：不然找 `id="…"` 会先撞上 `uid="…"` 里的那截
+    //    ——「uid://cd7wsjw4cuvnq」会被当成 id 读走，于是 job / resume_stamp 这些
+    //    带 uid 的 ext_resource 全部解析成空。这不是理论问题，是自检当场抓出来的。
+    const m = attrs.match(new RegExp('\\s' + name + '="([^"]*)"'));
+    return m ? m[1] : "";
+  };
+  const flush = () => {
+    if (!cur) return;
+    const props = parseTresProps(cur.lines.join("\n"));
+    if (cur.kind === "sub") subs[cur.id] = props;
+    else res = props;
+    cur = null;
+  };
+  for (const line of String(text).split(/\r?\n/)) {
+    const head = line.match(/^\[([a-z_]+)\s*(.*)\]\s*$/);
+    if (head) {
+      flush();
+      if (head[1] === "ext_resource") {
+        const id = attrOf(head[2], "id");
+        if (id) ext[id] = attrOf(head[2], "path");
+      } else if (head[1] === "sub_resource") {
+        cur = { kind: "sub", id: attrOf(head[2], "id"), lines: [] };
+      } else if (head[1] === "resource") {
+        cur = { kind: "res", id: "", lines: [] };
+      }
+      continue;   // gd_resource 头 / 不认识的段（以后的 metadata 之类）直接跳过
+    }
+    if (cur) cur.lines.push(line);
+  }
+  flush();
+  return { ext, subs, res };
+}
+
+/* 一段正文 → { 键: 原样值 }。值可以跨行：靠括号深度 + 字符串状态判断「这一口气完了没有」。 */
+function parseTresProps(body) {
+  const props = {};
+  let i = 0;
+  const n = body.length;
+  const isSpace = (ch) => ch === " " || ch === "\t" || ch === "\r" || ch === "\n";
+  while (i < n) {
+    while (i < n && isSpace(body[i])) i++;
+    if (i >= n) break;
+    const eq = body.indexOf("=", i);
+    if (eq < 0) break;
+    const key = body.slice(i, eq).trim();
+    i = eq + 1;
+    while (i < n && (body[i] === " " || body[i] === "\t")) i++;
+    const start = i;
+    let depth = 0, inStr = false, escaped = false;
+    while (i < n) {
+      const ch = body[i];
+      if (inStr) {
+        if (escaped) escaped = false;
+        else if (ch === "\\") escaped = true;
+        else if (ch === '"') inStr = false;
+      } else if (ch === '"') {
+        inStr = true;
+      } else if (ch === "(" || ch === "[" || ch === "{") {
+        depth++;
+      } else if (ch === ")" || ch === "]" || ch === "}") {
+        depth--;
+      } else if (ch === "\n" && depth === 0) {
+        break;
+      }
+      i++;
+    }
+    props[key] = body.slice(start, i).trim();
+  }
+  return props;
+}
+
+/* ext_resource 的路径 → 短名单里的名字（.../data/jobs/fighter.tres → fighter） */
+function nameInFolder(path, folder) {
+  const m = String(path || "").match(new RegExp("/" + folder + "/([^/]+)\\.tres$"));
+  return m ? m[1] : "";
+}
+
+/* 一份 data/candidates/*.tres 的正文 → 编辑器里那位候选人的数据。不像候选人文件则返回 null。 */
+function parseTres(text) {
+  const { ext, subs, res } = parseTresSections(text);
+  const extPath = (raw) => ext[tresRefId(raw)] || "";
+  if (!res.id && !("display_name" in res) && !("strength" in res)) return null;
+
+  const attrs = tresDict(res.true_attributes);
+  const trueAttrs = { strength: "", intelligence: "", wisdom: "" };
+  for (const k of ATTR_KEYS) if (attrs[k] !== undefined) trueAttrs[k] = String(attrs[k]);
+
+  const c = {
+    id: tresString(res.id),
+    display_name: tresString(res.display_name),
+    level: tresInt(res.level, RES_DEFAULTS.level),
+    strength: tresInt(res.strength, RES_DEFAULTS.strength),
+    intelligence: tresInt(res.intelligence, RES_DEFAULTS.intelligence),
+    wisdom: tresInt(res.wisdom, RES_DEFAULTS.wisdom),
+    true_attributes: trueAttrs,
+    race: nameInFolder(extPath(res.race), "races"),
+    job: nameInFolder(extPath(res.job), "jobs"),
+    gender: tresString(res.gender) || RES_DEFAULTS.gender,
+    age: tresInt(res.age, RES_DEFAULTS.age),
+    traits: tresArrayRefs(res.traits).map((id) => nameInFolder(ext[id] || "", "traits")).filter(Boolean).join(","),
+    portrait_race: tresString(res.portrait_race) || RES_DEFAULTS.portrait_race,
+    portrait_eye: tresInt(res.portrait_eye, RES_DEFAULTS.portrait_eye),
+    portrait_hair: tresInt(res.portrait_hair, RES_DEFAULTS.portrait_hair),
+    portrait_mouth: tresInt(res.portrait_mouth, RES_DEFAULTS.portrait_mouth),
+    portrait_hat: tresInt(res.portrait_hat, RES_DEFAULTS.portrait_hat),
+    resume_stamp: stripExtOf(basenameOf(extPath(res.resume_stamp))),
+    team_declaration: tresString(res.team_declaration),
+    judgment: tresString(res.judgment),
+    experience: [],
+    skill: [],
+    statusLines: [blankLine(), blankLine()],
+    statusLoaded: false,          // 没有 <id>_status.json 就一直是 false（写回会跳过它）
+  };
+
+  // 词条：sub_resource 里只有「描述 + 追问 json 的路径」，台词住在那个 json 里
+  for (const key of ["experience", "skill"]) {
+    for (const sid of tresArrayRefs(res[key])) {
+      const p = subs[sid] || {};
+      const ask = tresString(p.ask_path);
+      c[key].push({
+        description: tresString(p.description),
+        lines: [blankLine(), blankLine()],
+        linesLoaded: false,
+        askFile: basenameOf(ask),     // 只用来对 json 名字，写回时按序号重排（见 filesFor）
+        askPath: ask,
+      });
+    }
+  }
+  // 读进来的 ask_path 是不是约定名（<id>_<n>.json）：不是的话写回会改成约定名、旧文件成孤儿，
+  // 所以只数一下，交给 importNote 明说。（`_` 开头 = 读取期的记账，不是候选人字段）
+  const flat = flatEntries(c);
+  c._oddAsks = flat.filter((e, i) => e.askFile !== "" && e.askFile !== c.id + "_" + (i + 1) + ".json").length;
+  return c;
+}
+
+/* 一份追问 json 的正文 → 行数组；读不动返回 null（调用方据此判定「没读进来」）。 */
+function linesFromJson(text) {
+  let parsed;
+  try { parsed = JSON.parse(text); } catch (e) { return null; }
+  if (!Array.isArray(parsed)) return null;
+  return parsed.map((o) => {
+    const ln = blankLine(String(o.speaker_name || ""), String(o.text || ""));
+    ln.popup = String(o.popup || "");
+    ln.popupStamp = String(o.popup_stamp || "");
+    return ln;
+  });
+}
+
+/* 把一批 {name, text} 里的 json 贴回这个人的追问台词上。
+   ⚠️ 对不上号的**不编造**：那一条的 linesLoaded 停在 false，写回时会跳过它，
+      不然「只读 .tres 就写回」会拿两行空台词盖掉人家真写的对话。
+   返回没贴上的条数。 */
+function attachAsks(c, files) {
+  const byName = {};
+  for (const f of files) if (f.name.endsWith(".json")) byName[f.name] = f.text;
+  let missing = 0;
+  flatEntries(c).forEach((e) => {
+    const text = e.askFile ? byName[e.askFile] : undefined;
+    const lines = text === undefined ? null : linesFromJson(text);
+    if (lines) { e.lines = lines; e.linesLoaded = true; } else missing++;
+  });
+  const statusText = byName[c.id + "_status.json"];
+  const statusLines = statusText === undefined ? null : linesFromJson(statusText);
+  if (statusLines) { c.statusLines = statusLines; c.statusLoaded = true; } else missing++;
+  return missing;
+}
+
+/* 读取结果 → 一行给人看的话（附带那些「读不全」的实情，别让人以为读干净了）。 */
+function importNote(imported, what) {
+  const noLines = imported.filter((c) => !c.statusLoaded
+    || flatEntries(c).some((e) => e.linesLoaded === false)).length;
+  let note = what + "：" + imported.length + " 位候选人";
+  if (noLines) note += "；⚠ 其中 " + noLines + " 位的追问台词没一起读进来 —— 写回会跳过那些 json（不会覆盖）";
+  const odd = imported.filter((c) => c._oddAsks > 0).length;
+  if (odd) note += "。⚠ 有 " + odd + " 位的 ask_path 不是约定名（<id>_<n>.json）—— 写回会改成约定名，旧文件要自己删";
+  return note;
 }
 
 // ── 产出 ────────────────────────────────────────────────────────────────────
@@ -457,10 +735,19 @@ function lineObject(ln) {
 }
 function jsonText(lines) { return JSON.stringify(lines.map(lineObject), null, "\t") + "\n"; }
 
+/* 这位候选人会写出的全部文件。`loaded = false` 的那几个**不写**：
+   它们是 import 出来、台词却没跟过来的 json —— 写出去就是用空台词盖掉人家真写的对话。
+   （judgment / 文案之类全在 .tres 里，所以 .tres 永远 loaded。） */
 function filesFor(c) {
-  const out = [{ name: c.id + ".tres", dir: "candidates", text: buildTres(c) }];
-  flatEntries(c).forEach((e, i) => out.push({ name: c.id + "_" + (i + 1) + ".json", dir: "asks", text: jsonText(e.lines) }));
-  out.push({ name: c.id + "_status.json", dir: "asks", text: jsonText(c.statusLines) });
+  const out = [{ name: c.id + ".tres", dir: "candidates", text: buildTres(c), loaded: true }];
+  flatEntries(c).forEach((e, i) => out.push({
+    name: c.id + "_" + (i + 1) + ".json", dir: "asks", text: jsonText(e.lines),
+    loaded: e.linesLoaded !== false,
+  }));
+  out.push({
+    name: c.id + "_status.json", dir: "asks", text: jsonText(c.statusLines),
+    loaded: c.statusLoaded !== false,
+  });
   return out;
 }
 
@@ -479,11 +766,14 @@ function renderSide() {
   const c = candidates[current];
   const files = filesFor(c);
   for (const f of files) {
-    list.appendChild(el("li", {}, [
+    const row = el("li", {}, [
       el("span", { textContent: "data/" + f.dir + "/" + f.name }),
       el("button", { className: "tiny", textContent: "看", onclick: () => { out.textContent = f.text; } }),
-      el("button", { className: "tiny", textContent: "下载", onclick: () => download(f.name, f.text) }),
-    ]));
+    ]);
+    // 没读进来的 json：不给下载（免得存出一份空台词），写回时也会跳过
+    if (f.loaded) row.appendChild(el("button", { className: "tiny", textContent: "下载", onclick: () => download(f.name, f.text) }));
+    else row.appendChild(el("span", { className: "warn", textContent: "（台词没读进来 · 写回跳过）" }));
+    list.appendChild(row);
   }
   out.textContent = files[0].text;
 
@@ -527,8 +817,112 @@ $("#dlOne").onclick = () => {
 };
 $("#dlJson").onclick = () => {
   if (!candidates.length) return;
-  for (const f of filesFor(candidates[current])) if (f.name.endsWith(".json")) download(f.name, f.text);
+  let n = 0, skipped = 0;
+  for (const f of filesFor(candidates[current])) {
+    if (!f.name.endsWith(".json")) continue;
+    if (!f.loaded) { skipped++; continue; }
+    download(f.name, f.text); n++;
+  }
+  if (skipped) { $("#msg").textContent = "已下载 " + n + " 个 json（跳过 " + skipped + " 个台词没读进来的）"; $("#msg").className = "warn"; }
 };
+
+// ── 读取已存在的候选人 ──────────────────────────────────────────────────────
+//
+// 两条入口，做的事情一样（读文件 → parseTres → 贴台词 → 塞进标签栏）：
+//   · 「读取 .tres / json…」：选文件，任何浏览器都能用。**把同一个人的 ask json 一起选上**
+//     才能连台词一起读进来（.tres 里只有路径，台词在 json 里）。
+//   · 「从 data/ 读取…」（Chromium）：选 data/ 目录，candidates/*.tres 与 asks/*.json
+//     一起读 —— 相当于把整份数据读进来改，写完再「全部写入 data/…」放回去。
+// 拖拽文件到页面上 = 第一条入口。
+
+/* 读进来的候选人塞进标签栏。**同 id 就顶掉那一个**，不多开一个同 id 的标签 ——
+   两份同 id 摆在标签栏里，点「全部写入」时后一个会静默覆盖前一个，那是最难查的一类事故。 */
+function applyImport(imported, note) {
+  let first = -1, replaced = 0;
+  for (const c of imported) {
+    const at = candidates.findIndex((x) => x.id === c.id);
+    if (at >= 0) { candidates[at] = c; replaced++; if (first < 0) first = at; }
+    else { candidates.push(c); if (first < 0) first = candidates.length - 1; }
+  }
+  if (first >= 0) current = first;
+  render();
+  // render() 会顺手把 #msg 刷成「N 位候选人」，所以这句话要**在 render 之后**写
+  $("#msg").textContent = (imported.length ? note : "⚠ 没读出候选人") + (replaced ? "（同 id 的标签已顶上）" : "");
+  $("#msg").className = imported.length ? (note.indexOf("⚠") >= 0 ? "warn" : "ok") : "warn";
+}
+
+/* 一批 {name, text} → 塞进标签栏。tres 是主角，json 是台词。 */
+function importFromFiles(files, what) {
+  const tres = files.filter((f) => f.name.endsWith(".tres") || f.name.endsWith(".res"));
+  if (!tres.length) {
+    $("#msg").textContent = "⚠ 没选到 .tres（只认 .tres；同一个人的 ask json 可以一起选）";
+    $("#msg").className = "warn";
+    return;
+  }
+  const imported = [];
+  for (const t of tres) {
+    const c = parseTres(t.text);
+    if (c == null) {
+      $("#msg").textContent = "⚠ " + t.name + " 不像候选人 .tres（没有 id / display_name / 三项属性）";
+      $("#msg").className = "warn";
+      continue;
+    }
+    attachAsks(c, files);          // 名字对得上就贴台词；对不上就留着 false（写回会跳过）
+    imported.push(c);
+  }
+  applyImport(imported, importNote(imported, what));
+}
+
+$("#loadFiles").onclick = () => $("#filePicker").click();
+$("#filePicker").onchange = async (e) => {
+  const files = [];
+  for (const f of e.target.files) files.push({ name: f.name, text: await f.text() });
+  e.target.value = "";             // 清空：再选同一个文件时 change 还会响
+  importFromFiles(files, "已读取");
+};
+
+// 拖拽：不用先点按钮再找文件。drop 默认会让浏览器**打开**这个文件，所以要挡掉。
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", async (e) => {
+  if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+  e.preventDefault();
+  const files = [];
+  for (const f of e.dataTransfer.files) files.push({ name: f.name, text: await f.text() });
+  importFromFiles(files, "已拖入");
+});
+
+// Chromium：一次读整份 data/（candidates/*.tres + asks/*.json）
+if (window.showDirectoryPicker) {
+  $("#loadDir").hidden = false;
+  $("#loadDir").onclick = async () => {
+    try {
+      const root = await window.showDirectoryPicker({ mode: "readwrite" });   // 还是选 data/
+      let asks = [];
+      try {
+        const askDir = await root.getDirectoryHandle("asks");
+        for await (const h of askDir.values()) {
+          if (h.kind === "file" && h.name.endsWith(".json")) {
+            asks.push({ name: h.name, text: await (await h.getFile()).text() });
+          }
+        }
+      } catch (e) {
+        // 没有 asks/ 目录：台词读不进来，下面 importNote 会明说「写回会跳过」
+      }
+      const imported = [];
+      const candDir = await root.getDirectoryHandle("candidates");
+      for await (const h of candDir.values()) {
+        if (h.kind !== "file" || !h.name.endsWith(".tres")) continue;
+        const c = parseTres(await (await h.getFile()).text());
+        if (c == null) continue;
+        attachAsks(c, asks);
+        imported.push(c);
+      }
+      applyImport(imported, importNote(imported, "已从 data/ 读取"));
+    } catch (e) {
+      if (e && e.name !== "AbortError") { $("#msg").textContent = "读取失败：" + e.message; $("#msg").className = "warn"; }
+    }
+  };
+}
 
 // Chromium：一次把 data/candidates 与 data/asks 都写好，省掉一个个下载
 if (window.showDirectoryPicker) {
@@ -536,9 +930,11 @@ if (window.showDirectoryPicker) {
   $("#saveDir").onclick = async () => {
     try {
       const root = await window.showDirectoryPicker({ mode: "readwrite" });   // 选 data/ 目录
-      let n = 0;
+      let n = 0, skipped = 0;
       for (const c of candidates) {
         for (const f of filesFor(c)) {
+          // 台词没读进来的 json 一律**不碰**：写出去就是用空台词盖掉别人真写的对话（见 filesFor）
+          if (!f.loaded) { skipped++; continue; }
           const dir = await root.getDirectoryHandle(f.dir, { create: true });
           const fh = await dir.getFileHandle(f.name, { create: true });
           const w = await fh.createWritable();
@@ -546,7 +942,9 @@ if (window.showDirectoryPicker) {
           n++;
         }
       }
-      $("#msg").textContent = "已写入 " + n + " 个文件 ✅"; $("#msg").className = "ok";
+      $("#msg").textContent = "已写入 " + n + " 个文件 ✅"
+        + (skipped ? "（跳过 " + skipped + " 个台词没读进来的 json）" : "");
+      $("#msg").className = skipped ? "warn" : "ok";
     } catch (e) {
       if (e && e.name !== "AbortError") { $("#msg").textContent = "写入失败：" + e.message; $("#msg").className = "warn"; }
     }
