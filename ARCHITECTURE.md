@@ -1707,11 +1707,11 @@ func _on_exit_pressed() -> void:
 
 ```
 进主菜单 ─ _ready() ─ _refresh_continue_button()
-                        └─ button.disabled = not SaveService.has_any_save()
+						└─ button.disabled = not SaveService.has_any_save()
 
 按下 ─ _on_continuegame_pressed()
-        ├─ SaveService.load_latest() 为真 → SceneRouter.goto_scene("day_loop")
-        └─ 为假（一份都没有 / 读坏了）→ 什么都不做，只把按钮重刷一遍
+		├─ SaveService.load_latest() 为真 → SceneRouter.goto_scene("day_loop")
+		└─ 为假（一份都没有 / 读坏了）→ 什么都不做，只把按钮重刷一遍
 ```
 
 - **亮不亮看的是「磁盘上有没有存档」**（`has_any_save()`：自动存档，或任何一个手动槽位）。

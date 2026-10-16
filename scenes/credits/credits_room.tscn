@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://1vjphav6dfo6"]
 
 [ext_resource type="Script" uid="uid://cybo2ov47trcl" path="res://scenes/credits/credits_room.gd" id="1_5c5tq"]
-[ext_resource type="Texture2D" uid="uid://dkr8asosqkhus" path="res://assets/art/Credit/CreditRoom.png" id="2_pvhpk"]
+[ext_resource type="Texture2D" uid="uid://bccuqym5x7wnu" path="res://assets/art/Credit/Credit_Room.png" id="2_t3xfx"]
 [ext_resource type="FontFile" uid="uid://dorb4fg0c836s" path="res://assets/fonts/Silver.ttf" id="3_lofe2"]
 [ext_resource type="Texture2D" uid="uid://4vdgxkla2roc" path="res://assets/art/btn_phd.png" id="4_j82at"]
 [ext_resource type="BitMap" uid="uid://c1yqwgvtuxb7c" path="res://assets/art/phd_click_mask.tres" id="5_28yq1"]
@@ -32,7 +32,7 @@ script = ExtResource("1_5c5tq")
 [node name="CreditBackground" type="Sprite2D" parent="." unique_id=1032463924]
 position = Vector2(575.53125, 324.50003)
 scale = Vector2(0.50797105, 0.50784934)
-texture = ExtResource("2_pvhpk")
+texture = ExtResource("2_t3xfx")
 
 [node name="GetBack" type="Button" parent="." unique_id=2060295476]
 layout_mode = 0

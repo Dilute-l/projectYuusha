@@ -2,18 +2,18 @@
 
 [ext_resource type="Script" uid="uid://v31l2hifnnvk" path="res://scenes/day/interview/interview.gd" id="1_fa01g"]
 [ext_resource type="Texture2D" uid="uid://c0glgwas5kv7" path="res://assets/art/interview/interview_background.png" id="2_fa8i0"]
-[ext_resource type="Texture2D" uid="uid://bvisgb5i4xwiw" path="res://assets/art/interview/noticebd_phd.png" id="4_8dvi3"]
 [ext_resource type="Texture2D" uid="uid://drhh42u1dx068" path="res://assets/art/interview/table.png" id="4_wtybp"]
 [ext_resource type="PackedScene" uid="uid://btulexr2cglap" path="res://scenes/day/interview/resume/resume.tscn" id="5_asawf"]
-[ext_resource type="Texture2D" uid="uid://csok7wd54o1wn" path="res://assets/art/interview/handbook_phd.png" id="5_h3fcf"]
-[ext_resource type="BitMap" uid="uid://4wg2b4fu0ffy" path="res://assets/art/interview/noticebd_phd.tres" id="5_ytunt"]
 [ext_resource type="PackedScene" uid="uid://cu45yv8cffejs" path="res://scenes/day/interview/interviewee.tscn" id="6_asawf"]
-[ext_resource type="BitMap" uid="uid://x3y8g1h1mu3e" path="res://assets/art/interview/handbook_phd.tres" id="6_q4rqa"]
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
+[ext_resource type="Texture2D" uid="uid://dkbfbtehuiepi" path="res://assets/art/interview/handbook.png" id="8_4uqih"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_asawf"]
+[ext_resource type="BitMap" uid="uid://bh0onrn7es88y" path="res://assets/art/interview/handbook.tres" id="9_xdl4b"]
 [ext_resource type="Texture2D" uid="uid://dxwh63d2bke8b" path="res://assets/art/interview/yes.png" id="10_wtybp"]
 [ext_resource type="Texture2D" uid="uid://c34p2mqnxvexr" path="res://assets/art/interview/yes_hover.png" id="11_4uqih"]
 [ext_resource type="BitMap" uid="uid://dl03ppkuvvo6y" path="res://assets/art/interview/yes.tres" id="11_k2e4n"]
+[ext_resource type="Texture2D" uid="uid://bgsnfl0ud3cd4" path="res://assets/art/interview/Boardery.png" id="11_xdl4b"]
+[ext_resource type="BitMap" uid="uid://86w8td2pynd7" path="res://assets/art/interview/Boardery.tres" id="12_sx5f3"]
 [ext_resource type="Texture2D" uid="uid://deffmax7f528e" path="res://assets/art/interview/no.png" id="12_wtybp"]
 [ext_resource type="Texture2D" uid="uid://y8i38h1dk0jt" path="res://assets/art/interview/water.png" id="14_k2e4n"]
 [ext_resource type="Texture2D" uid="uid://bel4htp3jetqo" path="res://assets/art/interview/no_hover.png" id="14_xdl4b"]
@@ -60,20 +60,26 @@ centered = false
 
 [node name="HandbookButton" type="TextureButton" parent="." unique_id=830048374]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-texture_normal = ExtResource("5_h3fcf")
-texture_click_mask = ExtResource("6_q4rqa")
+offset_left = -20.0
+offset_top = 60.0
+offset_right = 2246.0
+offset_bottom = 1334.0
+scale = Vector2(0.5, 0.5)
+texture_normal = ExtResource("8_4uqih")
+texture_click_mask = ExtResource("9_xdl4b")
 
 [node name="Resume" parent="." unique_id=429165533 instance=ExtResource("5_asawf")]
 layout_mode = 1
 
 [node name="NoticeBoard" type="TextureButton" parent="." unique_id=1916152136]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
-texture_normal = ExtResource("4_8dvi3")
-texture_click_mask = ExtResource("5_ytunt")
+offset_left = -200.0
+offset_top = -60.0
+offset_right = 2066.0
+offset_bottom = 1214.0
+scale = Vector2(0.6, 0.6)
+texture_normal = ExtResource("11_xdl4b")
+texture_click_mask = ExtResource("12_sx5f3")
 
 [node name="Approved" type="TextureButton" parent="." unique_id=1053593264]
 layout_mode = 0
