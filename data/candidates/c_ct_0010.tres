@@ -41,6 +41,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "我会火魔法。"
 judgment = "费耶尔就是个纵火犯，他不是法师。"
+fake_level = 2
 portrait_race = &"hu"
 portrait_eye = 102
 portrait_hair = 105

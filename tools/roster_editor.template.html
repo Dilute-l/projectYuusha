@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>勇者 · 排班编辑器</title>
+<style>
+:root{
+  --bg:#14161a; --panel:#1b1f26; --panel2:#222833; --line:#2c333f;
+  --fg:#e7ecf3; --dim:#93a0b1; --accent:#e0b04f;
+  --ok:#57bb7e; --warn:#e6a23c; --bad:#e0625f; --info:#5aa9e6;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:13px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+button{
+  font:inherit; color:var(--fg); background:var(--panel2);
+  border:1px solid var(--line); border-radius:6px; padding:4px 10px; cursor:pointer;
+}
+button:hover{background:#2b3341;border-color:#3b465a}
+button.primary{background:#3a2f16;border-color:#6b5324;color:var(--accent)}
+button.primary:hover{background:#4a3b1c}
+button:disabled{opacity:.45;cursor:default}
+input,select,textarea{
+  font:inherit; color:var(--fg); background:#11141a;
+  border:1px solid var(--line); border-radius:6px; padding:4px 8px;
+}
+textarea{width:100%;resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5}
+header{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel);
+}
+header h1{font-size:15px; margin:0; letter-spacing:.5px}
+header h1 span{color:var(--accent)}
+.stats{display:flex; gap:14px; color:var(--dim); margin-left:6px}
+.stats b{color:var(--fg)}
+.stats b.warn{color:var(--warn)}
+.spacer{flex:1}
+main{
+  flex:1; display:grid; grid-template-columns:330px minmax(360px,1fr) 400px;
+  gap:0; overflow:hidden;
+}
+main > section, main > aside{overflow-y:auto; padding:12px; min-height:0}
+#pool{border-right:1px solid var(--line); background:#171a1f}
+#preview{border-left:1px solid var(--line); background:#171a1f}
+.tools{display:flex; flex-direction:column; gap:6px; margin-bottom:10px}
+.row{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.row > input[type=text]{flex:1; min-width:80px}
+h2{font-size:12px; color:var(--dim); font-weight:600; letter-spacing:1px; margin:0 0 8px; text-transform:uppercase}
+
+/* ---------- 候选人池 ---------- */
+.card{
+  border:1px solid var(--line); background:var(--panel); border-radius:8px;
+  padding:7px 9px; margin-bottom:7px; cursor:pointer;
+}
+.card:hover{border-color:#3b465a; background:var(--panel2)}
+.card .nm{font-weight:600}
+.card .sub{color:var(--dim); font-size:12px}
+.card.placed{opacity:.55}
+.badges{display:flex; gap:4px; flex-wrap:wrap; margin-top:4px}
+.badge{
+  font-size:11px; padding:0 6px; border-radius:999px;
+  border:1px solid var(--line); color:var(--dim); background:#11141a;
+}
+.badge.ok{color:var(--ok);border-color:#2c4a38}
+.badge.warn{color:var(--warn);border-color:#4a3d22}
+.badge.bad{color:var(--bad);border-color:#4a2a2a}
+.badge.info{color:var(--info);border-color:#243a4a}
+
+/* ---------- 天 ---------- */
+.day{
+  border:1px solid var(--line); border-radius:9px; margin-bottom:10px;
+  background:var(--panel); overflow:hidden;
+}
+.day.active{border-color:var(--accent); box-shadow:0 0 0 1px rgba(224,176,79,.35)}
+.day > .hd{
+  display:flex; align-items:center; gap:8px; padding:7px 10px; cursor:pointer;
+  background:var(--panel2); flex-wrap:wrap;
+}
+.day > .hd .t{font-weight:600}
+.day > .hd .th{color:var(--dim); font-size:12px}
+.day > .hd .cnt{margin-left:auto; font-variant-numeric:tabular-nums}
+.cnt .n{color:var(--fg)}
+.cnt.miss .n{color:var(--warn)}
+.cnt.over .n{color:var(--bad)}
+.day ul{list-style:none; margin:0; padding:6px 8px}
+.day li{
+  display:flex; align-items:center; gap:6px; padding:3px 4px; border-radius:6px;
+  cursor:pointer; font-size:13px;
+}
+.day li:hover{background:#20252e}
+.day li .i{color:var(--dim); width:16px; text-align:right; font-variant-numeric:tabular-nums}
+.day li .j{color:var(--dim); font-size:12px}
+.day li .ops{margin-left:auto; display:flex; gap:2px; opacity:0}
+.day li:hover .ops{opacity:1}
+.day li .ops button{padding:0 6px; font-size:12px; line-height:18px}
+.empty{
+  color:#5c6775; font-size:12px; padding:6px 10px; border-top:1px dashed var(--line);
+}
+.empty b{color:var(--warn);font-weight:600}
+.line-slot{margin-left:auto; display:flex; align-items:center; gap:4px; color:var(--dim); font-size:12px}
+.line-slot input{width:44px; padding:1px 4px; text-align:center}
+
+/* ---------- 预览 ---------- */
+.sheet{
+  border:1px solid var(--line); border-radius:10px; background:var(--panel);
+  padding:14px 16px;
+}
+.sheet h3{margin:0 0 2px; font-size:18px; letter-spacing:1px}
+.sheet .meta{color:var(--dim); font-size:12px; margin-bottom:10px}
+.verdict{border-radius:8px; padding:8px 10px; margin:10px 0; font-size:12px; border:1px solid}
+.verdict.ok{background:#16241c;border-color:#2c4a38;color:#a8dcc0}
+.verdict.warn{background:#241f13;border-color:#4a3d22;color:#ead2a0}
+.verdict.bad{background:#241618;border-color:#4a2a2a;color:#efb0ae}
+.attrs{display:grid; grid-template-columns:auto 1fr auto; gap:6px 8px; align-items:center; margin:10px 0}
+.attrs .k{color:var(--dim); font-size:12px}
+.attrs .bar{height:7px; background:#11141a; border-radius:4px; overflow:hidden}
+.attrs .bar i{display:block; height:100%; background:linear-gradient(90deg,#4d7ba8,#7fb0dd)}
+.attrs .bar i.main{background:linear-gradient(90deg,#a8802c,#e0b04f)}
+.attrs .v{font-variant-numeric:tabular-nums; font-size:12px}
+.chips{display:flex; gap:5px; flex-wrap:wrap; margin:8px 0}
+.chip{font-size:11px; padding:1px 8px; border-radius:999px; border:1px solid var(--line); background:#11141a; color:var(--dim)}
+.chip.bad{color:var(--bad);border-color:#4a2a2a}
+.chip.ok{color:var(--ok);border-color:#2c4a38}
+.sec{margin-top:12px}
+.sec > .lb{color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:4px}
+.entry{border-left:2px solid var(--line); padding:2px 0 2px 9px; margin-bottom:8px}
+.entry .kind{font-size:11px; color:var(--info)}
+.dlg{background:#11141a; border:1px solid var(--line); border-radius:6px; padding:6px 8px; margin-top:5px; font-size:12px}
+.dlg .who{color:var(--accent)}
+.dlg .stamp{color:var(--bad)}
+.decl{font-style:italic; color:#c9d3e0; border-left:2px solid #3b465a; padding-left:9px}
+.judge{border-radius:8px; background:#1a1d24; border:1px solid #333c4a; padding:8px 10px; margin-top:6px}
+.judge .lb{color:var(--warn); font-size:11px; letter-spacing:1px; margin-bottom:3px}
+.check{list-style:none; margin:6px 0 0; padding:0; font-size:12px}
+.check li{padding:1px 0}
+.check .ok{color:var(--ok)}
+.check .warn{color:var(--warn)}
+.check .bad{color:var(--bad)}
+.muted{color:#5c6775}
+.hint{font-size:12px; color:var(--dim); margin-bottom:10px}
+
+/* ---------- 读写 data/days ---------- */
+#io{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.chk{display:flex; gap:4px; align-items:center; color:var(--dim); font-size:12px; cursor:pointer}
+#io-status{font-size:12px; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+#io-status.ok{color:var(--ok)}
+#io-status.warn{color:var(--warn)}
+#io-status.bad{color:var(--bad)}
+
+/* ---------- 导出 ---------- */
+#exportDialog{border:1px solid var(--line); border-radius:12px; background:var(--panel); color:var(--fg); max-width:900px; width:92vw; padding:0}
+#exportDialog::backdrop{background:rgba(0,0,0,.6)}
+#exportDialog .bar{display:flex; gap:6px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+#exportDialog .body{padding:12px 14px}
+#exportDialog textarea{height:52vh}
+.tabs{display:flex; gap:4px; flex-wrap:wrap}
+.tabs button[aria-pressed=true]{background:#3a2f16;border-color:#6b5324;color:var(--accent)}
+</style>
+</head>
+<body>
+
+<script id="roster-data" type="application/json">__ROSTER_DATA__</script>
+
+<header>
+  <h1>勇者 · <span>排班编辑器</span></h1>
+  <div class="stats">
+    <span>已排 <b id="st-placed">0</b>/42 位</span>
+    <span>目标 60 位 / 空位 <b id="st-blank" class="warn">0</b></span>
+    <span>会露假章 <b id="st-fake">0</b></span>
+  </div>
+  <div class="spacer"></div>
+  <div id="io">
+    <button id="btn-connect" title="选一次 data/days 文件夹，之后就能直接读、直接写">连接 data/days</button>
+    <button id="btn-read" disabled title="重新从 data/days 读一遍">重读</button>
+    <button id="btn-write" disabled title="把当前排班写回 data/days">写回</button>
+    <label class="chk"><input type="checkbox" id="chk-bak"> 存 .bak</label>
+    <input type="file" id="file-import" accept=".tres,.json" multiple hidden>
+    <button id="btn-import" title="不能连接文件夹时：手动挑 day_XX.tres 或 roster_plan.json">导入文件…</button>
+    <span id="io-status" class="muted">未连接</span>
+  </div>
+  <button id="btn-default">恢复方案</button>
+  <button id="btn-clear">清空</button>
+  <button id="btn-export" class="primary">导出…</button>
+</header>
+
+<main>
+  <section id="pool">
+    <h2>候选人池</h2>
+    <div class="tools">
+      <input type="text" id="q" placeholder="按名字 / 特质 / 编号搜索">
+      <div class="row">
+        <select id="f-job">
+          <option value="">全部职业</option>
+          <option value="fighter">战士</option>
+          <option value="mage">法师</option>
+          <option value="cleric">牧师</option>
+        </select>
+        <select id="f-fake">
+          <option value="">真假不限</option>
+          <option value="0">无造假</option>
+          <option value="1">有造假</option>
+        </select>
+      </div>
+      <div class="row">
+        <select id="f-stamp">
+          <option value="">印章不限</option>
+          <option value="real">真章</option>
+          <option value="none">无章</option>
+        </select>
+        <label class="muted"><input type="checkbox" id="f-free"> 只看没排的</label>
+      </div>
+    </div>
+    <div id="pool-list"></div>
+  </section>
+
+  <section id="days">
+    <h2>十天排班 <span class="muted" style="font-weight:400">（点某天标题设为“当前天”，再点左边的卡就能加进去）</span></h2>
+    <div id="day-list"></div>
+  </section>
+
+  <aside id="preview">
+    <h2>简历预览</h2>
+    <div id="preview-body"><p class="hint">点左边的候选人卡或右边某天的名字，看这份简历长什么样、哪些地方是假的。</p></div>
+  </aside>
+</main>
+
+<dialog id="exportDialog">
+  <div class="bar">
+    <strong>导出</strong>
+    <div class="tabs" id="tabs"></div>
+    <div class="spacer"></div>
+    <button id="btn-copy">复制</button>
+    <button id="btn-dl">下载这一个</button>
+    <button id="btn-dl-all" class="primary">下载全部 .tres</button>
+    <button id="btn-close">关闭</button>
+  </div>
+  <div class="body">
+    <textarea id="export-text" readonly spellcheck="false"></textarea>
+    <p class="hint" style="margin:8px 0 0">
+      想直接改项目里的文件：点右上角 <b>连接 data/days</b>（Chrome / Edge 支持），选一次文件夹，之后
+      「重读」把现有名单读进来、「写回」把改好的写出去（会先列清单让你确认，勾了「存 .bak」就把旧文件备份一份）。
+      不支持直连文件夹的浏览器：用「导入文件…」+ 下载，或者跑
+      <code>pwsh -File tools/apply_roster.ps1 -From 下载的 roster_plan.json -Apply</code>。
+    </p>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ============================================================
+   数据：候选人来自 data/candidates/*.tres + data/asks/*.json 的快照
+   （由 tools/build_roster_editor.ps1 生成；改了数据就重跑一次）
+   ============================================================ */
+const DAY_META = [
+  { d:1,  target:3, theme:'基础机制',        hint:'队伍均衡 · 职业与主属性 · 奖项与证书 · 数据公章齐全' },
+  { d:2,  target:4, theme:'履历造假',        hint:'从追问语气判断专业性' },
+  { d:3,  target:5, theme:'史莱姆 · 怪物手册', hint:'追问回答与手册信息的矛盾点' },
+  { d:4,  target:6, theme:'检测机构暴雷',    hint:'旧公章不可用 · 异常属性（单项>18 / 总和>45）' },
+  { d:5,  target:7, theme:'不是勇者也来应聘', hint:'厨师 / 神棍 / 铁匠 —— 实力不错就招' },
+  { d:6,  target:7, theme:'造假加剧',        hint:'辨水货：能力与材料是两件事' },
+  { d:7,  target:7, theme:'魔王城腹地',      hint:'全怪物出现，需要很多人才' },
+  { d:8,  target:7, theme:'公章全面造假',    hint:'材料到底哪里有问题' },
+  { d:9,  target:7, theme:'社会闲散人员',    hint:'城里没勇者了，都来碰运气' },
+  { d:10, target:7, theme:'总力战',          hint:'所有机制 + 所有勇者' }
+];
+
+/* docs/day_roster.md 里的方案（空位 = 那天不到目标人数） */
+const DEFAULT_PLAN = {
+  1:  ['c_dl_0007','c_ct_0011','c_ct_0008'],
+  2:  ['c_dl_0001','c_ct_0023','c_md_0002','c_ct_0002'],
+  3:  ['c_dl_0003','c_ct_0014','c_ct_0006','c_ct_0016','c_ct_0010'],
+  4:  ['c_ct_0003','c_ct_0026','c_ct_0012','c_ct_0017','c_ct_0007','c_ct_0020'],
+  5:  ['c_ct_0004','c_ct_0015','c_ct_0018','c_ct_0021'],
+  6:  ['c_ct_9904','c_ct_0027','c_ct_0001','c_ct_0019','c_md_0001'],
+  7:  ['c_ct_0009','c_ct_0013','c_ct_9902'],
+  8:  ['c_dl_0002','c_dl_0004','c_dl_0006'],
+  9:  ['c_ct_0022','c_ct_0024','c_ct_0005'],
+  10: ['c_md_9903','c_dl_0005','c_md_9901','c_md_9902','c_ct_9901','c_ct_0025']
+};
+
+const JOB_CN  = { fighter:'战士', mage:'法师', cleric:'牧师' };
+const RACE_CN = { human:'人类', elf:'精灵', dwarf:'矮人', st:'矮人' };
+const TRAIT_CN = {
+  fake0:'无造假', fake1:'造假·一', fake2:'造假·二', fake3:'造假·三',
+  caring:'体贴', rude:'粗鲁', timid:'胆小', prideful:'傲慢', active:'活泼',
+  bard:'吟游诗人', fourth_wall:'看破第四面墙', dwarf_joke:'爱讲矮人笑话',
+  slime_slayer:'史莱姆杀手', ghost_slayer:'幽灵杀手', goblin_slayer:'哥布林杀手',
+  harpy_slayer:'鸟妖杀手', mimic_slayer:'拟身怪杀手', orc_slayer:'兽人杀手'
+};
+const STAMP_CN = {
+  resume_stamp_real:'真章', resume_stamp_fake1:'假章·一', resume_stamp_fake2:'假章·二',
+  resume_stamp_fake3:'假章·三', resume_stamp_fake4:'假章·四', none:'不盖章'
+};
+const SINGLE_OVER = 18;   // 单项上限（D4 机制）
+const TOTAL_OVER  = 45;   // 三项总和上限（D4 机制）
+
+const RAW_TEXT = (typeof document !== 'undefined' && document.getElementById('roster-data'))
+  ? document.getElementById('roster-data').textContent
+  : (typeof globalThis.__ROSTER_JSON__ !== 'undefined' ? globalThis.__ROSTER_JSON__ : '{"candidates":[]}');
+const DATA = JSON.parse(RAW_TEXT);
+const CAND = DATA.candidates || [];
+const BY_ID = new Map(CAND.map(c => [c.id, c]));
+const TARGET_TOTAL = DAY_META.reduce((s, m) => s + m.target, 0);
+
+/* ============================================================
+   纯函数：判断一份简历的“真假”（全部依据数据，不做推理）
+   ============================================================ */
+/* 造假程度：**以数据里那个 fake_level 字段为准**（CandidateResource.fake_level，0~3）。
+   老数据里没有这一行 → 0。特质里的 fakeN 只当交叉校验用（traitFakeOf）。 */
+function fakeLevelOf(c) {
+  const n = Number(c && c.fake);
+  return Number.isFinite(n) ? n : 0;
+}
+/* 特质里带的 fakeN（这批数据人手一个 fake0~fake3）。和 fake_level 对不上时提示一下。 */
+function traitFakeOf(c) {
+  let n = 0;
+  for (const t of (c && c.traits) || []) {
+    const m = /^fake(\d)$/.exec(t);
+    if (m) n = Math.max(n, Number(m[1]));
+  }
+  return n;
+}
+/* 简历上会印的种族名：display_race 非空就用它（和游戏里 resume.gd 一致） */
+function raceLabelOf(c) {
+  const shown = (c && c.dispr ? String(c.dispr).trim() : '');
+  if (shown) return shown;
+  return RACE_CN[c && c.race] || (c && c.race) || '';
+}
+function sumOf(c) { return (c.str || 0) + (c.int || 0) + (c.wis || 0); }
+function mainStatOf(job) { return job === 'fighter' ? 'str' : job === 'cleric' ? 'wis' : 'int'; }
+function mainStatOk(c) {
+  const k = mainStatOf(c.job);
+  const mine = c[k] || 0;
+  return ['str','int','wis'].every(o => o === k || (c[o] || 0) <= mine);
+}
+function overFlags(c) {
+  const out = [];
+  for (const k of ['str','int','wis']) {
+    if ((c[k] || 0) > SINGLE_OVER) out.push({ k, v: c[k], kind: 'single' });
+  }
+  if (sumOf(c) > TOTAL_OVER) out.push({ kind: 'total', v: sumOf(c) });
+  return out;
+}
+function askStampList(c) {
+  const out = [];
+  for (const e of c.entries || []) {
+    for (const line of e.ask || []) {
+      if (line.stamp && line.stamp !== 'resume_stamp_real') {
+        out.push({ where: e.desc, stamp: line.stamp, text: line.text });
+      }
+    }
+  }
+  return out;
+}
+/* 一句话结论 + 分级 */
+function verdictOf(c) {
+  const fk = fakeLevelOf(c);
+  const over = overFlags(c);
+  const fakeStamps = askStampList(c);
+  const problems = [];
+  if (fk > 0) problems.push('简历有造假（fake' + fk + '）');
+  if (!c.stamp) problems.push('没有公章');
+  if (over.length) problems.push('属性越界（' + over.map(o => o.kind === 'total' ? '总和 ' + o.v : (o.k === 'str' ? '力' : o.k === 'int' ? '智' : '慧') + ' ' + o.v).join('、') + '）');
+  if (!mainStatOk(c)) problems.push('主属性不是本职业最强项');
+  if (fakeStamps.length) problems.push('追问时会盖出假章');
+  let level = 'ok';
+  if (problems.length >= 3 || fk >= 3) level = 'bad';
+  else if (problems.length >= 1) level = 'warn';
+  return { level, problems, fakeLevel: fk, over, fakeStamps,
+           label: problems.length === 0 ? '材料与说法都没查出问题' : problems.join(' · ') };
+}
+/* 逐项检查清单（预览面板用） */
+function checksOf(c) {
+  const fk = fakeLevelOf(c);
+  const tf = traitFakeOf(c);
+  const over = overFlags(c);
+  const list = [];
+  list.push({ level: fk === 0 ? 'ok' : (fk >= 3 ? 'bad' : 'warn'),
+              text: '造假程度 fake_level = ' + fk + (fk === 0 ? '（没造假）' : '（' + ['', '一', '二', '三'][fk] + '级）') });
+  if (tf !== fk) {
+    list.push({ level: 'warn',
+                text: '⚠ 和特质对不上：特质里是 fake' + tf + '（fake_level 才是准的，特质的 fakeN 现在只参与相性）' });
+  }
+  list.push({ level: c.stamp ? 'ok' : 'bad',
+              text: c.stamp ? '公章：有（真章）' : '公章：缺（简历上没有章）' });
+  const single = over.filter(o => o.kind === 'single');
+  const total = over.filter(o => o.kind === 'total');
+  list.push({ level: single.length ? 'warn' : 'ok',
+              text: single.length ? '单项超 ' + SINGLE_OVER + '：' + single.map(o => o.v).join('、') : '单项都没超 ' + SINGLE_OVER });
+  list.push({ level: total.length ? 'warn' : 'ok',
+              text: total.length ? '三项总和 ' + sumOf(c) + '（超 ' + TOTAL_OVER + '）' : '三项总和 ' + sumOf(c) });
+  list.push({ level: mainStatOk(c) ? 'ok' : 'warn',
+              text: (JOB_CN[c.job] || c.job) + '的主属性应是' + ({ str:'力量', int:'智力', wis:'智慧' }[mainStatOf(c.job)]) + '，' + (mainStatOk(c) ? '符合' : '不符（分配反常）') });
+  list.push({ level: 'ok',
+              text: '种族：简历上印「' + raceLabelOf(c) + '」' + (c.dispr ? '（display_race 覆盖，race 仍是 ' + (RACE_CN[c.race] || c.race) + '）' : '（照 race 走）') });
+  const fs = askStampList(c);
+  list.push({ level: fs.length ? 'bad' : 'ok',
+              text: fs.length ? '追问里会盖出假章 ' + fs.length + ' 处（' + [...new Set(fs.map(s => STAMP_CN[s.stamp] || s.stamp))].join('、') + '）' : '追问里不会盖假章' });
+  return list;
+}
+
+/* ============================================================
+   状态
+   ============================================================ */
+const LS_KEY = 'yuusha.roster.v1';
+const state = {
+  plan: JSON.parse(JSON.stringify(DEFAULT_PLAN)),
+  slots: {},
+  uids: {},            // 每天 .tres 原来的 resource uid（写回时保留，避免 uid 漂移）
+  activeDay: 1,
+  selected: null,
+  exportTab: '1',
+  backup: false,       // 写回时是否把旧文件存成 .bak
+  source: ''           // '' = 默认方案 / 'dir' = 已连接 data/days / 'file' = 从文件导入
+};
+DAY_META.forEach(m => { state.slots[m.d] = Math.max(1, (state.plan[m.d] || []).length - 1); });
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s && s.plan) {
+      state.plan = s.plan; state.slots = s.slots || {};
+      state.uids = s.uids || {};
+      state.activeDay = s.activeDay || 1; state.selected = s.selected || null;
+      state.backup = !!s.backup;
+      DAY_META.forEach(m => {
+        if (typeof state.slots[m.d] !== 'number') state.slots[m.d] = Math.max(1, dayIds(m.d).length - 1);
+      });
+    }
+  } catch (e) { /* 坏存档就当没有 */ }
+}
+function saveState() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      plan: state.plan, slots: state.slots, uids: state.uids,
+      activeDay: state.activeDay, selected: state.selected, backup: state.backup
+    }));
+  } catch (e) {}
+}
+function dayIds(d) { return state.plan[d] || (state.plan[d] = []); }
+function placedAt(id) {
+  for (const m of DAY_META) if (dayIds(m.d).includes(id)) return m.d;
+  return 0;
+}
+function addToDay(d, id) {
+  const from = placedAt(id);
+  if (from === d) return;
+  if (from) dayIds(from).splice(dayIds(from).indexOf(id), 1);
+  dayIds(d).push(id);
+  state.selected = id; state.activeDay = d;
+  saveState(); renderAll();
+}
+function removeFromDay(d, idx) { dayIds(d).splice(idx, 1); saveState(); renderAll(); }
+function moveInDay(d, idx, dir) {
+  const arr = dayIds(d); const j = idx + dir;
+  if (j < 0 || j >= arr.length) return;
+  [arr[idx], arr[j]] = [arr[j], arr[idx]];
+  saveState(); renderAll();
+}
+
+/* ============================================================
+   导出：DayConfig .tres（格式对齐 data/days/day_02.tres）
+   ============================================================ */
+function tresForDayWith(d, ids, slots, uid) {
+  const head = '[gd_resource type="Resource" script_class="DayConfig" format=3' +
+    (uid ? ' uid="' + uid + '"' : '') + ']';
+  const L = [];
+  L.push(head);
+  L.push('');
+  L.push('[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_cand"]');
+  ids.forEach((id, i) => {
+    L.push('[ext_resource type="Resource" path="res://data/candidates/' + id + '.tres" id="' + (i + 2) + '_c' + i + '"]');
+  });
+  const scriptId = (ids.length + 2) + '_script';
+  L.push('[ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="' + scriptId + '"]');
+  L.push('');
+  L.push('[resource]');
+  L.push('script = ExtResource("' + scriptId + '")');
+  L.push('day_index = ' + d);
+  const refs = ids.map((_, i) => 'ExtResource("' + (i + 2) + '_c' + i + '")').join(', ');
+  L.push('candidates = Array[ExtResource("1_cand")]([' + refs + '])');
+  L.push('slots = ' + slots);
+  L.push('tutorial_step = ' + (d === 1 ? 1 : 0));
+  L.push('');
+  return L.join('\n');
+}
+function tresForDay(d) { return tresForDayWith(d, dayIds(d), state.slots[d], state.uids[d]); }
+
+function planSnapshot() {
+  const plan = {};
+  for (const m of DAY_META) plan[m.d] = dayIds(m.d).slice();
+  return {
+    generatedAt: new Date().toISOString(),
+    note: '由 tools/roster_editor.html 导出；tools/apply_roster.ps1 可以按它写进 data/days/',
+    days: plan,
+    slots: Object.fromEntries(DAY_META.map(m => [m.d, state.slots[m.d]])),
+    uids: Object.fromEntries(DAY_META.filter(m => state.uids[m.d]).map(m => [m.d, state.uids[m.d]]))
+  };
+}
+
+function planMarkdown() {
+  const L = [];
+  L.push('# 排班结果（导出时间 ' + new Date().toLocaleString() + '）');
+  L.push('');
+  L.push('| Day | 主题 | 出场 / 目标 | 名单 |');
+  L.push('| --- | --- | --- | --- |');
+  for (const m of DAY_META) {
+    const ids = dayIds(m.d);
+    const names = ids.map(id => {
+      const c = BY_ID.get(id);
+      return c ? c.name + '（`' + id + '`）' : '`' + id + '`';
+    });
+    const list = names.length ? names.join('、') : '（全部空位）';
+    L.push('| ' + m.d + ' | ' + m.theme + ' | ' + ids.length + ' / ' + m.target + ' | ' + list + ' |');
+  }
+  L.push('');
+  L.push('空位合计：' + DAY_META.reduce((s, m) => s + Math.max(0, m.target - dayIds(m.d).length), 0) + ' 位');
+  return L.join('\n');
+}
+
+/* ============================================================
+   读写 data/days
+   Chrome / Edge 可以用 File System Access API 直接连文件夹读写；
+   Firefox / Safari 不支持时走「导入文件…」+ 导出下载，或者用 tools/apply_roster.ps1。
+   ============================================================ */
+const FS = {
+  dir: null,                 // FileSystemDirectoryHandle
+  files: new Map(),          // 'day_01.tres' -> { text, ids, slots, uid }
+  supported: (typeof window !== 'undefined') && typeof window.showDirectoryPicker === 'function'
+};
+const OTHERS = new Map((DATA.others || []).map(o => [o.id, o]));   // 池子之外、data/candidates 里仍有的卡（旧占位等）
+
+function nameOfId(id) {
+  const c = BY_ID.get(id);
+  if (c) return c.name;
+  const o = OTHERS.get(id);
+  return o ? (o.name || id) : id;
+}
+function setStatus(text, level) {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('io-status');
+  if (!el) return;
+  el.textContent = text;
+  el.className = level || '';
+}
+
+/* ---------- 从 .tres 文本里把名单抠出来 ---------- */
+function parseDayTres(text, fileName) {
+  const ext = {};
+  for (const m of text.matchAll(/\[ext_resource [^\]]*path="res:\/\/([^"]+)" id="([^"]+)"\]/g)) ext[m[2]] = m[1];
+
+  const ids = [];
+  const arr = text.match(/candidates = Array\[[^\]]*\]\(\[([\s\S]*?)\]\)/);
+  if (arr) {
+    for (const m of arr[1].matchAll(/ExtResource\("([^"]+)"\)/g)) {
+      const p = ext[m[1]];
+      if (p) ids.push(p.split('/').pop().replace(/\.tres$/, ''));
+    }
+  }
+  if (!arr) {   // 数组那行坏了就按文件里出现的顺序兜底
+    for (const m of text.matchAll(/res:\/\/data\/candidates\/([A-Za-z0-9_]+)\.tres/g)) ids.push(m[1]);
+  }
+
+  const di = text.match(/^day_index = (\d+)$/m);
+  const sl = text.match(/^slots = (\d+)$/m);
+  const uid = (text.match(/^\[gd_resource[^\]]*uid="(uid:\/\/[^"]+)"/m) || [])[1] || '';
+  const fromName = Number((fileName.match(/day_(\d+)/) || [])[1]) || 0;
+  return { day: fromName || (di ? Number(di[1]) : 0), ids, slots: sl ? Number(sl[1]) : Math.max(1, ids.length - 1), uid };
+}
+
+/* ---------- 把读到的名单塞进编辑器 ---------- */
+function applyImported(entries, source) {
+  let days = 0, people = 0;
+  const unknown = new Set();
+  entries.slice().sort((a, b) => a.day - b.day).forEach(e => {
+    if (!e.day || !DAY_META.some(m => m.d === e.day)) return;
+    state.plan[e.day] = e.ids.slice();
+    state.slots[e.day] = e.slots;
+    state.uids[e.day] = e.uid || '';
+    days++; people += e.ids.length;
+    e.ids.forEach(id => { if (!BY_ID.has(id) && !OTHERS.has(id)) unknown.add(id); });
+  });
+  state.source = source;
+  saveState();
+  renderAll();
+  setStatus('已读取 ' + days + ' 天 / ' + people + ' 位' +
+    (unknown.size ? '（其中 ' + unknown.size + ' 个 id 在 data/candidates 里查不到）' : ''), unknown.size ? 'warn' : 'ok');
+}
+
+/* ---------- 目录句柄存 IndexedDB ---------- */
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('yuusha.roster', 1);
+    req.onupgradeneeded = () => { try { req.result.createObjectStore('h'); } catch (e) {} };
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbPut(key, value) {
+  const db = await idbOpen();
+  await new Promise((res, rej) => {
+    const tx = db.transaction('h', 'readwrite');
+    tx.objectStore('h').put(value, key);
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(key) {
+  try {
+    const db = await idbOpen();
+    return await new Promise(res => {
+      const tx = db.transaction('h', 'readonly');
+      const req = tx.objectStore('h').get(key);
+      req.onsuccess = () => res(req.result || null);
+      req.onerror = () => res(null);
+    });
+  } catch (e) { return null; }
+}
+
+async function ensurePermission(handle, write) {
+  if (!handle) return false;
+  const opts = { mode: write ? 'readwrite' : 'read' };
+  if (!handle.queryPermission) return true;
+  if (await handle.queryPermission(opts) === 'granted') return true;
+  if (!handle.requestPermission) return false;
+  return await handle.requestPermission(opts) === 'granted';
+}
+
+/* 用户挑的可能是 data/days，也可能是项目根目录 —— 都认 */
+async function resolveDaysDir(handle) {
+  const hasDays = async h => {
+    try { for await (const [name] of h.entries()) if (/^day_\d+\.tres$/.test(name)) return true; }
+    catch (e) {}
+    return false;
+  };
+  if (await hasDays(handle)) return handle;
+  try {
+    const dataDir = await handle.getDirectoryHandle('data');
+    if (await hasDays(dataDir)) return dataDir;
+    const daysDir = await dataDir.getDirectoryHandle('days');
+    if (await hasDays(daysDir)) return daysDir;
+  } catch (e) {}
+  try {
+    const daysDir = await handle.getDirectoryHandle('days');
+    if (await hasDays(daysDir)) return daysDir;
+  } catch (e) {}
+  return handle;
+}
+
+async function readFromDir() {
+  if (!FS.dir) return;
+  const entries = [];
+  FS.files.clear();
+  for await (const [name, handle] of FS.dir.entries()) {
+    if (!/^day_\d+\.tres$/.test(name) || handle.kind !== 'file') continue;
+    const text = await (await handle.getFile()).text();
+    const parsed = parseDayTres(text, name);
+    FS.files.set(name, { text, ids: parsed.ids, slots: parsed.slots, uid: parsed.uid });
+    entries.push(parsed);
+  }
+  if (!entries.length) { setStatus('这个文件夹里没有 day_XX.tres', 'bad'); return; }
+  applyImported(entries, 'dir');
+  document.getElementById('btn-read').disabled = false;
+  document.getElementById('btn-write').disabled = false;
+  document.getElementById('btn-connect').textContent = '重连 data/days';
+}
+
+async function connectDir() {
+  if (!FS.supported) {
+    setStatus('这个浏览器不能直接读写文件夹：用「导入文件…」，或导出后跑 apply_roster.ps1', 'warn');
+    return;
+  }
+  try {
+    const picked = await window.showDirectoryPicker({ id: 'yuusha-days', mode: 'readwrite' });
+    const dir = await resolveDaysDir(picked);
+    if (!await ensurePermission(dir, true)) { setStatus('没拿到写入权限', 'bad'); return; }
+    FS.dir = dir;
+    await idbPut('daysDir', dir);
+    await idbPut('daysName', dir.name);
+    await readFromDir();
+    if (FS.files.size) setStatus('已连接 ' + dir.name + '（可直接写回）', 'ok');
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    setStatus('连接失败：' + (e && e.message ? e.message : e), 'bad');
+  }
+}
+
+/* 重新打开工具时：句柄还在，但通常要一次点击才重新授权 */
+async function tryReconnect() {
+  if (!FS.supported) { setStatus('未连接（这浏览器不支持直连文件夹，用「导入文件…」）', ''); return; }
+  const handle = await idbGet('daysDir');
+  const savedName = await idbGet('daysName');
+  if (!handle) { setStatus('未连接', ''); return; }
+  let perm = 'granted';
+  if (handle.queryPermission) perm = await handle.queryPermission({ mode: 'readwrite' });
+  if (perm === 'granted') {
+    FS.dir = handle;
+    await readFromDir();
+    if (FS.files.size) setStatus('已连接 ' + (savedName || handle.name) + '（可直接写回）', 'ok');
+  } else {
+    setStatus('上次连过 ' + (savedName || handle.name) + '，点「连接 data/days」重新授权', 'warn');
+  }
+}
+
+/* ---------- 写回 ---------- */
+function dayFileName(d) { return 'day_' + String(d).padStart(2, '0') + '.tres'; }
+function differsFromDisk(d) {
+  if (!FS.files.size) return false;              // 还没连过，不标
+  const rec = FS.files.get(dayFileName(d));
+  if (!rec) return dayIds(d).length > 0;
+  return rec.ids.join(',') !== dayIds(d).join(',') || rec.slots !== state.slots[d];
+}
+
+async function writeToDir() {
+  if (!FS.dir) { setStatus('先「连接 data/days」', 'warn'); return; }
+  if (!await ensurePermission(FS.dir, true)) { setStatus('没拿到写入权限', 'bad'); return; }
+
+  const days = DAY_META.filter(m => differsFromDisk(m.d));
+  if (!days.length) { setStatus('十天都和磁盘上一致，没有要写的', 'ok'); return; }
+
+  const missing = [];
+  days.forEach(m => dayIds(m.d).forEach(id => {
+    if (!BY_ID.has(id) && !OTHERS.has(id)) missing.push('D' + m.d + ':' + id);
+  }));
+  const lines = days.map(m => {
+    const rec = FS.files.get(dayFileName(m.d));
+    return '  Day ' + m.d + '：' + dayIds(m.d).length + ' 位' + (rec ? '（磁盘上 ' + rec.ids.length + ' 位）' : '（磁盘上还没有这个文件）');
+  });
+  const msg = '要写回 ' + days.length + ' 天：\n' + lines.join('\n') +
+    (state.backup ? '\n\n旧的会存成 .bak' : '') +
+    (missing.length ? '\n\n⚠ ' + missing.length + ' 个 id 连 data/candidates 里都没有：\n  ' + missing.slice(0, 6).join('\n  ') : '');
+  if (!confirm(msg)) return;
+
+  let written = 0;
+  for (const m of days) {
+    const name = dayFileName(m.d);
+    const text = tresForDayWith(m.d, dayIds(m.d), state.slots[m.d], state.uids[m.d]);
+    try {
+      if (state.backup) {
+        const rec = FS.files.get(name);
+        if (rec) {
+          const bh = await FS.dir.getFileHandle(name + '.bak', { create: true });
+          const bw = await bh.createWritable();
+          await bw.write(rec.text);
+          await bw.close();
+        }
+      }
+      const fh = await FS.dir.getFileHandle(name, { create: true });
+      const w = await fh.createWritable();
+      await w.write(text);
+      await w.close();
+      FS.files.set(name, { text, ids: dayIds(m.d).slice(), slots: state.slots[m.d], uid: state.uids[m.d] || '' });
+      written++;
+    } catch (e) {
+      setStatus('写 ' + name + ' 失败：' + (e && e.message ? e.message : e), 'bad');
+      renderDays();
+      return;
+    }
+  }
+  renderDays();
+  setStatus('已写回 ' + written + ' 天' +
+    (missing.length ? '（⚠ ' + missing.length + ' 个 id 在 data/candidates 里查不到，游戏里会加载失败）' : '') +
+    '，回 Godot 点一下资源管理器就会重新导入', missing.length ? 'warn' : 'ok');
+}
+
+/* ---------- 兜底：手动导入文件 ---------- */
+async function importFiles(files) {
+  const entries = [];
+  let planObj = null;
+  for (const f of files) {
+    const text = await f.text();
+    if (/\.json$/i.test(f.name)) {
+      try { planObj = JSON.parse(text); } catch (e) { setStatus(f.name + ' 不是合法 JSON', 'bad'); return; }
+      continue;
+    }
+    entries.push(parseDayTres(text, f.name));
+  }
+  if (planObj && planObj.days) {
+    const list = Object.keys(planObj.days).map(d => ({
+      day: Number(d),
+      ids: Array.isArray(planObj.days[d]) ? planObj.days[d].slice() : [],
+      slots: Number((planObj.slots || {})[d]) || Math.max(1, (planObj.days[d] || []).length - 1),
+      uid: (planObj.uids || {})[d] || ''
+    }));
+    applyImported(list, 'file');
+    return;
+  }
+  if (!entries.length) { setStatus('没读到 day_XX.tres', 'warn'); return; }
+  applyImported(entries, 'file');
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+const $ = sel => document.querySelector(sel);
+
+function renderHeader() {
+  const placed = DAY_META.reduce((s, m) => s + dayIds(m.d).length, 0);
+  const blank = DAY_META.reduce((s, m) => s + Math.max(0, m.target - dayIds(m.d).length), 0);
+  const fake = [...new Set(DAY_META.flatMap(m => dayIds(m.d)))]
+    .map(id => BY_ID.get(id)).filter(Boolean).filter(c => askStampList(c).length).length;
+  $('#st-placed').textContent = placed;
+  $('#st-blank').textContent = blank;
+  $('#st-fake').textContent = fake;
+}
+
+function badge(text, cls) { return '<span class="badge ' + (cls || '') + '">' + text + '</span>'; }
+
+function renderPool() {
+  const q = ($('#q').value || '').trim().toLowerCase();
+  const job = $('#f-job').value;
+  const fake = $('#f-fake').value;
+  const stamp = $('#f-stamp').value;
+  const freeOnly = $('#f-free').checked;
+
+  const list = CAND.filter(c => {
+    if (job && c.job !== job) return false;
+    const fk = fakeLevelOf(c);
+    if (fake === '0' && fk !== 0) return false;
+    if (fake === '1' && fk === 0) return false;
+    if (stamp === 'real' && !c.stamp) return false;
+    if (stamp === 'none' && c.stamp) return false;
+    const at = placedAt(c.id);
+    if (freeOnly && at) return false;
+    if (q) {
+      const hay = (c.name + ' ' + c.id + ' ' + (c.traits || []).join(' ') + ' ' + (JOB_CN[c.job] || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const html = list.map(c => {
+    const at = placedAt(c.id);
+    const fk = fakeLevelOf(c);
+    const bs = [];
+    bs.push(badge('fake' + fk, fk === 0 ? 'ok' : (fk >= 3 ? 'bad' : 'warn')));
+    bs.push(badge(c.stamp ? '真章' : '无章', c.stamp ? 'ok' : 'bad'));
+    const over = overFlags(c);
+    if (over.length) bs.push(badge('越界', 'warn'));
+    const fs = askStampList(c);
+    if (fs.length) bs.push(badge('会露假章', 'bad'));
+    if (at) bs.push(badge('D' + at, 'info'));
+    return '<div class="card' + (at ? ' placed' : '') + '" data-id="' + c.id + '">' +
+      '<div class="nm">' + esc(c.name) + '</div>' +
+      '<div class="sub">' + (JOB_CN[c.job] || c.job) + ' · Lv' + c.level + ' · ' +
+        c.str + '/' + c.int + '/' + c.wis + ' · ' + esc(raceLabelOf(c)) + ' · ' + esc(c.id) + '</div>' +
+      '<div class="badges">' + bs.join('') + '</div>' +
+      '</div>';
+  }).join('');
+
+  $('#pool-list').innerHTML = html || '<p class="hint">没有符合条件的候选人。</p>';
+}
+
+function renderDays() {
+  const html = DAY_META.map(m => {
+    const ids = dayIds(m.d);
+    const cls = ids.length === m.target ? '' : (ids.length > m.target ? ' over' : ' miss');
+    const li = ids.map((id, i) => {
+      const c = BY_ID.get(id);
+      const known = !!c || OTHERS.has(id);
+      const nm = c ? c.name : nameOfId(id);
+      const fk = c ? fakeLevelOf(c) : 0;
+      const mark = [];
+      if (!known) mark.push('<span class="badge bad">查不到</span>');
+      if (c && !c.stamp) mark.push('<span class="badge bad">无章</span>');
+      if (fk >= 3) mark.push('<span class="badge bad">fake' + fk + '</span>');
+      if (c && hoverFlags(c)) mark.push('<span class="badge warn">越界</span>');
+      return '<li data-day="' + m.d + '" data-id="' + id + '" data-idx="' + i + '">' +
+        '<span class="i">' + (i + 1) + '</span>' +
+        '<span>' + esc(nm) + '</span>' +
+        '<span class="j">' + (c ? (JOB_CN[c.job] || '') : '') + '</span>' + mark.join('') +
+        '<span class="ops">' +
+          '<button data-act="up" title="上移">↑</button>' +
+          '<button data-act="down" title="下移">↓</button>' +
+          '<button data-act="del" title="移出">×</button>' +
+        '</span></li>';
+    }).join('');
+    const blank = m.target - ids.length;
+    const dirty = differsFromDisk(m.d);
+    return '<div class="day' + (state.activeDay === m.d ? ' active' : '') + '" data-day="' + m.d + '">' +
+      '<div class="hd" data-role="day-hd">' +
+        '<span class="t">Day ' + m.d + '</span>' +
+        '<span class="th">' + esc(m.theme) + ' · ' + esc(m.hint) + '</span>' +
+        '<span class="line-slot">名额 <input type="number" min="1" max="12" value="' + state.slots[m.d] + '" data-role="slots"></span>' +
+        '<span class="cnt' + cls + '"><span class="n">' + ids.length + '</span>/' + m.target + '</span>' +
+        (dirty ? '<span class="badge warn" title="和磁盘上的 day_XX.tres 不一样，写回才会生效">待写</span>' : '') +
+      '</div>' +
+      '<ul>' + li + '</ul>' +
+      (blank > 0 ? '<div class="empty">还空着 <b>' + blank + '</b> 位（这天目标 ' + m.target + ' 人）</div>' : '') +
+      '</div>';
+  }).join('');
+  $('#day-list').innerHTML = html;
+}
+function hoverFlags(c) { return overFlags(c).length > 0; }
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
+}
+
+function renderPreview() {
+  const id = state.selected;
+  const c = id && BY_ID.get(id);
+  if (!c) {
+    $('#preview-body').innerHTML = '<p class="hint">点左边的候选人卡，或点某天名单里的名字，看这份简历长什么样、哪些地方是假的。</p>';
+    return;
+  }
+  const v = verdictOf(c);
+  const checks = checksOf(c);
+  const at = placedAt(c.id);
+  const maxAttr = Math.max(20, c.str, c.int, c.wis);
+  const bar = (k, label) => {
+    const val = c[k] || 0;
+    const main = mainStatOf(c.job) === k;
+    return '<span class="k">' + label + (main ? ' ★' : '') + '</span>' +
+      '<span class="bar"><i class="' + (main ? 'main' : '') + '" style="width:' + Math.round(val / maxAttr * 100) + '%"></i></span>' +
+      '<span class="v">' + val + '</span>';
+  };
+  const entries = (c.entries || []).map((e, i) => {
+    const kind = e.kind === 'skill' ? '专长' : '经验';
+    const dlg = (e.ask || []).map(l =>
+      '<div><span class="who">' + esc(l.who) + '：</span>' + esc(l.text) +
+      (l.stamp ? ' <span class="stamp">［' + esc(STAMP_CN[l.stamp] || l.stamp) + '］</span>' : '') +
+      (l.popup && !l.stamp ? ' <span class="badge info">' + esc(l.popup) + '</span>' : '') +
+      '</div>').join('');
+    return '<div class="entry"><div><span class="kind">' + kind + ' ' + (i + 1) + '</span> · ' + esc(e.desc) + '</div>' +
+      (dlg ? '<div class="dlg">' + dlg + '</div>' : '') + '</div>';
+  }).join('');
+
+  $('#preview-body').innerHTML =
+    '<div class="sheet">' +
+      '<h3>' + esc(c.name) + '</h3>' +
+      '<div class="meta">' + esc(raceLabelOf(c)) +
+        (c.dispr ? ' <span class="muted">（race: ' + esc(RACE_CN[c.race] || c.race) + '）</span>' : '') +
+        ' · ' + (JOB_CN[c.job] || c.job) +
+        ' · Lv' + c.level + ' · ' + esc(c.gender) + ' · ' + c.age + ' 岁' +
+        (at ? ' · <span class="badge info">已排在 Day ' + at + '</span>' : ' · <span class="muted">未排</span>') +
+      '</div>' +
+      '<div class="verdict ' + v.level + '"><b>' +
+        (v.level === 'ok' ? '看起来没问题' : v.level === 'warn' ? '有可疑之处' : '明显有问题') +
+        '</b>：' + esc(v.label) + '</div>' +
+      '<div class="attrs">' + bar('str', '力量') + bar('int', '智力') + bar('wis', '智慧') + '</div>' +
+      '<div class="muted" style="font-size:12px">三项总和 ' + sumOf(c) +
+        (sumOf(c) > TOTAL_OVER ? '（<span class="warn">超 ' + TOTAL_OVER + '</span>）' : '') + '</div>' +
+      '<div class="chips">' + ((c.traits || []).length
+        ? c.traits.map(t => '<span class="chip ' + (/^fake[1-9]$/.test(t) ? 'bad' : '') + '">' + esc(TRAIT_CN[t] || t) + '</span>').join('')
+        : '<span class="muted">（无特质）</span>') + '</div>' +
+      '<div class="chips">' + (c.stamp ? '<span class="chip ok">简历上：真章</span>' : '<span class="chip bad">简历上：没有章</span>') +
+        (askStampList(c).map(s => '<span class="chip bad">追问会盖出 ' + esc(STAMP_CN[s.stamp] || s.stamp) + '</span>').join('')) +
+      '</div>' +
+      '<div class="sec"><div class="lb">简历条目（含追问原文）</div>' + (entries || '<div class="muted">（空）</div>') + '</div>' +
+      (c.declaration ? '<div class="sec"><div class="lb">团队宣言</div><div class="decl">' + esc(c.declaration) + '</div></div>' : '') +
+      '<div class="sec"><div class="lb">检查清单</div><ul class="check">' +
+        checks.map(k => '<li class="' + k.level + '">' + (k.level === 'ok' ? '✓ ' : k.level === 'warn' ? '⚠ ' : '✗ ') + esc(k.text) + '</li>').join('') +
+      '</ul></div>' +
+      '<div class="judge"><div class="lb">判定（面试结束后的真相）</div>' + esc(c.judgment || '（无）') + '</div>' +
+      '<div class="row" style="margin-top:10px">' +
+        '<button data-act="add-active">加到 Day ' + state.activeDay + '</button>' +
+        (at ? '<button data-act="unplace">从 Day ' + at + ' 移出</button>' : '') +
+      '</div>' +
+    '</div>';
+}
+
+function renderAll() { renderHeader(); renderPool(); renderDays(); renderPreview(); }
+
+/* ============================================================
+   导出面板
+   ============================================================ */
+function exportTabs() {
+  const tabs = DAY_META.map(m => ({ key: String(m.d), label: 'day_' + String(m.d).padStart(2, '0') }));
+  tabs.push({ key: 'md', label: '名单.md' });
+  tabs.push({ key: 'json', label: 'roster_plan.json' });
+  return tabs;
+}
+function exportText(key) {
+  if (key === 'md') return planMarkdown();
+  if (key === 'json') return JSON.stringify(planSnapshot(), null, 2);
+  const d = Number(key);
+  return tresForDayWith(d, dayIds(d), state.slots[d]);
+}
+function renderExport() {
+  const tabs = exportTabs();
+  $('#tabs').innerHTML = tabs.map(t =>
+    '<button data-tab="' + t.key + '" aria-pressed="' + (state.exportTab === t.key) + '">' + t.label + '</button>').join('');
+  $('#export-text').value = exportText(state.exportTab);
+}
+function openExport(key) {
+  if (key) state.exportTab = key;
+  renderExport();
+  $('#exportDialog').showModal();
+}
+
+/* ============================================================
+   事件
+   ============================================================ */
+function boot() {
+  loadState();
+  if (!state.selected && CAND.length) state.selected = CAND[0].id;
+
+  /* 池：点卡 = 选预览 + 加到当前天 */
+  $('#pool-list').addEventListener('click', e => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const id = card.dataset.id;
+    const at = placedAt(id);
+    if (at) { state.selected = id; state.activeDay = at; saveState(); renderAll(); }
+    else { addToDay(state.activeDay, id); }
+  });
+
+  /* 天：点标题设为当前天；点名字看预览；↑↓× */
+  $('#day-list').addEventListener('click', e => {
+    if (e.target.tagName === 'INPUT') return;   // 名额输入框：让用户安静地打字
+    const dayEl = e.target.closest('.day');
+    if (!dayEl) return;
+    const d = Number(dayEl.dataset.day);
+
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      e.stopPropagation();
+      const li = act.closest('li');
+      const idx = Number(li.dataset.idx);
+      if (act.dataset.act === 'del') removeFromDay(d, idx);
+      if (act.dataset.act === 'up') moveInDay(d, idx, -1);
+      if (act.dataset.act === 'down') moveInDay(d, idx, 1);
+      return;
+    }
+    if (e.target.closest('[data-role=day-hd]')) {
+      state.activeDay = d;
+      saveState();
+      renderDays();
+      const li = e.target.closest('li');
+      if (li) { state.selected = li.dataset.id; saveState(); renderPreview(); }
+      return;
+    }
+    const li = e.target.closest('li');
+    if (li) {
+      state.selected = li.dataset.id;
+      state.activeDay = d;
+      saveState();
+      renderDays(); renderPreview();
+    }
+  });
+
+  $('#day-list').addEventListener('input', e => {
+    if (e.target.dataset.role !== 'slots') return;
+    const d = Number(e.target.closest('.day').dataset.day);
+    const v = Math.max(1, Math.min(12, Number(e.target.value) || 1));
+    state.slots[d] = v;
+    saveState();
+  });
+
+  /* 预览面板上的按钮 */
+  $('#preview-body').addEventListener('click', e => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    if (act.dataset.act === 'add-active' && state.selected) addToDay(state.activeDay, state.selected);
+    if (act.dataset.act === 'unplace' && state.selected) {
+      const d = placedAt(state.selected);
+      if (d) { dayIds(d).splice(dayIds(d).indexOf(state.selected), 1); saveState(); renderAll(); }
+    }
+  });
+
+  /* 筛选 */
+  ['#q','#f-job','#f-fake','#f-stamp','#f-free'].forEach(sel => {
+    const el = $(sel);
+    el.addEventListener(el.type === 'text' ? 'input' : 'change', renderPool);
+  });
+
+  /* 读写 data/days */
+  $('#btn-connect').addEventListener('click', connectDir);
+  $('#btn-read').addEventListener('click', () => { if (FS.dir) readFromDir(); else connectDir(); });
+  $('#btn-write').addEventListener('click', writeToDir);
+  $('#chk-bak').checked = state.backup;
+  $('#chk-bak').addEventListener('change', e => { state.backup = e.target.checked; saveState(); });
+  $('#btn-import').addEventListener('click', () => $('#file-import').click());
+  $('#file-import').addEventListener('change', async e => {
+    const files = [...e.target.files];
+    e.target.value = '';
+    if (files.length) await importFiles(files);
+  });
+  tryReconnect();
+
+  /* 顶部按钮 */
+  $('#btn-default').addEventListener('click', () => {
+    if (!confirm('恢复成 docs/day_roster.md 里的方案？（当前调整会丢）')) return;
+    state.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
+    DAY_META.forEach(m => { state.slots[m.d] = Math.max(1, dayIds(m.d).length - 1); });
+    state.selected = null; state.activeDay = 1;
+    saveState(); renderAll();
+  });
+  $('#btn-clear').addEventListener('click', () => {
+    if (!confirm('清空所有天的名单？')) return;
+    DAY_META.forEach(m => { state.plan[m.d] = []; });
+    saveState(); renderAll();
+  });
+  $('#btn-export').addEventListener('click', () => openExport());
+
+  /* 导出面板 */
+  $('#tabs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-tab]');
+    if (!b) return;
+    state.exportTab = b.dataset.tab;
+    renderExport();
+  });
+  $('#btn-close').addEventListener('click', () => $('#exportDialog').close());
+  $('#btn-copy').addEventListener('click', async () => {
+    const el = $('#export-text');
+    try { await navigator.clipboard.writeText(el.value); }
+    catch (err) { el.select(); document.execCommand('copy'); }
+    flash($('#btn-copy'), '已复制');
+  });
+  $('#btn-dl').addEventListener('click', () => {
+    downloadOne(state.exportTab);
+  });
+  $('#btn-dl-all').addEventListener('click', () => {
+    const jobs = DAY_META.map((m, i) => () => downloadOne(String(m.d)));
+    jobs.push(() => downloadOne('md'), () => downloadOne('json'));
+    let i = 0;
+    const tick = () => { if (i >= jobs.length) return; jobs[i++](); setTimeout(tick, 220); };
+    tick();
+  });
+
+  renderAll();
+}
+
+function flash(btn, text) {
+  const old = btn.textContent;
+  btn.textContent = text;
+  setTimeout(() => { btn.textContent = old; }, 900);
+}
+
+function fileNameFor(key) {
+  if (key === 'md') return 'roster_plan.md';
+  if (key === 'json') return 'roster_plan.json';
+  return 'day_' + String(Number(key)).padStart(2, '0') + '.tres';
+}
+function downloadOne(key) {
+  download(fileNameFor(key), exportText(key));
+}
+function download(name, text) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+/* 浏览器里才启动；Node 里只取纯函数做自检 */
+if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.getElementById('day-list')) {
+  boot();
+}
+</script>
+</body>
+</html>

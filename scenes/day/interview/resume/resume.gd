@@ -214,10 +214,12 @@ static func ask_path_of(candidate: CandidateResource, entry_index: int) -> Strin
 ## 把姓名 / 种族 / 职业 / 性别 / 年龄 / 三围 / 组队宣言铺到各自的显示位上。
 ##
 ## race 与 job 都是资源（RaceDef / JobDef），取它们的 display_name；
+## 种族那一栏走 `shown_race_name()` —— 候选人要是填了 display_race，纸面上就印那一串
+## （只改显示，玩法判定仍然读 race 本身）。
 ## 任一为空就把那一栏清空 —— 不写「未知」这种兜底字，宁可空着，免得看不出来数据漏了。
 func _fill_fields(candidate: CandidateResource) -> void:
 	_set_label(_name_value, candidate.display_name)
-	_set_label(_race_value, candidate.race.display_name if candidate.race != null else "")
+	_set_label(_race_value, candidate.shown_race_name())
 	_set_label(_class_value, candidate.job.display_name if candidate.job != null else "")
 	_set_label(_gender_value, String(candidate.gender))
 	_set_label(_age_value, str(candidate.age))

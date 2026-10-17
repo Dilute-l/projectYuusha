@@ -41,6 +41,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "不会有人受伤的，我会照顾好大家！"
 judgment = "安必诺是个称职的护士，但她并没有那么擅长对付史莱姆。"
+fake_level = 1
 portrait_race = &"hu"
 portrait_eye = 203
 portrait_hair = 204

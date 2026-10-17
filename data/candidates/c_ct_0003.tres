@@ -36,6 +36,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([])
 team_declaration = "如此优秀的我加入你们的队伍，你们理应感到荣幸！"
 judgment = "……好吧，奥克斯是个活脱脱的水货。"
+fake_level = 3
 portrait_race = &"hu"
 portrait_eye = 104
 portrait_hair = 105

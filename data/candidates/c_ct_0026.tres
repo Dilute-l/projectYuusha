@@ -43,6 +43,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "我很期待能在这次冒险中收获些新的经验。"
 judgment = "帕里亚科斯的属性没有经过官方认证。"
+fake_level = 1
 portrait_race = &"hu"
 portrait_eye = 104
 portrait_hair = 104

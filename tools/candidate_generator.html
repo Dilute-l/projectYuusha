@@ -93,6 +93,14 @@
 
    等级（level）是**隐藏属性**：照写进 .tres，但不上简历纸，也没有「简历值 / 实际值」两说。
 
+   造假程度（fake_level，0~3）也是**不上简历纸**的字段：只给以后的机制当参考，
+   现在游戏里没有任何代码读它。0 = 不写这一行（默认值），和「没造假」是一个意思。
+   注意它和特质里的 fake0~fake3 **不是一回事**：那个参与相性计算，这个不参与。
+
+   显示种族（display_race）：填了就以它当简历上那一栏的种族名（例如 race 是 elf，
+   纸面印「仙灵」）。空 = 照 race 的 display_name。**只改纸面**，玩法判定仍然读 race，
+   立绘另有一套 portrait_race，都不受影响。
+
    牌子印章：每行的追问对话可以多写一个 popup_stamp 键（值 = POPUP_STAMP_NAMES 里的名字），
    盖在对话小牌子（Popup.tscn）上 —— 和简历那枚**共用同一批图**，
    但由**台词**决定盖不盖、盖哪张（dialogue_generator.html 里是同一个下拉）。
@@ -145,6 +153,8 @@ function blankCandidate(n) {
     id: "c_" + String(n).padStart(4, "0"),
     display_name: "", strength: 10, intelligence: 10, wisdom: 10,
     level: 1,                         // 等级：**隐藏属性**，不上简历纸（CandidateResource.level）
+    fake_level: 0,                    // 造假程度 0~3：**不上简历纸**，只给以后的机制参考
+    display_race: "",                 // 简历上印的种族名；空 = 照 race.display_name
     // 真实属性：只有「和简历不一样」的那几项才填，"" = 与简历一致。
     // 界面上是三个独立的框 —— 它们各自对应 .tres 里那个字典的一项。
     true_attributes: { strength: "", intelligence: "", wisdom: "" },
@@ -196,6 +206,7 @@ function render() {
     field("id（c_0001）", c.id, (v) => c.id = v.trim()),
     field("姓名 display_name", c.display_name, (v) => c.display_name = v),
     field("等级 level（隐藏，不上简历纸）", c.level, (v) => c.level = intOf(v), "number"),
+    field("造假程度 fake_level（0~3，不上简历纸，只作参考）", c.fake_level, (v) => c.fake_level = intOf(v), "number"),
     field("力量 strength（简历上写的）", c.strength, (v) => c.strength = intOf(v), "number"),
     field("智力 intelligence（简历上写的）", c.intelligence, (v) => c.intelligence = intOf(v), "number"),
     field("感知 wisdom（简历上写的）", c.wisdom, (v) => c.wisdom = intOf(v), "number"),
@@ -225,6 +236,7 @@ function render() {
   };
   basic.append(
     sel("种族 race（data/races/）", c.race, (v) => c.race = v, RACES),
+    field("显示种族 display_race（留空 = 照 race；只改简历纸面）", c.display_race, (v) => c.display_race = v),
     sel("职业 job（data/jobs/）", c.job, (v) => c.job = v, JOBS),
     sel("性别 gender", c.gender, (v) => c.gender = v, ["男", "女"]),
     sel("立绘种族 portrait_race", c.portrait_race, (v) => c.portrait_race = v, PORTRAIT_RACES),
@@ -384,6 +396,7 @@ function lineEditor(ln, arr, i) {
    （模板里 strength 默认 10 / portrait_eye 默认 1，那是「新增一位」时的方便值。） */
 const RES_DEFAULTS = {
   level: 1, strength: 0, intelligence: 0, wisdom: 0, age: 2,
+  fake_level: 0, display_race: "",
   gender: "男", portrait_race: "hu",
   portrait_eye: 101, portrait_hair: 101, portrait_mouth: 101, portrait_hat: 0,
 };
@@ -532,6 +545,8 @@ function parseTres(text) {
     id: tresString(res.id),
     display_name: tresString(res.display_name),
     level: tresInt(res.level, RES_DEFAULTS.level),
+    fake_level: tresInt(res.fake_level, RES_DEFAULTS.fake_level),
+    display_race: tresString(res.display_race),
     strength: tresInt(res.strength, RES_DEFAULTS.strength),
     intelligence: tresInt(res.intelligence, RES_DEFAULTS.intelligence),
     wisdom: tresInt(res.wisdom, RES_DEFAULTS.wisdom),
@@ -714,6 +729,12 @@ function buildTres(c) {
   }
   L.push("team_declaration = " + q(c.team_declaration));
   L.push("judgment = " + q(c.judgment));
+  // 造假程度：**只在非 0 时写**（默认值就是 0，写 0 只会让「没造假」的 .tres 变脏）。
+  // 它不上简历纸，纯给以后的机制当参考 —— 和 traits 里的 fake0~fake3 是两回事。
+  if (intOf(c.fake_level) > 0) L.push("fake_level = " + intOf(c.fake_level));
+  // 显示种族：**只在非空时写**（空 = 照 race.display_name，也就是默认行为）。
+  const dispr = String(c.display_race || "").trim();
+  if (dispr !== "") L.push("display_race = " + q(dispr));
   L.push("portrait_race = " + sn(c.portrait_race));
   L.push("portrait_eye = " + c.portrait_eye);
   L.push("portrait_hair = " + c.portrait_hair);

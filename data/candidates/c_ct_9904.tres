@@ -48,6 +48,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "希望你在我们的游戏里玩的开心！"
 judgment = "纸袋头实际上完全没有认真打架，他纯在摸鱼而已。"
+fake_level = 3
 portrait_race = &"hu"
 portrait_eye = 9904
 portrait_hair = 9904

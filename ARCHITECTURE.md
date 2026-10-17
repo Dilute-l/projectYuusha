@@ -180,6 +180,9 @@ class_name CandidateResource extends Resource
 @export var experience: Array[ResumeEntry] = [] # 个人履历与奖项（见 §3.2）
 @export var skill: Array[ResumeEntry] = []      # 专长（见 §3.2）
 @export_multiline var team_declaration: String  # 组队宣言：一整段自由文本，不挂追问
+@export var judgment: String                    # 战报评语：结算后呈现的那句「真相」
+@export var fake_level: int = 0                 # 造假程度 0~3：**不上任何界面**，只给后续机制参考
+@export var display_race: String = ""           # 简历上印的种族名；空 = 照 race.display_name
 @export var portrait: Texture2D                 # 整张立绘（可选；当前用拼装立绘，见下）
 @export var resume_stamp: Texture2D             # 简历上那枚印章；留空 = 不盖章（§10.6）
 
@@ -206,6 +209,9 @@ class_name CandidateResource extends Resource
 | `experience` | 个人履历与奖项 | `Array[ResumeEntry]`，每条 = 一句描述 + 追问对话 json 的路径 |
 | `skill` | 专长 | 同上。**与 `experience` 共用一套扁平序号**，见 §10.6 |
 | `team_declaration` | 组队宣言 | **一整段自由文本**，原样铺在纸面右下；不挂追问（它是「他自己喊的口号」，不是「可被质疑的履历」） |
+| `judgment` | 战报评语 | 结算之后战报上呈现的那句「真相」；和简历上的自述是**两回事** |
+| `fake_level` | 造假程度 | `0`~`3`（0 = 没造假）。**不上任何界面，当前没有任何代码读它** —— 留着给以后的机制（风险 / 举报 / 派系反应）当参考。⚠️ 和 `traits` 里的 `fake0`~`fake3` **不同源**：那个参与相性计算，这个不参与；老 `.tres` 没这一行 = 0 |
+| `display_race` | 简历上印的种族名 | 非空就替换纸面那一栏（例如 `race` 是 `elf`，纸面印「仙灵」）。**只换显示**：相性 / 叙事规则 / `combat_resolver.gd::_is_race()` 读的仍然是 `race`；立绘另看 `portrait_race`。取值走 `CandidateResource.shown_race_name()`，别处别自己拼 |
 | `resume_stamp` | 简历上的印章 | 一张贴图同时决定**显不显示**与**用哪张**：留空 = 不盖章（§10.6） |
 | `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号；面试者的长相也是数据，不是代码里摇的（§10.7） |
 

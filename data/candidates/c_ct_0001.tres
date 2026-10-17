@@ -34,6 +34,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
 team_declaration = "我会用我的魔法照顾好所有人的哦。"
 judgment = "虽然确实很体贴，但梅索西斯在属性上撒谎了。"
+fake_level = 1
 portrait_race = &"el"
 portrait_eye = 201
 portrait_hair = 201

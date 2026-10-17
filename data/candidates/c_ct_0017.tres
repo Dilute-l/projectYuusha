@@ -43,6 +43,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "别让其他废物拖我后腿。"
 judgment = "玛纳斯在简历上造了两处假。"
+fake_level = 2
 portrait_race = &"el"
 portrait_eye = 204
 portrait_hair = 202

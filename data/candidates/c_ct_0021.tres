@@ -43,6 +43,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("Resource_e2")])
 team_declaration = "啊~我会用音乐为队伍带来胜利的哦~"
 judgment = "弥思特瑞是个吟游诗人。但是他的音乐鼓舞了士气。"
+fake_level = 1
 portrait_race = &"el"
 portrait_eye = 202
 portrait_hair = 202

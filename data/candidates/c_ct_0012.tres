@@ -38,6 +38,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
 team_declaration = "我……我很强，真的！请把我纳入队伍吧！"
 judgment = "依斯尔确实在属性上造假了，但其他地方她都很诚实。"
+fake_level = 1
 portrait_race = &"hu"
 portrait_eye = 205
 portrait_hair = 203

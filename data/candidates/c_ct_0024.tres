@@ -36,6 +36,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
 team_declaration = "如，如果能真的遇到一条龙的话……我会努力！"
 judgment = "皮皮纳拉事实上从来没见过龙，更别说屠龙了。"
+fake_level = 1
 portrait_race = &"hu"
 portrait_eye = 102
 portrait_hair = 103

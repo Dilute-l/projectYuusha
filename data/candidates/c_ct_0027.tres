@@ -41,6 +41,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "别担心，我会处理好一切的哦。"
 judgment = "蔡西的个人履历造假了，她本人也不会对付幽灵。"
+fake_level = 2
 portrait_race = &"el"
 portrait_eye = 202
 portrait_hair = 204

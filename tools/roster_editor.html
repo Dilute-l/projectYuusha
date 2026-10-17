@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>勇者 · 排班编辑器</title>
+<style>
+:root{
+  --bg:#14161a; --panel:#1b1f26; --panel2:#222833; --line:#2c333f;
+  --fg:#e7ecf3; --dim:#93a0b1; --accent:#e0b04f;
+  --ok:#57bb7e; --warn:#e6a23c; --bad:#e0625f; --info:#5aa9e6;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:13px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+button{
+  font:inherit; color:var(--fg); background:var(--panel2);
+  border:1px solid var(--line); border-radius:6px; padding:4px 10px; cursor:pointer;
+}
+button:hover{background:#2b3341;border-color:#3b465a}
+button.primary{background:#3a2f16;border-color:#6b5324;color:var(--accent)}
+button.primary:hover{background:#4a3b1c}
+button:disabled{opacity:.45;cursor:default}
+input,select,textarea{
+  font:inherit; color:var(--fg); background:#11141a;
+  border:1px solid var(--line); border-radius:6px; padding:4px 8px;
+}
+textarea{width:100%;resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5}
+header{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel);
+}
+header h1{font-size:15px; margin:0; letter-spacing:.5px}
+header h1 span{color:var(--accent)}
+.stats{display:flex; gap:14px; color:var(--dim); margin-left:6px}
+.stats b{color:var(--fg)}
+.stats b.warn{color:var(--warn)}
+.spacer{flex:1}
+main{
+  flex:1; display:grid; grid-template-columns:330px minmax(360px,1fr) 400px;
+  gap:0; overflow:hidden;
+}
+main > section, main > aside{overflow-y:auto; padding:12px; min-height:0}
+#pool{border-right:1px solid var(--line); background:#171a1f}
+#preview{border-left:1px solid var(--line); background:#171a1f}
+.tools{display:flex; flex-direction:column; gap:6px; margin-bottom:10px}
+.row{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.row > input[type=text]{flex:1; min-width:80px}
+h2{font-size:12px; color:var(--dim); font-weight:600; letter-spacing:1px; margin:0 0 8px; text-transform:uppercase}
+
+/* ---------- 候选人池 ---------- */
+.card{
+  border:1px solid var(--line); background:var(--panel); border-radius:8px;
+  padding:7px 9px; margin-bottom:7px; cursor:pointer;
+}
+.card:hover{border-color:#3b465a; background:var(--panel2)}
+.card .nm{font-weight:600}
+.card .sub{color:var(--dim); font-size:12px}
+.card.placed{opacity:.55}
+.badges{display:flex; gap:4px; flex-wrap:wrap; margin-top:4px}
+.badge{
+  font-size:11px; padding:0 6px; border-radius:999px;
+  border:1px solid var(--line); color:var(--dim); background:#11141a;
+}
+.badge.ok{color:var(--ok);border-color:#2c4a38}
+.badge.warn{color:var(--warn);border-color:#4a3d22}
+.badge.bad{color:var(--bad);border-color:#4a2a2a}
+.badge.info{color:var(--info);border-color:#243a4a}
+
+/* ---------- 天 ---------- */
+.day{
+  border:1px solid var(--line); border-radius:9px; margin-bottom:10px;
+  background:var(--panel); overflow:hidden;
+}
+.day.active{border-color:var(--accent); box-shadow:0 0 0 1px rgba(224,176,79,.35)}
+.day > .hd{
+  display:flex; align-items:center; gap:8px; padding:7px 10px; cursor:pointer;
+  background:var(--panel2); flex-wrap:wrap;
+}
+.day > .hd .t{font-weight:600}
+.day > .hd .th{color:var(--dim); font-size:12px}
+.day > .hd .cnt{margin-left:auto; font-variant-numeric:tabular-nums}
+.cnt .n{color:var(--fg)}
+.cnt.miss .n{color:var(--warn)}
+.cnt.over .n{color:var(--bad)}
+.day ul{list-style:none; margin:0; padding:6px 8px}
+.day li{
+  display:flex; align-items:center; gap:6px; padding:3px 4px; border-radius:6px;
+  cursor:pointer; font-size:13px;
+}
+.day li:hover{background:#20252e}
+.day li .i{color:var(--dim); width:16px; text-align:right; font-variant-numeric:tabular-nums}
+.day li .j{color:var(--dim); font-size:12px}
+.day li .ops{margin-left:auto; display:flex; gap:2px; opacity:0}
+.day li:hover .ops{opacity:1}
+.day li .ops button{padding:0 6px; font-size:12px; line-height:18px}
+.empty{
+  color:#5c6775; font-size:12px; padding:6px 10px; border-top:1px dashed var(--line);
+}
+.empty b{color:var(--warn);font-weight:600}
+.line-slot{margin-left:auto; display:flex; align-items:center; gap:4px; color:var(--dim); font-size:12px}
+.line-slot input{width:44px; padding:1px 4px; text-align:center}
+
+/* ---------- 预览 ---------- */
+.sheet{
+  border:1px solid var(--line); border-radius:10px; background:var(--panel);
+  padding:14px 16px;
+}
+.sheet h3{margin:0 0 2px; font-size:18px; letter-spacing:1px}
+.sheet .meta{color:var(--dim); font-size:12px; margin-bottom:10px}
+.verdict{border-radius:8px; padding:8px 10px; margin:10px 0; font-size:12px; border:1px solid}
+.verdict.ok{background:#16241c;border-color:#2c4a38;color:#a8dcc0}
+.verdict.warn{background:#241f13;border-color:#4a3d22;color:#ead2a0}
+.verdict.bad{background:#241618;border-color:#4a2a2a;color:#efb0ae}
+.attrs{display:grid; grid-template-columns:auto 1fr auto; gap:6px 8px; align-items:center; margin:10px 0}
+.attrs .k{color:var(--dim); font-size:12px}
+.attrs .bar{height:7px; background:#11141a; border-radius:4px; overflow:hidden}
+.attrs .bar i{display:block; height:100%; background:linear-gradient(90deg,#4d7ba8,#7fb0dd)}
+.attrs .bar i.main{background:linear-gradient(90deg,#a8802c,#e0b04f)}
+.attrs .v{font-variant-numeric:tabular-nums; font-size:12px}
+.chips{display:flex; gap:5px; flex-wrap:wrap; margin:8px 0}
+.chip{font-size:11px; padding:1px 8px; border-radius:999px; border:1px solid var(--line); background:#11141a; color:var(--dim)}
+.chip.bad{color:var(--bad);border-color:#4a2a2a}
+.chip.ok{color:var(--ok);border-color:#2c4a38}
+.sec{margin-top:12px}
+.sec > .lb{color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:4px}
+.entry{border-left:2px solid var(--line); padding:2px 0 2px 9px; margin-bottom:8px}
+.entry .kind{font-size:11px; color:var(--info)}
+.dlg{background:#11141a; border:1px solid var(--line); border-radius:6px; padding:6px 8px; margin-top:5px; font-size:12px}
+.dlg .who{color:var(--accent)}
+.dlg .stamp{color:var(--bad)}
+.decl{font-style:italic; color:#c9d3e0; border-left:2px solid #3b465a; padding-left:9px}
+.judge{border-radius:8px; background:#1a1d24; border:1px solid #333c4a; padding:8px 10px; margin-top:6px}
+.judge .lb{color:var(--warn); font-size:11px; letter-spacing:1px; margin-bottom:3px}
+.check{list-style:none; margin:6px 0 0; padding:0; font-size:12px}
+.check li{padding:1px 0}
+.check .ok{color:var(--ok)}
+.check .warn{color:var(--warn)}
+.check .bad{color:var(--bad)}
+.muted{color:#5c6775}
+.hint{font-size:12px; color:var(--dim); margin-bottom:10px}
+
+/* ---------- 读写 data/days ---------- */
+#io{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.chk{display:flex; gap:4px; align-items:center; color:var(--dim); font-size:12px; cursor:pointer}
+#io-status{font-size:12px; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+#io-status.ok{color:var(--ok)}
+#io-status.warn{color:var(--warn)}
+#io-status.bad{color:var(--bad)}
+
+/* ---------- 导出 ---------- */
+#exportDialog{border:1px solid var(--line); border-radius:12px; background:var(--panel); color:var(--fg); max-width:900px; width:92vw; padding:0}
+#exportDialog::backdrop{background:rgba(0,0,0,.6)}
+#exportDialog .bar{display:flex; gap:6px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+#exportDialog .body{padding:12px 14px}
+#exportDialog textarea{height:52vh}
+.tabs{display:flex; gap:4px; flex-wrap:wrap}
+.tabs button[aria-pressed=true]{background:#3a2f16;border-color:#6b5324;color:var(--accent)}
+</style>
+</head>
+<body>
+
+<script id="roster-data" type="application/json">{"generatedAt":"2026-10-18T05:42:16","count":42,"candidates":[{"id":"c_ct_0001","name":"梅索西斯","group":"ct","job":"mage","race":"elf","level":1,"fake":1,"dispr":"","gender":"女","age":101,"str":8,"int":14,"wis":10,"traits":["fake1","caring"],"stamp":false,"declaration":"我会用我的魔法照顾好所有人的哦。","judgment":"虽然确实很体贴，但梅索西斯在属性上撒谎了。","entries":[{"kind":"experience","desc":"王国学生魔法水平六级","ask":[{"who":"面试官","text":"介意出示一下你的证书吗？"},{"who":"梅索西斯","text":"可以哦，请看。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"照顾他人","ask":[{"who":"面试官","text":"她看起来就蛮温柔的……似乎没必要问了。"}]}]},{"id":"c_ct_0002","name":"托尔","group":"ct","job":"cleric","race":"dwarf","level":1,"fake":0,"dispr":"","gender":"男","age":42,"str":12,"int":9,"wis":14,"traits":["fake0","rude"],"stamp":true,"declaration":"我来就是为了干架，杀人，顺便播撒福音。","judgment":"虽然托尔很粗暴，但他确实有点实力。","entries":[{"kind":"experience","desc":"大学僧祷言背默竞赛 一等奖","ask":[{"who":"面试官","text":"介意出示一下相关证书吗？"},{"who":"托尔","text":"我没带。如果你想要的话，我可以现场背给你听。"},{"who":"面试官","text":"呃……算了。"}]},{"kind":"skill","desc":"钉头锤专精","ask":[{"who":"面试官","text":"你作为一个牧师，不该精通某种神术吗？"},{"who":"托尔","text":"谁跟你说的？没见过战斗牧师？"},{"who":"面试官","text":"好吧。"}]}]},{"id":"c_ct_0003","name":"奥克斯","group":"ct","job":"fighter","race":"human","level":2,"fake":3,"dispr":"","gender":"男","age":20,"str":18,"int":14,"wis":12,"traits":["fake2","prideful"],"stamp":true,"declaration":"如此优秀的我加入你们的队伍，你们理应感到荣幸！","judgment":"……好吧，奥克斯是个活脱脱的水货。","entries":[{"kind":"experience","desc":"21.曾经作为唐石诃德的侍从，有丰富的战斗经验。","ask":[{"who":"面试官","text":"既然你曾是唐石诃德的侍从……你从他那里学到了什么？"},{"who":"奥克斯","text":"呃……哈哈，青出于蓝而胜于蓝，我现在比他强太多了！"}]},{"kind":"experience","desc":"王国学生魔法水平四级","ask":[{"who":"面试官","text":"你一个战士，为什么需要魔法水平考试？看看你的证书？"},{"who":"奥克斯","text":"呃……我太优秀了，有能力多考几个证书！"},{"who":"奥克斯","text":"只是证书我没带来，哈哈。"}]}]},{"id":"c_ct_0004","name":"贝特瑞","group":"ct","job":"cleric","race":"human","level":1,"fake":0,"dispr":"","gender":"男","age":38,"str":10,"int":9,"wis":13,"traits":["fake0","caring"],"stamp":true,"declaration":"我只是被餐厅开除之后单纯来碰碰运气……","judgment":"贝特瑞做的饭真的很好吃。","entries":[{"kind":"experience","desc":"厨房地狱真人秀节目第二名","ask":[{"who":"面试官","text":"哦，我看过这档节目！那个主厨，狗蛋辣木奇，对吧？"},{"who":"贝特瑞","text":"呃，对，就是那档。"}]},{"kind":"experience","desc":"十年主厨工作经验","ask":[{"who":"贝特瑞","text":"……在怀疑吗，嘛，我手上的茧子不会骗人。"},{"who":"面试官","text":"确实不像编出来的履历……"}]},{"kind":"skill","desc":"做饭","ask":[{"who":"贝特瑞","text":"就是这样，毕竟我是个厨子。"}]}]},{"id":"c_ct_0005","name":"塔米·新叶","group":"ct","job":"mage","race":"elf","level":1,"fake":0,"dispr":"","gender":"女","age":80,"str":7,"int":15,"wis":12,"traits":["fake0","timid"],"stamp":true,"declaration":"我……我会努力不拖大家后腿的！","judgment":"虽然有些胆怯，但塔米做的很不错。","entries":[{"kind":"experience","desc":"王国胜利第一魔法学院优秀毕业生","ask":[{"who":"面试官","text":"可以给我看看你的毕业证吗？"},{"who":"塔米·新叶","text":"好，好的，我找找……"},{"who":"塔米·新叶","text":"啊，坏了，我怎么忘带了！完了完了不好不好……"},{"who":"面试官","text":"（……她是不是快哭了？）"}]},{"kind":"experience","desc":"发表两篇mag","ask":[{"who":"面试官","text":"两篇mag……介意告诉我它们的题目吗？"},{"who":"塔米·新叶","text":"啊，分，分别是……嗯……"},{"who":"塔米·新叶","text":"《无声吟唱的可行性与推广试验》，还有《夸张动作幅度对常见法术效力的影响》"},{"who":"面试官","text":"（……嗯……魔网里都能查到，不是造假。）"}]},{"kind":"skill","desc":"学习能力","ask":[{"who":"面试官","text":"你说学习能力……是什么意思？"},{"who":"塔米·新叶","text":"就，就是，虽然我不是很厉害，但是我会认真学习其他人的！"}]}]},{"id":"c_ct_0006","name":"\\\"大铁锤\\\"斯坦","group":"ct","job":"fighter","race":"dwarf","level":2,"fake":0,"dispr":"","gender":"男","age":21,"str":14,"int":12,"wis":7,"traits":["fake0","slime_slayer","active"],"stamp":false,"declaration":"哈哈哈，我肯定没问题的，尽管相信我吧！","judgment":"斯坦表现得相当活跃，对这次任务的奉献很大。","entries":[{"kind":"experience","desc":"在森林清剿过数个史莱姆巢穴","ask":[{"who":"面试官","text":"能分享一下你讨伐史莱姆的经验吗？"},{"who":"\"大铁锤\"斯坦","text":"哦，哈哈，简单，把它们的核心直接碾碎就好！"}]},{"kind":"experience","desc":"“生还杯”密林生存竞赛 金奖","ask":[{"who":"面试官","text":"你的奖状，可以向我出示一下吗。"},{"who":"\"大铁锤\"斯坦","text":"当然，你知道吗，我在这个比赛里杀了不少史莱姆呢！","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"杀史莱姆","ask":[{"who":"","text":""},{"who":"","text":""}]}]},{"id":"c_ct_0007","name":"威克瑟","group":"ct","job":"mage","race":"elf","level":3,"fake":1,"dispr":"","gender":"男","age":120,"str":4,"int":18,"wis":12,"traits":["prideful","fake1"],"stamp":true,"declaration":"你们的队伍需要，且仅需要我一人。","judgment":"虽然威克瑟的证书是假的，但是他确实很有实力。","entries":[{"kind":"experience","desc":"全国杰出青年法师","ask":[{"who":"面试官","text":"没听说过你的名字……有证书吗？"},{"who":"威克瑟","text":"哼哼，你可看好了。我的实力可远远比这一纸证书要强。","popup":"AwardPhd","stamp":"resume_stamp_fake2"}]},{"kind":"experience","desc":"王国学生魔法水平六级","ask":[{"who":"面试官","text":"介意出示一下你的证书吗？"},{"who":"威克瑟","text":"好，请看。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"精密的法术和豪迈的破坏力","ask":[{"who":"面试官","text":"……真的吗，你要不要再会个时间停止？"},{"who":"威克瑟","text":"那是九环大法师才能做到的事情，我差了一点。"}]}]},{"id":"c_ct_0008","name":"伊利克斯","group":"ct","job":"cleric","race":"human","level":2,"fake":0,"dispr":"","gender":"男","age":25,"str":8,"int":11,"wis":15,"traits":["fake0","active","ghost_slayer"],"stamp":true,"declaration":"我会把洛必达的荣光播撒到每一处角落。","judgment":"伊利克斯表现出了相当不错的素养。","entries":[{"kind":"experience","desc":"曾在洛必达的神殿担任侍僧，有丰富的神术相关经验","ask":[{"who":"面试官","text":"介意解释一下你对于神术的理解吗？"},{"who":"伊利克斯","text":"当然了，神术就是通过虔诚的心把神明的力量引导为自己心所朝向的方向。"},{"who":"伊利克斯","text":"需要我演示一下吗？"},{"who":"面试官","text":"不必了。"}]},{"kind":"experience","desc":"神殿级大学僧知识竞赛 一等奖","ask":[{"who":"面试官","text":"麻烦出示一下你的证书。"},{"who":"伊利克斯","text":"好，在这里。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"传播福音","ask":[{"who":"","text":""},{"who":"","text":""}]},{"kind":"skill","desc":"消灭幽灵","ask":[{"who":"面试官","text":"你很会消灭幽灵吗？"},{"who":"伊利克斯","text":"没错，我是神术高手，而神术是幽灵的克星。"}]}]},{"id":"c_ct_0009","name":"威尔伯·石子","group":"ct","job":"fighter","race":"dwarf","level":5,"fake":0,"dispr":"","gender":"男","age":54,"str":13,"int":12,"wis":11,"traits":["fake0","timid","goblin_slayer"],"stamp":true,"declaration":"我会干好我的工作。","judgment":"威尔伯的实力比我们想象的还要强。","entries":[{"kind":"experience","desc":"曾独自剿灭草原上的哥布林巢穴","ask":[{"who":"面试官","text":"哥布林巢穴……对一个人来说很危险吧。你是怎么做到的？"},{"who":"威尔伯·石子","text":"……那时我还很年轻。"},{"who":"面试官","text":"好吧……？"}]},{"kind":"experience","desc":"王国勇者大赛 二等奖","ask":[{"who":"面试官","text":"勇者大赛……好像是好久之前的活动。有证书吗？"},{"who":"威尔伯·石子","text":"有。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"战士","ask":[{"who":"面试官","text":"这一栏要写的是专长，不是职业。"},{"who":"威尔伯·石子","text":"我知道。我擅长作为战士的一切。"}]}]},{"id":"c_ct_0010","name":"费耶尔","group":"ct","job":"mage","race":"human","level":2,"fake":2,"dispr":"","gender":"男","age":21,"str":7,"int":15,"wis":8,"traits":["fake2","rude"],"stamp":true,"declaration":"我会火魔法。","judgment":"费耶尔就是个纵火犯，他不是法师。","entries":[{"kind":"experience","desc":"王国学生火魔法水平六级","ask":[{"who":"面试官","text":"我没听说过这个考试……有证书吗？"},{"who":"费耶尔","text":"有，有，哈哈……","popup":"AwardPhd","stamp":"resume_stamp_fake4"}]},{"kind":"experience","desc":"王国认证火魔法水平一级甲等","ask":[{"who":"面试官","text":"……根本没有这种头衔。"},{"who":"费耶尔","text":"你只是怕了。"},{"who":"面试官","text":"……唉，你说是就是吧。"}]},{"kind":"skill","desc":"火魔法","ask":[{"who":"面试官","text":"能和我们说一下你对火魔法的理解吗？"},{"who":"费耶尔","text":"就是把一切点着然后烧烧烧，简单。"}]}]},{"id":"c_ct_0011","name":"黛·博德","group":"ct","job":"mage","race":"elf","level":3,"fake":0,"dispr":"","gender":"女","age":23,"str":8,"int":16,"wis":12,"traits":["fake0","caring","harpy_slayer"],"stamp":true,"declaration":"这次旅程下来，我会让大家都有所成长的。","judgment":"黛·博德的素养很不错，甚至还指导了队伍里的其他人。","entries":[{"kind":"experience","desc":"持有魔法教育资格证，有丰富的魔法教学经验","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"黛·博德","text":"嗯，可以哦。","popup":"AwardPhd","stamp":"resume_stamp_real"},{"who":"黛·博德","text":"我在王国周边地区进行过很多次支教呢。"}]},{"kind":"experience","desc":"发表一篇mag《鸟妖羽毛剥离法的改良与无损化剥离的构想》","ask":[{"who":"面试官","text":"你对鸟妖很有研究吗？"},{"who":"黛·博德","text":"是的。她们的身体构造和弱点我都很清楚。"}]},{"kind":"skill","desc":"教学","ask":[{"who":"面试官","text":"教学指的是……？"},{"who":"黛·博德","text":"毕竟我的本职是老师嘛。勉强能算是法师。"}]}]},{"id":"c_ct_0012","name":"依斯尔","group":"ct","job":"cleric","race":"human","level":2,"fake":1,"dispr":"","gender":"女","age":20,"str":15,"int":12,"wis":18,"traits":["fake1","timid","mimic_slayer"],"stamp":true,"declaration":"我……我很强，真的！请把我纳入队伍吧！","judgment":"依斯尔确实在属性上造假了，但其他地方她都很诚实。","entries":[{"kind":"experience","desc":"拟身怪搜寻赛 一等奖","ask":[{"who":"面试官","text":"还有这种比赛吗……有证书吗？"},{"who":"依斯尔","text":"啊，有的！","popup":"AwardPhd","stamp":"resume_stamp_real"},{"who":"依斯尔","text":"因为是学校里的小比赛，所以您可能没听说过……"}]},{"kind":"skill","desc":"神殿布置","ask":[{"who":"","text":""},{"who":"","text":""}]}]},{"id":"c_ct_0013","name":"金玫","group":"ct","job":"fighter","race":"elf","level":2,"fake":0,"dispr":"","gender":"女","age":120,"str":14,"int":12,"wis":8,"traits":["fake0","orc_slayer","rude"],"stamp":true,"declaration":"尽管把大家伙交给我吧，我会把他们全都放倒。","judgment":"虽然有些粗鲁，但是金玫表现得相当勇猛。","entries":[{"kind":"experience","desc":"女子摔跤竞赛 一等奖","ask":[{"who":"面试官","text":"可以看一下你的证书吗？"},{"who":"金玫","text":"当然。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"摔跤","ask":[{"who":"面试官","text":"摔跤……"},{"who":"金玫","text":"是战斗方式啊，不是摔倒。"},{"who":"金玫","text":"投技啊投技。"}]},{"kind":"skill","desc":"与兽人搏斗","ask":[{"who":"面试官","text":"你很擅长与兽人交战吗？"},{"who":"金玫","text":"当然了。那些不长脑子的傻大个，我能轻松把他们放倒。"}]}]},{"id":"c_ct_0014","name":"安必诺","group":"ct","job":"cleric","race":"human","level":1,"fake":1,"dispr":"","gender":"女","age":21,"str":8,"int":12,"wis":15,"traits":["caring","fake1"],"stamp":true,"declaration":"不会有人受伤的，我会照顾好大家！","judgment":"安必诺是个称职的护士，但她并没有那么擅长对付史莱姆。","entries":[{"kind":"experience","desc":"王国护理技能竞赛 二等奖","ask":[{"who":"面试官","text":"可以看一下你的证书吗？"},{"who":"安必诺","text":"可，可以！","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"experience","desc":"曾在沙漠地区处理过史莱姆巢穴","ask":[{"who":"面试官","text":"沙漠地区的史莱姆巢穴吗……没听说过呢。"},{"who":"安必诺","text":"啊，这，这样吗……欸，那个……嗯……"}]},{"kind":"skill","desc":"照顾伤员","ask":[{"who":"面试官","text":"擅长照顾伤员是因为你是个牧师吗？"},{"who":"安必诺","text":"其实因为我是个护士啦……"}]}]},{"id":"c_ct_0015","name":"希拉帕佳","group":"ct","job":"fighter","race":"human","level":3,"fake":0,"dispr":"","gender":"男","age":24,"str":15,"int":11,"wis":9,"traits":["fake0","prideful"],"stamp":true,"declaration":"各位队友你们好，我是从来不会软脚的希拉帕佳。","judgment":"希拉帕佳给队友们分了杯级。哦他自己表现得还不错。","entries":[{"kind":"experience","desc":"王国建筑工评级 苏帕比格卡普","ask":[{"who":"面试官","text":"……苏帕比格卡普是什么地方的方言吗？"},{"who":"希拉帕佳","text":"对，意思是非常厉害。我还有证书。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"评价强度","ask":[{"who":"面试官","text":"……何意味。"},{"who":"面试官","text":"所以你觉得我是什么杯。"},{"who":"希拉帕佳","text":"大杯上。"}]},{"kind":"skill","desc":"土木","ask":[{"who":"面试官","text":"你是建筑工人？"},{"who":"希拉帕佳","text":"对，但是在职业分类上或许也可以算是战士。"}]}]},{"id":"c_ct_0016","name":"林东","group":"ct","job":"mage","race":"dwarf","level":4,"fake":0,"dispr":"","gender":"男","age":52,"str":13,"int":16,"wis":8,"traits":["fake0","active","slime_slayer"],"stamp":true,"declaration":"我很期待这次旅行会遇到什么新的食材。","judgment":"林东把整场冒险变成了一场致敬某个经典冒险美食漫画的旅行。","entries":[{"kind":"experience","desc":"“魔王饭”餐厅 主厨 二十年工作经验","ask":[{"who":"面试官","text":"哦，这家餐厅我听说过。是大胆做魔物料理的。"},{"who":"面试官","text":"您为什么要放弃主厨的工作来应聘勇者呢。"},{"who":"林东","text":"那当然是为了探寻全新的菜系。这是我的追求。"}]},{"kind":"skill","desc":"制作炸物","ask":[{"who":"面试官","text":"制作炸物和法师有什么关系吗……"},{"who":"林东","text":"哈哈，你不懂了吧。这叫油腻术。"}]},{"kind":"skill","desc":"史莱姆料理","ask":[{"who":"面试官","text":"哦哦，您的史莱姆料理，我早有耳闻。"},{"who":"林东","text":"哼哼，果然像你这样的小年轻也听说过。"},{"who":"林东","text":"我会把一路上遇到的史莱姆做成美食的。"}]}]},{"id":"c_ct_0017","name":"玛纳斯","group":"ct","job":"cleric","race":"elf","level":3,"fake":2,"dispr":"","gender":"女","age":140,"str":11,"int":12,"wis":20,"traits":["fake2","rude","ghost_slayer"],"stamp":true,"declaration":"别让其他废物拖我后腿。","judgment":"玛纳斯在简历上造了两处假。","entries":[{"kind":"experience","desc":"持有神殿大祭司职称","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"玛纳斯","text":"那就给你看。","popup":"AwardPhd","stamp":"resume_stamp_fake2"}]},{"kind":"experience","desc":"王国神术水平六级","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"玛纳斯","text":"嗯。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"驱散不死生物","ask":[{"who":"面试官","text":"你很擅长驱散不死生物……是因为你的神术吗？"},{"who":"玛纳斯","text":"对，幽灵，僵尸，随便什么。"}]}]},{"id":"c_ct_0018","name":"锡盛","group":"ct","job":"fighter","race":"dwarf","level":1,"fake":0,"dispr":"","gender":"男","age":19,"str":13,"int":12,"wis":10,"traits":["fake0","active"],"stamp":true,"declaration":"我不知道啊，导员叫我来我就来了。","judgment":"锡盛没有撒谎，他确实只是一个普通大学生。","entries":[{"kind":"experience","desc":"校级野外生存竞赛 三等奖","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"锡盛","text":"好。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"无","ask":[{"who":"面试官","text":"……你没有特长？"},{"who":"锡盛","text":"我不知道要写什么，但我会学的。"},{"who":"面试官","text":"你这家伙怎么怎么实诚……"}]}]},{"id":"c_ct_0019","name":"欧米","group":"ct","job":"mage","race":"elf","level":4,"fake":1,"dispr":"","gender":"女","age":24,"str":7,"int":16,"wis":11,"traits":["fake1","timid"],"stamp":true,"declaration":"唔……我会努力的。","judgment":"欧米没有她说的那样擅长对付哥布林。","entries":[{"kind":"experience","desc":"王国魔法水平六级","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"欧米","text":"可以哦……","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"experience","desc":"咒语吟唱一级甲等","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"欧米","text":"我没带哦……但是我可以在这里给你演示哦。"},{"who":"面试官","text":"没事，不用了。"}]},{"kind":"skill","desc":"反制哥布林","ask":[{"who":"面试官","text":"可以具体说一下你反制哥布林的方式吗？"},{"who":"欧米","text":"嘛啊……反正它们移动慢吞吞的，怎样都好吧……"}]}]},{"id":"c_ct_0020","name":"库珀","group":"ct","job":"cleric","race":"human","level":2,"fake":3,"dispr":"","gender":"女","age":20,"str":11,"int":12,"wis":14,"traits":["prideful","fake3"],"stamp":true,"declaration":"我一定要写这个吗。","judgment":"库珀是个大水货，或者说她根本就没想来干活。","entries":[{"kind":"experience","desc":"王国魔法水平四级","ask":[{"who":"面试官","text":"这个考试不是法师要考的吗。你不是牧师吗？"},{"who":"库珀","text":"……因为我厉害。"}]},{"kind":"experience","desc":"大学僧祷言背默竞赛 一等奖","ask":[{"who":"面试官","text":"可以看一下你的证书吗"},{"who":"库珀","text":"嗯。","popup":"AwardPhd","stamp":"resume_stamp_fake3"}]},{"kind":"skill","desc":"识别拟身怪","ask":[{"who":"面试官","text":"嗯……可以分享一下你识别拟身怪的方法吗？"},{"who":"库珀","text":"呃……它们……盯着他们看……差不多……那样？"}]}]},{"id":"c_ct_0021","name":"弥思特瑞","group":"ct","job":"mage","race":"elf","level":3,"fake":1,"dispr":"","gender":"女","age":133,"str":7,"int":8,"wis":9,"traits":["fake1","bard","active","harpy_slayer"],"stamp":false,"declaration":"啊~我会用音乐为队伍带来胜利的哦~","judgment":"弥思特瑞是个吟游诗人。但是他的音乐鼓舞了士气。","entries":[{"kind":"experience","desc":"王国好声音真人秀 人气第一","ask":[{"who":"面试官","text":"我不怎么看真人秀……有证书吗？"},{"who":"弥思特瑞","text":"请看，亲爱的~","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"音乐","ask":[{"who":"面试官","text":"音乐……对战斗有帮助吗？"},{"who":"弥思特瑞","text":"啊，当然了，亲爱的。如果遇到鸟妖，我可以用我绝妙的音乐反制她们！"}]},{"kind":"skill","desc":"抚慰人心","ask":[{"who":"面试官","text":"嗯……你是怎么抚慰人心的？"},{"who":"弥思特瑞","text":"用我的音乐啊，亲爱的。总不能是用我的身体吧？"}]}]},{"id":"c_ct_0022","name":"帕特里奇","group":"ct","job":"fighter","race":"human","level":2,"fake":0,"dispr":"","gender":"男","age":19,"str":16,"int":12,"wis":6,"traits":["fake0","dwarf_joke","orc_slayer","rude"],"stamp":true,"declaration":"别担心，比矮人高的家伙我都能解决掉。","judgment":"帕特里奇干得不错，只是讲了太多的矮人笑话。","entries":[{"kind":"experience","desc":"曾经作为齐飞哥的侍从，学习了许多战斗经验","ask":[{"who":"面试官","text":"可以详细说一下你学到的东西吗？"},{"who":"帕特里奇","text":"啊，当然了。他教了我如何牺牲命中率造成史诗级的伤害。"}]},{"kind":"skill","desc":"讲矮人笑话","ask":[{"who":"面试官","text":"我知道你有这方面癖好，但是会不会太直白了？"},{"who":"帕特里奇","text":"怎么会？他们这么矮，说小点声，传不到他们耳朵里。"}]},{"kind":"skill","desc":"处理兽人","ask":[{"who":"面试官","text":"你对处理兽人有什么见解？"},{"who":"帕特里奇","text":"这些傻大个，用我的腿部力量把他们绊倒就好。"},{"who":"面试官","text":"腿部力量……？"},{"who":"帕特里奇","text":"踢矮人踢的。"}]}]},{"id":"c_ct_0023","name":"狄尔克娜","group":"ct","job":"fighter","race":"dwarf","level":1,"fake":0,"dispr":"","gender":"女","age":35,"str":14,"int":9,"wis":11,"traits":["active","fake0"],"stamp":true,"declaration":"我会加油努力，不拖大家后腿。","judgment":"狄尔克娜在战斗技巧上略显生疏，但仍然尽了全力。","entries":[{"kind":"experience","desc":"接受了系统的战士训练并被评为优秀学员","ask":[{"who":"面试官","text":"可以看一下你的证书吗？"},{"who":"狄尔克娜","text":"可以，这是我的优秀学员证书","popup":"AwardPhd"}]},{"kind":"experience","desc":"作为实习侍从追随过多位骑士","ask":[{"who":"面试官","text":"你从实习侍从的经历里学到了什么？"},{"who":"狄尔克娜","text":"那些骑士们教会了我如何有趣的打出更多的重击。"},{"who":"面试官","text":"（嗯……没有问题。）"}]}]},{"id":"c_ct_0024","name":"皮皮纳拉","group":"ct","job":"mage","race":"human","level":2,"fake":1,"dispr":"","gender":"男","age":22,"str":10,"int":14,"wis":9,"traits":["timid","fake1"],"stamp":true,"declaration":"如，如果能真的遇到一条龙的话……我会努力！","judgment":"皮皮纳拉事实上从来没见过龙，更别说屠龙了。","entries":[{"kind":"experience","desc":"咒语吟唱一级甲等","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"皮皮纳拉","text":"嗯，可以的。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"龙族学识","ask":[{"who":"面试官","text":"你对龙的了解很多吗？"},{"who":"皮皮纳拉","text":"对！我知道很多关于龙的事情！"},{"who":"皮皮纳拉","text":"我，我是屠龙高手，请把我加入你们的队伍吧！"}]}]},{"id":"c_ct_0025","name":"杰克·真知","group":"ct","job":"cleric","race":"elf","level":3,"fake":0,"dispr":"","gender":"男","age":187,"str":6,"int":13,"wis":17,"traits":["fake0","prideful","fourth_wall"],"stamp":true,"declaration":"我将会把我看到的世界真理展现给每一个人……每一个！","judgment":"他真的看到你了，但别担心，我出手了;)","entries":[{"kind":"experience","desc":"窥见世间真理","ask":[{"who":"面试官","text":"……什么叫世间真理？"},{"who":"杰克·真知","text":"你难道从来没有意识到他们的存在吗？"},{"who":"面试官","text":"谁们？"},{"who":"杰克·真知","text":"啊啊……你也看不到……"},{"who":"杰克·真知","text":"在你的双眼后，正看着我的那个人……"},{"who":"面试官","text":"（哪儿来的区）"}]},{"kind":"skill","desc":"看破第四面墙","ask":[{"who":"面试官","text":"这看破……这对我们的讨伐大业有帮助吗？"},{"who":"杰克·真知","text":"你不懂……我看到了超越讨伐魔王，甚至比那更重要的事情！"},{"who":"面试官","text":"呃……我觉得这游戏不着调的要素够多了。"},{"who":"杰克·真知","text":"啥"},{"who":"面试官","text":"……算了，当我没说。"}]}]},{"id":"c_ct_0026","name":"帕里亚科斯","group":"ct","job":"mage","race":"human","level":2,"fake":1,"dispr":"","gender":"男","age":21,"str":7,"int":17,"wis":11,"traits":["fake1","active","orc_slayer"],"stamp":true,"declaration":"我很期待能在这次冒险中收获些新的经验。","judgment":"帕里亚科斯的属性没有经过官方认证。","entries":[{"kind":"experience","desc":"全国杰出青年法师证书","ask":[{"who":"面试官","text":"可以看一下你的证书吗？"},{"who":"帕里亚科斯","text":"可以的，请看。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"experience","desc":"发表一篇mag","ask":[{"who":"面试官","text":"你的mag题目是什么？"},{"who":"帕里亚科斯","text":"应该能搜到，《不同龙种不同部位对于法术攻击的抗性研究》"}]},{"kind":"skill","desc":"龙族学识","ask":[{"who":"面试官","text":"你对于如何讨伐巨龙很有见解吗？"},{"who":"帕里亚科斯","text":"啊，是的，毕竟我在学院里研究的就是巨龙。"},{"who":"帕里亚科斯","text":"那种强大且危险的生物……可惜我自己难以讨伐。如果跟着其他人的话，或许可以。"}]}]},{"id":"c_ct_0027","name":"蔡西","group":"ct","job":"mage","race":"elf","level":3,"fake":2,"dispr":"","gender":"女","age":164,"str":8,"int":13,"wis":16,"traits":["caring","fake2"],"stamp":true,"declaration":"别担心，我会处理好一切的哦。","judgment":"蔡西的个人履历造假了，她本人也不会对付幽灵。","entries":[{"kind":"experience","desc":"发表过多篇mag","ask":[{"who":"面试官","text":"可以问一下你的mag题目吗？"},{"who":"蔡西","text":"欸……我忘记了。"},{"who":"面试官","text":"那你的魔网账号？可以看一下吗？"},{"who":"蔡西","text":"什么是魔网？"},{"who":"面试官","text":"……"}]},{"kind":"experience","desc":"自然术法水平专业八级","ask":[{"who":"面试官","text":"可以看一下你的证书吗。"},{"who":"蔡西","text":"可以哦。","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"对付幽灵","ask":[{"who":"面试官","text":"你对幽灵有什么见解吗？"},{"who":"蔡西","text":"嗯……我觉得……冲上去勇敢面对它们会更好吧？"}]}]},{"id":"c_ct_9901","name":"默汀","group":"ct","job":"mage","race":"human","level":5,"fake":0,"dispr":"","gender":"女","age":18,"str":9,"int":18,"wis":9,"traits":["active","fake0"],"stamp":true,"declaration":"我会好好表现的哦，相信我吧！","judgment":"默汀在战斗中表现得相当活跃。豪猫豪猫。","entries":[{"kind":"experience","desc":"飞絮酒馆 全能服务生","ask":[{"who":"面试官","text":"……什么是飞絮酒馆？"},{"who":"默汀","text":"唔，你不知道啊……"},{"who":"默汀","text":"总之意思就是我会干很多事情啦！"}]},{"kind":"experience","desc":"被纸袋头评为年度豪猫","ask":[{"who":"面试官","text":"纸袋头是谁？"},{"who":"默汀","text":"你那本手册就是他和其他人一起写的哦。"},{"who":"默汀","text":"一个棕色的方脑袋，对吧？"},{"who":"面试官","text":"……那是纸袋啊？"}]},{"kind":"skill","desc":"魔能爆","ask":[{"who":"面试官","text":"魔能爆不是契术士法术吗。你一个法师怎么会的。"},{"who":"默汀","text":"你们也没给除了法师之外的选项啊。"},{"who":"面试官","text":"好吧，有道理。"}]},{"kind":"skill","desc":"打史莱姆！","ask":[{"who":"面试官","text":"嗯……你对打史莱姆有什么见解？"},{"who":"默汀","text":"只要瞄准核心就好了哦，对吧？"}]}]},{"id":"c_ct_9902","name":"崔莱","group":"ct","job":"cleric","race":"elf","level":3,"fake":0,"dispr":"","gender":"女","age":99,"str":8,"int":12,"wis":15,"traits":["fake0","timid","harpy_slayer"],"stamp":true,"declaration":"嗯，只要能比我上一份工作好，怎样都行。","judgment":"崔莱的工作完成的很好。只是她看起来有点死了。","entries":[{"kind":"experience","desc":"发表多篇星界相关论文","ask":[{"who":"面试官","text":"可以问一下你的论文题目吗？"},{"who":"崔莱","text":"嗯。比较出名的应该有《星位对不同法术学派的影响探究》。"},{"who":"面试官","text":"好……查到了。"}]},{"kind":"skill","desc":"自然法术","ask":[{"who":"面试官","text":"你不是牧师吗，怎么还会自然法术。"},{"who":"崔莱","text":"首先，我是德鲁伊。"},{"who":"崔莱","text":"其次，德鲁伊和牧师的施法主属性都是感知。"},{"who":"崔莱","text":"所以我只能把自己写成牧师了。"}]},{"kind":"skill","desc":"鸟妖处理手段","ask":[{"who":"面试官","text":"可以分享一下你对鸟妖的见解吗？"},{"who":"崔莱","text":"啊哈哈……这种东西，只要让她们发不出声音就好了吧？"}]}]},{"id":"c_ct_9904","name":"纸袋头","group":"ct","job":"mage","race":"human","level":5,"fake":3,"dispr":"","gender":"男","age":19,"str":18,"int":18,"wis":18,"traits":["fake3","prideful","mimic_slayer"],"stamp":true,"declaration":"希望你在我们的游戏里玩的开心！","judgment":"纸袋头实际上完全没有认真打架，他纯在摸鱼而已。","entries":[{"kind":"experience","desc":"编写了面试官专用手册","ask":[{"who":"面试官","text":"……？"},{"who":"纸袋头","text":"怎么，看着眼熟？"},{"who":"纸袋头","text":"没认出来你手册上那个方脑袋吗？"},{"who":"面试官","text":"只是很好奇为什么你会来这里……"},{"who":"纸袋头","text":"嘛，因为好玩。"}]},{"kind":"experience","desc":"建立了飞絮酒馆","ask":[{"who":"面试官","text":"飞絮酒馆到底是啥。"},{"who":"纸袋头","text":"哦，你见过默汀了？"},{"who":"纸袋头","text":"嗯……好吧。我热衷于加入私货。别在意就好。"}]},{"kind":"skill","desc":"识别真假","ask":[{"who":"面试官","text":"识别真假……为什么？"},{"who":"纸袋头","text":"因为我写了你用的手册。虽然写它的人不止我一个。"},{"who":"纸袋头","text":"嗯……为了平衡性吧，我懒得对付其他生物，但如果是拟身怪，我可以去帮忙。"}]},{"kind":"skill","desc":"摸鱼","ask":[{"who":"面试官","text":"啥"},{"who":"纸袋头","text":"对"}]}]},{"id":"c_dl_0001","name":"伊尔","group":"dl","job":"mage","race":"human","level":1,"fake":0,"dispr":"","gender":"男","age":20,"str":7,"int":13,"wis":10,"traits":["prideful"],"stamp":true,"declaration":"曾接受过专业魔法训练，深耕魔法研究领域，具有丰富的研究成果，也具有一定的实践经验。","judgment":"伊尔看上去并没有接受过系统的法术训练，只会放几个最基础的魔法。","entries":[{"kind":"experience","desc":"王国胜利第一魔法学院优秀毕业生","ask":[{"who":"面试官","text":"可以出示一下你的毕业证吗？"},{"who":"伊尔","text":"额……我的学历竟然还需要那种东西来证明吗？"}]},{"kind":"experience","desc":"发表过多篇魔法论文","ask":[{"who":"面试官","text":"你说你发表过多篇魔法论文，具体是什么方向的，方便介绍一下吗？"},{"who":"伊尔","text":"基于火焰魔法的……什么来着？时间太久我想不起来了。"}]},{"kind":"skill","desc":"法术卷轴抄写","ask":[{"who":"面试官","text":"你觉得你在抄写卷轴的过程中遇到过的最大的困难是什么？"},{"who":"伊尔","text":"没有什么困难，我一直抄写的都挺顺利的。"}]}]},{"id":"c_dl_0002","name":"奈奈莉","group":"dl","job":"fighter","race":"elf","level":4,"fake":0,"dispr":"","gender":"女","age":327,"str":16,"int":14,"wis":10,"traits":["caring","harpy_slayer"],"stamp":true,"declaration":"来自精灵之岛的前骑士奈奈莉，希望在王国踏上新的冒险。","judgment":"奈奈莉的准头虽然有点差，但是莫名其妙的都能打中，看起来她的运气出奇的好。","entries":[{"kind":"experience","desc":"曾经作为冒险者小队的一员讨伐了一窝鸟妖","ask":[{"who":"面试官","text":"方便具体说说你们当时讨伐鸟妖的过程吗？"},{"who":"奈奈莉","text":"我们当时接到委托去调查一块沉船事件莫名多发的海滩，最后发现是有一窝四只鸟妖作祟。"},{"who":"奈奈莉","text":"队里成功抵御住歌声的法师赶紧施展了沉默魔法，失去了歌声之后鸟妖的爪子就构不成很大的威胁了。"}]},{"kind":"experience","desc":"曾经作为冒险者小队的一员讨伐了一只青年龙","ask":[{"who":"面试官","text":"你曾经讨伐过青年龙？那是一头怎样的龙呢？"},{"who":"奈奈莉","text":"那是一头操控闪电的蓝龙。它的鳞片没有我想象中那么坚硬，但是当时我差点被它的龙息给杀死。"}]},{"kind":"experience","desc":"在家乡的骑士团任职百余年","ask":[{"who":"面试官","text":"你们当时在骑士团的时候主要都负责些什么工作？"},{"who":"奈奈莉","text":"维护城里的治安、击退周围的魔物……差不多就是这样。"}]},{"kind":"skill","desc":"重型武器战斗","ask":[{"who":"面试官","text":"你使用这些重型武器的技巧是从哪里学来的？"},{"who":"奈奈莉","text":"我在骑士团里学来的技巧，有的时候可以用牺牲准头的方式可以换来更大的攻击威力。"}]}]},{"id":"c_dl_0003","name":"盖斯","group":"dl","job":"mage","race":"human","level":3,"fake":0,"dispr":"","gender":"男","age":32,"str":8,"int":15,"wis":10,"traits":["slime_slayer"],"stamp":true,"declaration":"发表多篇学术论文，具有丰富研究经验，希望在讨伐魔王的实战中实践自己的理论。","judgment":"虽然不是很适应战场，但是盖斯的理论确实能在实战中发挥不错的作用。","entries":[{"kind":"experience","desc":"曾经在魔网上发表过论文","ask":[{"who":"面试官","text":"你曾经发表过论文？具体是什么内容的？"},{"who":"盖斯","text":"题目是……《一种基于火球术结合冰风暴的全新史莱姆安全讨伐方式》。"},{"who":"盖斯","text":"大概就是关于如何高效的使用各种法术组合破坏他们的核心。"}]},{"kind":"experience","desc":"王国国立魔法大学学生","ask":[{"who":"面试官","text":"你是国立魔法大学的学生？"},{"who":"盖斯","text":"是的……这是我的毕业证。"}]},{"kind":"skill","desc":"理论魔法研究","ask":[{"who":"面试官","text":"方便分享一下你的魔法研究经历吗？"},{"who":"盖斯","text":"我在魔法学校学习的时候，找到了我当时的导师，跟着他做了几年研究。"},{"who":"盖斯","text":"不过虽然给他干了几年白工，不过他也没让我跟着他继续深造就是了……说是名额不够让我自寻出路来着。"}]}]},{"id":"c_dl_0004","name":"莫恩","group":"dl","job":"cleric","race":"human","level":2,"fake":0,"dispr":"","gender":"男","age":34,"str":6,"int":10,"wis":14,"traits":["caring"],"stamp":true,"declaration":"","judgment":"莫恩作为一个牧师尚且有些青涩，不过他的医术弥补了这一点。","entries":[{"kind":"experience","desc":"曾经在赛文涅的神殿中作为侍僧实习","ask":[{"who":"面试官","text":"你是赛文涅的信徒？"},{"who":"莫恩","text":"是的，我的父母都是虔诚的信徒。"}]},{"kind":"experience","desc":"参与救治受伤的城市卫队","ask":[{"who":"面试官","text":"方便分享一下你救治城市卫队的事情吗？"},{"who":"莫恩","text":"啊……当时城外面出现的魔物比较哦多，所以就让城内我当时实习的神殿负责了一部分伤员的救治。"},{"who":"莫恩","text":"我当时还和几个卫兵打好了关系，他们之后看病都来我家的诊所。"}]},{"kind":"skill","desc":"医术","ask":[{"who":"面试官","text":"作为一个牧师，你为什么要学习医术？"},{"who":"莫恩","text":"我家里是开诊所的。我从小就一直在家里的诊所帮忙，后面也会用神术辅助一下病人的治疗。"}]}]},{"id":"c_dl_0005","name":"皮尔莉","group":"dl","job":"fighter","race":"elf","level":5,"fake":1,"dispr":"仙灵","gender":"男","age":20,"str":19,"int":50,"wis":9,"traits":["active"],"stamp":true,"declaration":"（随机混乱的涂鸦）","judgment":"皮尔莉真实而有力地打倒了我们的敌人，但他一直坚持自己刚才使用的是某种法术。","entries":[{"kind":"experience","desc":"（一张戴着法师帽的仙灵坐在瀑布下的涂鸦）","ask":[{"who":"面试官","text":"额……这张图画的是？"},{"who":"皮尔莉","text":"这是我成为大法师之路上的修行！"},{"who":"皮尔莉","text":"我知道伟大的法师的修行都是从肌肉开始的！所以我在瀑布下不停锻炼自己的肌肉，直到自己学会了法术。"},{"who":"面试官","text":"你是法师？但你简历上写的不是战士吗？"},{"who":"皮尔莉","text":"什么？那个什么机构的人竟然敢篡改我的职业？这是对我法术造旨的不尊重！"}]},{"kind":"experience","desc":"（一张画着带着法师帽的仙灵将另一个人抓起丢向一只狮子的图像）","ask":[{"who":"面试官","text":"那这张画又是？"},{"who":"皮尔莉","text":"这是我用法术解决困境的样子，当时我使用了创造食物的魔法。"},{"who":"面试官","text":"额……被丢过去的那位没事吧……"},{"who":"皮尔莉","text":"当然没事，泽兹后来好着呢，我们后来还继续一起冒险来着。"},{"who":"皮尔莉","text":"一定是我创造的食物太过美味了，那头狮子都没吃下去就直接晕了过去。"}]},{"kind":"skill","desc":"（一张戴着法师帽的仙灵的涂鸦，身旁是纷飞的各种颜色）","ask":[{"who":"面试官","text":"那这张图画的是什么？"},{"who":"皮尔莉","text":"这张图代表了我强大的施法能力！"},{"who":"皮尔莉","text":"我会的法术特别多，我现在就可以立马给你演示一遍！（开始活动自己的筋肉）"},{"who":"面试官","text":"（为了我的安全考虑还是算了吧……）"}]}]},{"id":"c_dl_0006","name":"拉埃洛尔","group":"dl","job":"mage","race":"elf","level":4,"fake":3,"dispr":"","gender":"男","age":402,"str":8,"int":18,"wis":8,"traits":["prideful"],"stamp":false,"declaration":"我不太想写宣言，这没有什么意义。","judgment":"拉埃洛尔的水平还算可以，但是他对魔法的理解似乎和常人不太一样，显得非常野路子。","entries":[{"kind":"experience","desc":"雷斯卡利家族首席魔法顾问","ask":[{"who":"面试官","text":"这个首席魔法顾问……具体是干一些什么的？"},{"who":"拉埃洛尔","text":"就是帮助家族处理各种各样魔法带来的问题，还有为学习奥术的少爷们解答一下疑惑之类的工作。"}]},{"kind":"experience","desc":"曾经参加过对一只白龙的讨伐战","ask":[{"who":"面试官","text":"你在这场讨伐战中具体起了什么作用呢？"},{"who":"拉埃洛尔","text":"规划战术、调查敌人情报、物资配置和战斗部署都是由我负责的。"},{"who":"面试官","text":"这么说你没有面对面与白龙战斗？"},{"who":"拉埃洛尔","text":"但我干的这些内容不比实际战斗含金量低，不是吗？"}]},{"kind":"skill","desc":"古代精灵魔法","ask":[{"who":"面试官","text":"你擅长古代的精灵魔法？你是怎么学到这种东西的？"},{"who":"拉埃洛尔","text":"我几千年前在精灵的魔法学院里学的。"},{"who":"面试官","text":"但是我看你的资料……你不是才400岁吗？"},{"who":"拉埃洛尔","text":"我中间因为一些原因休眠了一段时间，400岁是我实际苏醒的时间。"}]}]},{"id":"c_dl_0007","name":"伊戈","group":"dl","job":"fighter","race":"human","level":3,"fake":0,"dispr":"","gender":"男","age":23,"str":15,"int":7,"wis":12,"traits":["active"],"stamp":true,"declaration":"飞翼一族的战士伊戈，愿为讨伐魔王事业尽微薄之力。","judgment":"伊戈的战斗方式稳健得就像一堵城墙，队友在他的保护下十分安全。","entries":[{"kind":"experience","desc":"曾经在飞翼族卫队任职","ask":[{"who":"面试官","text":"你曾经当过卫兵？"},{"who":"伊戈","text":"是的，我们当时负责城镇的治安，和许多种类的怪物，或者和土匪之类的人的都交战过。"}]},{"kind":"experience","desc":"作为冒险者，和小队一起鏖战一大队哥布林并且取胜","ask":[{"who":"面试官","text":"你觉得对付哥布林有什么诀窍吗？"},{"who":"伊戈","text":"保持谨慎。他们比大多数人想象的聪明，会使用各种各样的诡计。只要识破了诡计，他们就只是脆弱的个体。"},{"who":"面试官","text":"你们当时面对的哥布林大概有多少只？"},{"who":"伊戈","text":"我们小队五个人，杀了大概有二十多只哥布林。"}]},{"kind":"skill","desc":"盾牌运用","ask":[{"who":"面试官","text":"你们有什么特别的盾牌运用技巧吗？"},{"who":"伊戈","text":"在我的家乡，战士们为排成一列，用盾牌筑起坚不可摧的屏障。我们的队伍特别擅长防守，所以有人称赞我们可以“鏖战一切”。"}]},{"kind":"skill","desc":"飞行","ask":[{"who":"面试官","text":"你会飞？"},{"who":"伊戈","text":"当然，需要我给你示范一下吗？"},{"who":"面试官","text":"这里好像没有那个空间……那就算了吧。"}]}]},{"id":"c_md_0001","name":"法斯特","group":"md","job":"fighter","race":"human","level":1,"fake":0,"dispr":"","gender":"男","age":20,"str":15,"int":10,"wis":12,"traits":[],"stamp":false,"declaration":"我是我们村里最好的战士，还有村里最好的剑！","judgment":"法斯特的战斗水平还不错，而且出人意料的勇敢。","entries":[{"kind":"experience","desc":"冒险者协会B级冒险者","ask":[{"who":"面试官","text":"你是职业冒险者吗"},{"who":"法斯特","text":"我觉得我是","popup":"AwardPhd"}]},{"kind":"skill","desc":"剑术","ask":[{"who":"面试官","text":"你的剑术很厉害吗"},{"who":"法斯特","text":"我从八岁起开始学习剑术，长大后打过了村子里的所有人，这把是村里最好的剑，老村长认可我的实力才给我的"}]}]},{"id":"c_md_0002","name":"拜伦·斯沃特","group":"md","job":"mage","race":"human","level":3,"fake":0,"dispr":"","gender":"男","age":20,"str":12,"int":16,"wis":8,"traits":[],"stamp":true,"declaration":"吃苦耐劳，热情上进，寒窗苦读十年学习魔法，希望面试官大人能给我这个机会。","judgment":"拜伦·斯沃特的魔法，嗯，还不错吧，至少他都顺利的放出来了。","entries":[{"kind":"experience","desc":"王国胜利第一魔法学院优秀毕业生","ask":[{"who":"面试官","text":"可以出示一下你的毕业证吗"},{"who":"拜伦·斯沃特","text":"是的，这是我的毕业证，我是325届的学生","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"experience","desc":"普通高等魔法学院招生全国统一考试710分","ask":[{"who":"面试官","text":"可以出示一下你的成绩单吗"},{"who":"拜伦·斯沃特","text":"这是我的成绩单","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"experience","desc":"魔法水平专业八级","ask":[{"who":"面试官","text":"可以出示一下你的证书吗"},{"who":"拜伦·斯沃特","text":"这是我的证书，费尽千辛万苦而来","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"skill","desc":"魔法","ask":[{"who":"","text":""},{"who":"","text":""}]}]},{"id":"c_md_9901","name":"觅迹","group":"md","job":"fighter","race":"human","level":5,"fake":0,"dispr":"","gender":"女","age":21,"str":16,"int":12,"wis":12,"traits":[],"stamp":true,"declaration":"觅迹大王堂堂登场！我很能打的！还有你有没有看到一只海獭？","judgment":"觅迹的枪法非常厉害，她的面前没有魔物生存的空间。","entries":[{"kind":"experience","desc":"大荒天师府优秀毕业生","ask":[{"who":"面试官","text":"大荒天师府是什么学校，你有毕业证吗？"},{"who":"觅迹","text":"是来自邻国的很厉害的学校！我有的，请看！","popup":"AwardPhd","stamp":"resume_stamp_real"}]},{"kind":"experience","desc":"罗德岛制药外勤行动部指挥官","ask":[{"who":"面试官","text":"你的主要职责是什么？"},{"who":"觅迹","text":"探索不同的危险地带，记录信息，清除威胁，营救目标等等"}]},{"kind":"experience","desc":"擅长养殖海獭","ask":[{"who":"面试官","text":"海獭？是那种自称很伟大的生物吗？"},{"who":"觅迹","text":"明明只有能吃这一点伟大吧。"}]},{"kind":"skill","desc":"枪械射击","ask":[{"who":"","text":""},{"who":"","text":""}]},{"kind":"skill","desc":"近身格斗","ask":[{"who":"","text":""},{"who":"","text":""}]}]},{"id":"c_md_9902","name":"马斯特蒂","group":"md","job":"fighter","race":"human","level":3,"fake":0,"dispr":"","gender":"男","age":33,"str":33,"int":33,"wis":33,"traits":[],"stamp":false,"declaration":"海獭是世界上最伟大的生物！你们不知道？我真不信！","judgment":"马斯特蒂不仅热爱这份工作，还相当努力。没人知道他的上限在哪里。","entries":[{"kind":"experience","desc":"哈基城吃白饭大赛第一二三四届冠军，创下连吃五十碗白饭的记录","ask":[{"who":"面试官","text":"你连吃了五十碗饭？"},{"who":"马斯特蒂","text":"是的，只有白饭。"}]},{"kind":"experience","desc":"哈基卫兵团现役卫兵","ask":[{"who":"面试官","text":"你作为一名卫兵很强吗"},{"who":"马斯特蒂","text":"是的，我很强，他们甚至允许我谁十二个小时再上班"},{"who":"面试官","text":"（感觉专业水平还不如我）"}]},{"kind":"skill","desc":"敲击贝壳和一切硬物","ask":[{"who":"","text":""},{"who":"","text":""}]},{"kind":"skill","desc":"游泳","ask":[{"who":"","text":""},{"who":"","text":""}]}]},{"id":"c_md_9903","name":"万阴","group":"md","job":"fighter","race":"human","level":5,"fake":0,"dispr":"","gender":"女","age":20,"str":20,"int":12,"wis":8,"traits":[],"stamp":false,"declaration":"拯救世界的活我比较熟悉，交给我就好了。还有，如果你见到一个自称姓韩的家伙，请转告我。","judgment":"万阴的实力摧枯拉朽，这家伙是个天生向死而生的战士。","entries":[{"kind":"experience","desc":"拯救过一个世界","ask":[{"who":"面试官","text":"你拯救的是哪个世界？"},{"who":"万阴","text":"说来话长，我来自另一个世界，临死前打败了一个和你们魔王差不多的东西。"}]},{"kind":"experience","desc":"来的路上杀了很多魔物","ask":[{"who":"面试官","text":"你还能记得杀了哪些魔物吗"},{"who":"万阴","text":"我不认识"}]},{"kind":"skill","desc":"徒手格斗","ask":[{"who":"","text":""},{"who":"","text":""}]},{"kind":"skill","desc":"持械格斗","ask":[{"who":"","text":""},{"who":"","text":""}]}]}],"others":[{"id":"c_0001","name":"PLACEHOLDER NAME 01"},{"id":"c_0002","name":"PLACEHOLDER NAME 02"},{"id":"c_0003","name":"PLACEHOLDER NAME 03"},{"id":"c_0004","name":"PLACEHOLDER NAME 04"},{"id":"c_0005","name":"PLACEHOLDER NAME 05"},{"id":"c_0006","name":"PLACEHOLDER NAME 06"},{"id":"c_0007","name":"PLACEHOLDER NAME 07"},{"id":"c_0008","name":"PLACEHOLDER NAME 08"},{"id":"c_0009","name":"PLACEHOLDER NAME 09"},{"id":"c_0010","name":"PLACEHOLDER NAME 10"},{"id":"c_0011","name":"PLACEHOLDER NAME 11"},{"id":"c_0012","name":"PLACEHOLDER NAME 12"},{"id":"c_0013","name":"PLACEHOLDER NAME 13"},{"id":"c_0014","name":"PLACEHOLDER NAME 14"},{"id":"c_0015","name":"PLACEHOLDER NAME 15"},{"id":"c_0016","name":"PLACEHOLDER NAME 16"},{"id":"c_0017","name":"PLACEHOLDER NAME 17"},{"id":"c_0018","name":"PLACEHOLDER NAME 18"},{"id":"c_0019","name":"PLACEHOLDER NAME 19"},{"id":"c_0020","name":"PLACEHOLDER NAME 20"},{"id":"c_0021","name":"PLACEHOLDER NAME 21"},{"id":"c_0022","name":"PLACEHOLDER NAME 22"},{"id":"c_0023","name":"PLACEHOLDER NAME 23"},{"id":"c_0024","name":"PLACEHOLDER NAME 24"},{"id":"c_0025","name":"PLACEHOLDER NAME 25"},{"id":"c_0101","name":"法斯特"}]}</script>
+
+<header>
+  <h1>勇者 · <span>排班编辑器</span></h1>
+  <div class="stats">
+    <span>已排 <b id="st-placed">0</b>/42 位</span>
+    <span>目标 60 位 / 空位 <b id="st-blank" class="warn">0</b></span>
+    <span>会露假章 <b id="st-fake">0</b></span>
+  </div>
+  <div class="spacer"></div>
+  <div id="io">
+    <button id="btn-connect" title="选一次 data/days 文件夹，之后就能直接读、直接写">连接 data/days</button>
+    <button id="btn-read" disabled title="重新从 data/days 读一遍">重读</button>
+    <button id="btn-write" disabled title="把当前排班写回 data/days">写回</button>
+    <label class="chk"><input type="checkbox" id="chk-bak"> 存 .bak</label>
+    <input type="file" id="file-import" accept=".tres,.json" multiple hidden>
+    <button id="btn-import" title="不能连接文件夹时：手动挑 day_XX.tres 或 roster_plan.json">导入文件…</button>
+    <span id="io-status" class="muted">未连接</span>
+  </div>
+  <button id="btn-default">恢复方案</button>
+  <button id="btn-clear">清空</button>
+  <button id="btn-export" class="primary">导出…</button>
+</header>
+
+<main>
+  <section id="pool">
+    <h2>候选人池</h2>
+    <div class="tools">
+      <input type="text" id="q" placeholder="按名字 / 特质 / 编号搜索">
+      <div class="row">
+        <select id="f-job">
+          <option value="">全部职业</option>
+          <option value="fighter">战士</option>
+          <option value="mage">法师</option>
+          <option value="cleric">牧师</option>
+        </select>
+        <select id="f-fake">
+          <option value="">真假不限</option>
+          <option value="0">无造假</option>
+          <option value="1">有造假</option>
+        </select>
+      </div>
+      <div class="row">
+        <select id="f-stamp">
+          <option value="">印章不限</option>
+          <option value="real">真章</option>
+          <option value="none">无章</option>
+        </select>
+        <label class="muted"><input type="checkbox" id="f-free"> 只看没排的</label>
+      </div>
+    </div>
+    <div id="pool-list"></div>
+  </section>
+
+  <section id="days">
+    <h2>十天排班 <span class="muted" style="font-weight:400">（点某天标题设为“当前天”，再点左边的卡就能加进去）</span></h2>
+    <div id="day-list"></div>
+  </section>
+
+  <aside id="preview">
+    <h2>简历预览</h2>
+    <div id="preview-body"><p class="hint">点左边的候选人卡或右边某天的名字，看这份简历长什么样、哪些地方是假的。</p></div>
+  </aside>
+</main>
+
+<dialog id="exportDialog">
+  <div class="bar">
+    <strong>导出</strong>
+    <div class="tabs" id="tabs"></div>
+    <div class="spacer"></div>
+    <button id="btn-copy">复制</button>
+    <button id="btn-dl">下载这一个</button>
+    <button id="btn-dl-all" class="primary">下载全部 .tres</button>
+    <button id="btn-close">关闭</button>
+  </div>
+  <div class="body">
+    <textarea id="export-text" readonly spellcheck="false"></textarea>
+    <p class="hint" style="margin:8px 0 0">
+      想直接改项目里的文件：点右上角 <b>连接 data/days</b>（Chrome / Edge 支持），选一次文件夹，之后
+      「重读」把现有名单读进来、「写回」把改好的写出去（会先列清单让你确认，勾了「存 .bak」就把旧文件备份一份）。
+      不支持直连文件夹的浏览器：用「导入文件…」+ 下载，或者跑
+      <code>pwsh -File tools/apply_roster.ps1 -From 下载的 roster_plan.json -Apply</code>。
+    </p>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ============================================================
+   数据：候选人来自 data/candidates/*.tres + data/asks/*.json 的快照
+   （由 tools/build_roster_editor.ps1 生成；改了数据就重跑一次）
+   ============================================================ */
+const DAY_META = [
+  { d:1,  target:3, theme:'基础机制',        hint:'队伍均衡 · 职业与主属性 · 奖项与证书 · 数据公章齐全' },
+  { d:2,  target:4, theme:'履历造假',        hint:'从追问语气判断专业性' },
+  { d:3,  target:5, theme:'史莱姆 · 怪物手册', hint:'追问回答与手册信息的矛盾点' },
+  { d:4,  target:6, theme:'检测机构暴雷',    hint:'旧公章不可用 · 异常属性（单项>18 / 总和>45）' },
+  { d:5,  target:7, theme:'不是勇者也来应聘', hint:'厨师 / 神棍 / 铁匠 —— 实力不错就招' },
+  { d:6,  target:7, theme:'造假加剧',        hint:'辨水货：能力与材料是两件事' },
+  { d:7,  target:7, theme:'魔王城腹地',      hint:'全怪物出现，需要很多人才' },
+  { d:8,  target:7, theme:'公章全面造假',    hint:'材料到底哪里有问题' },
+  { d:9,  target:7, theme:'社会闲散人员',    hint:'城里没勇者了，都来碰运气' },
+  { d:10, target:7, theme:'总力战',          hint:'所有机制 + 所有勇者' }
+];
+
+/* docs/day_roster.md 里的方案（空位 = 那天不到目标人数） */
+const DEFAULT_PLAN = {
+  1:  ['c_dl_0007','c_ct_0011','c_ct_0008'],
+  2:  ['c_dl_0001','c_ct_0023','c_md_0002','c_ct_0002'],
+  3:  ['c_dl_0003','c_ct_0014','c_ct_0006','c_ct_0016','c_ct_0010'],
+  4:  ['c_ct_0003','c_ct_0026','c_ct_0012','c_ct_0017','c_ct_0007','c_ct_0020'],
+  5:  ['c_ct_0004','c_ct_0015','c_ct_0018','c_ct_0021'],
+  6:  ['c_ct_9904','c_ct_0027','c_ct_0001','c_ct_0019','c_md_0001'],
+  7:  ['c_ct_0009','c_ct_0013','c_ct_9902'],
+  8:  ['c_dl_0002','c_dl_0004','c_dl_0006'],
+  9:  ['c_ct_0022','c_ct_0024','c_ct_0005'],
+  10: ['c_md_9903','c_dl_0005','c_md_9901','c_md_9902','c_ct_9901','c_ct_0025']
+};
+
+const JOB_CN  = { fighter:'战士', mage:'法师', cleric:'牧师' };
+const RACE_CN = { human:'人类', elf:'精灵', dwarf:'矮人', st:'矮人' };
+const TRAIT_CN = {
+  fake0:'无造假', fake1:'造假·一', fake2:'造假·二', fake3:'造假·三',
+  caring:'体贴', rude:'粗鲁', timid:'胆小', prideful:'傲慢', active:'活泼',
+  bard:'吟游诗人', fourth_wall:'看破第四面墙', dwarf_joke:'爱讲矮人笑话',
+  slime_slayer:'史莱姆杀手', ghost_slayer:'幽灵杀手', goblin_slayer:'哥布林杀手',
+  harpy_slayer:'鸟妖杀手', mimic_slayer:'拟身怪杀手', orc_slayer:'兽人杀手'
+};
+const STAMP_CN = {
+  resume_stamp_real:'真章', resume_stamp_fake1:'假章·一', resume_stamp_fake2:'假章·二',
+  resume_stamp_fake3:'假章·三', resume_stamp_fake4:'假章·四', none:'不盖章'
+};
+const SINGLE_OVER = 18;   // 单项上限（D4 机制）
+const TOTAL_OVER  = 45;   // 三项总和上限（D4 机制）
+
+const RAW_TEXT = (typeof document !== 'undefined' && document.getElementById('roster-data'))
+  ? document.getElementById('roster-data').textContent
+  : (typeof globalThis.__ROSTER_JSON__ !== 'undefined' ? globalThis.__ROSTER_JSON__ : '{"candidates":[]}');
+const DATA = JSON.parse(RAW_TEXT);
+const CAND = DATA.candidates || [];
+const BY_ID = new Map(CAND.map(c => [c.id, c]));
+const TARGET_TOTAL = DAY_META.reduce((s, m) => s + m.target, 0);
+
+/* ============================================================
+   纯函数：判断一份简历的“真假”（全部依据数据，不做推理）
+   ============================================================ */
+/* 造假程度：**以数据里那个 fake_level 字段为准**（CandidateResource.fake_level，0~3）。
+   老数据里没有这一行 → 0。特质里的 fakeN 只当交叉校验用（traitFakeOf）。 */
+function fakeLevelOf(c) {
+  const n = Number(c && c.fake);
+  return Number.isFinite(n) ? n : 0;
+}
+/* 特质里带的 fakeN（这批数据人手一个 fake0~fake3）。和 fake_level 对不上时提示一下。 */
+function traitFakeOf(c) {
+  let n = 0;
+  for (const t of (c && c.traits) || []) {
+    const m = /^fake(\d)$/.exec(t);
+    if (m) n = Math.max(n, Number(m[1]));
+  }
+  return n;
+}
+/* 简历上会印的种族名：display_race 非空就用它（和游戏里 resume.gd 一致） */
+function raceLabelOf(c) {
+  const shown = (c && c.dispr ? String(c.dispr).trim() : '');
+  if (shown) return shown;
+  return RACE_CN[c && c.race] || (c && c.race) || '';
+}
+function sumOf(c) { return (c.str || 0) + (c.int || 0) + (c.wis || 0); }
+function mainStatOf(job) { return job === 'fighter' ? 'str' : job === 'cleric' ? 'wis' : 'int'; }
+function mainStatOk(c) {
+  const k = mainStatOf(c.job);
+  const mine = c[k] || 0;
+  return ['str','int','wis'].every(o => o === k || (c[o] || 0) <= mine);
+}
+function overFlags(c) {
+  const out = [];
+  for (const k of ['str','int','wis']) {
+    if ((c[k] || 0) > SINGLE_OVER) out.push({ k, v: c[k], kind: 'single' });
+  }
+  if (sumOf(c) > TOTAL_OVER) out.push({ kind: 'total', v: sumOf(c) });
+  return out;
+}
+function askStampList(c) {
+  const out = [];
+  for (const e of c.entries || []) {
+    for (const line of e.ask || []) {
+      if (line.stamp && line.stamp !== 'resume_stamp_real') {
+        out.push({ where: e.desc, stamp: line.stamp, text: line.text });
+      }
+    }
+  }
+  return out;
+}
+/* 一句话结论 + 分级 */
+function verdictOf(c) {
+  const fk = fakeLevelOf(c);
+  const over = overFlags(c);
+  const fakeStamps = askStampList(c);
+  const problems = [];
+  if (fk > 0) problems.push('简历有造假（fake' + fk + '）');
+  if (!c.stamp) problems.push('没有公章');
+  if (over.length) problems.push('属性越界（' + over.map(o => o.kind === 'total' ? '总和 ' + o.v : (o.k === 'str' ? '力' : o.k === 'int' ? '智' : '慧') + ' ' + o.v).join('、') + '）');
+  if (!mainStatOk(c)) problems.push('主属性不是本职业最强项');
+  if (fakeStamps.length) problems.push('追问时会盖出假章');
+  let level = 'ok';
+  if (problems.length >= 3 || fk >= 3) level = 'bad';
+  else if (problems.length >= 1) level = 'warn';
+  return { level, problems, fakeLevel: fk, over, fakeStamps,
+           label: problems.length === 0 ? '材料与说法都没查出问题' : problems.join(' · ') };
+}
+/* 逐项检查清单（预览面板用） */
+function checksOf(c) {
+  const fk = fakeLevelOf(c);
+  const tf = traitFakeOf(c);
+  const over = overFlags(c);
+  const list = [];
+  list.push({ level: fk === 0 ? 'ok' : (fk >= 3 ? 'bad' : 'warn'),
+              text: '造假程度 fake_level = ' + fk + (fk === 0 ? '（没造假）' : '（' + ['', '一', '二', '三'][fk] + '级）') });
+  if (tf !== fk) {
+    list.push({ level: 'warn',
+                text: '⚠ 和特质对不上：特质里是 fake' + tf + '（fake_level 才是准的，特质的 fakeN 现在只参与相性）' });
+  }
+  list.push({ level: c.stamp ? 'ok' : 'bad',
+              text: c.stamp ? '公章：有（真章）' : '公章：缺（简历上没有章）' });
+  const single = over.filter(o => o.kind === 'single');
+  const total = over.filter(o => o.kind === 'total');
+  list.push({ level: single.length ? 'warn' : 'ok',
+              text: single.length ? '单项超 ' + SINGLE_OVER + '：' + single.map(o => o.v).join('、') : '单项都没超 ' + SINGLE_OVER });
+  list.push({ level: total.length ? 'warn' : 'ok',
+              text: total.length ? '三项总和 ' + sumOf(c) + '（超 ' + TOTAL_OVER + '）' : '三项总和 ' + sumOf(c) });
+  list.push({ level: mainStatOk(c) ? 'ok' : 'warn',
+              text: (JOB_CN[c.job] || c.job) + '的主属性应是' + ({ str:'力量', int:'智力', wis:'智慧' }[mainStatOf(c.job)]) + '，' + (mainStatOk(c) ? '符合' : '不符（分配反常）') });
+  list.push({ level: 'ok',
+              text: '种族：简历上印「' + raceLabelOf(c) + '」' + (c.dispr ? '（display_race 覆盖，race 仍是 ' + (RACE_CN[c.race] || c.race) + '）' : '（照 race 走）') });
+  const fs = askStampList(c);
+  list.push({ level: fs.length ? 'bad' : 'ok',
+              text: fs.length ? '追问里会盖出假章 ' + fs.length + ' 处（' + [...new Set(fs.map(s => STAMP_CN[s.stamp] || s.stamp))].join('、') + '）' : '追问里不会盖假章' });
+  return list;
+}
+
+/* ============================================================
+   状态
+   ============================================================ */
+const LS_KEY = 'yuusha.roster.v1';
+const state = {
+  plan: JSON.parse(JSON.stringify(DEFAULT_PLAN)),
+  slots: {},
+  uids: {},            // 每天 .tres 原来的 resource uid（写回时保留，避免 uid 漂移）
+  activeDay: 1,
+  selected: null,
+  exportTab: '1',
+  backup: false,       // 写回时是否把旧文件存成 .bak
+  source: ''           // '' = 默认方案 / 'dir' = 已连接 data/days / 'file' = 从文件导入
+};
+DAY_META.forEach(m => { state.slots[m.d] = Math.max(1, (state.plan[m.d] || []).length - 1); });
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s && s.plan) {
+      state.plan = s.plan; state.slots = s.slots || {};
+      state.uids = s.uids || {};
+      state.activeDay = s.activeDay || 1; state.selected = s.selected || null;
+      state.backup = !!s.backup;
+      DAY_META.forEach(m => {
+        if (typeof state.slots[m.d] !== 'number') state.slots[m.d] = Math.max(1, dayIds(m.d).length - 1);
+      });
+    }
+  } catch (e) { /* 坏存档就当没有 */ }
+}
+function saveState() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      plan: state.plan, slots: state.slots, uids: state.uids,
+      activeDay: state.activeDay, selected: state.selected, backup: state.backup
+    }));
+  } catch (e) {}
+}
+function dayIds(d) { return state.plan[d] || (state.plan[d] = []); }
+function placedAt(id) {
+  for (const m of DAY_META) if (dayIds(m.d).includes(id)) return m.d;
+  return 0;
+}
+function addToDay(d, id) {
+  const from = placedAt(id);
+  if (from === d) return;
+  if (from) dayIds(from).splice(dayIds(from).indexOf(id), 1);
+  dayIds(d).push(id);
+  state.selected = id; state.activeDay = d;
+  saveState(); renderAll();
+}
+function removeFromDay(d, idx) { dayIds(d).splice(idx, 1); saveState(); renderAll(); }
+function moveInDay(d, idx, dir) {
+  const arr = dayIds(d); const j = idx + dir;
+  if (j < 0 || j >= arr.length) return;
+  [arr[idx], arr[j]] = [arr[j], arr[idx]];
+  saveState(); renderAll();
+}
+
+/* ============================================================
+   导出：DayConfig .tres（格式对齐 data/days/day_02.tres）
+   ============================================================ */
+function tresForDayWith(d, ids, slots, uid) {
+  const head = '[gd_resource type="Resource" script_class="DayConfig" format=3' +
+    (uid ? ' uid="' + uid + '"' : '') + ']';
+  const L = [];
+  L.push(head);
+  L.push('');
+  L.push('[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_cand"]');
+  ids.forEach((id, i) => {
+    L.push('[ext_resource type="Resource" path="res://data/candidates/' + id + '.tres" id="' + (i + 2) + '_c' + i + '"]');
+  });
+  const scriptId = (ids.length + 2) + '_script';
+  L.push('[ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="' + scriptId + '"]');
+  L.push('');
+  L.push('[resource]');
+  L.push('script = ExtResource("' + scriptId + '")');
+  L.push('day_index = ' + d);
+  const refs = ids.map((_, i) => 'ExtResource("' + (i + 2) + '_c' + i + '")').join(', ');
+  L.push('candidates = Array[ExtResource("1_cand")]([' + refs + '])');
+  L.push('slots = ' + slots);
+  L.push('tutorial_step = ' + (d === 1 ? 1 : 0));
+  L.push('');
+  return L.join('\n');
+}
+function tresForDay(d) { return tresForDayWith(d, dayIds(d), state.slots[d], state.uids[d]); }
+
+function planSnapshot() {
+  const plan = {};
+  for (const m of DAY_META) plan[m.d] = dayIds(m.d).slice();
+  return {
+    generatedAt: new Date().toISOString(),
+    note: '由 tools/roster_editor.html 导出；tools/apply_roster.ps1 可以按它写进 data/days/',
+    days: plan,
+    slots: Object.fromEntries(DAY_META.map(m => [m.d, state.slots[m.d]])),
+    uids: Object.fromEntries(DAY_META.filter(m => state.uids[m.d]).map(m => [m.d, state.uids[m.d]]))
+  };
+}
+
+function planMarkdown() {
+  const L = [];
+  L.push('# 排班结果（导出时间 ' + new Date().toLocaleString() + '）');
+  L.push('');
+  L.push('| Day | 主题 | 出场 / 目标 | 名单 |');
+  L.push('| --- | --- | --- | --- |');
+  for (const m of DAY_META) {
+    const ids = dayIds(m.d);
+    const names = ids.map(id => {
+      const c = BY_ID.get(id);
+      return c ? c.name + '（`' + id + '`）' : '`' + id + '`';
+    });
+    const list = names.length ? names.join('、') : '（全部空位）';
+    L.push('| ' + m.d + ' | ' + m.theme + ' | ' + ids.length + ' / ' + m.target + ' | ' + list + ' |');
+  }
+  L.push('');
+  L.push('空位合计：' + DAY_META.reduce((s, m) => s + Math.max(0, m.target - dayIds(m.d).length), 0) + ' 位');
+  return L.join('\n');
+}
+
+/* ============================================================
+   读写 data/days
+   Chrome / Edge 可以用 File System Access API 直接连文件夹读写；
+   Firefox / Safari 不支持时走「导入文件…」+ 导出下载，或者用 tools/apply_roster.ps1。
+   ============================================================ */
+const FS = {
+  dir: null,                 // FileSystemDirectoryHandle
+  files: new Map(),          // 'day_01.tres' -> { text, ids, slots, uid }
+  supported: (typeof window !== 'undefined') && typeof window.showDirectoryPicker === 'function'
+};
+const OTHERS = new Map((DATA.others || []).map(o => [o.id, o]));   // 池子之外、data/candidates 里仍有的卡（旧占位等）
+
+function nameOfId(id) {
+  const c = BY_ID.get(id);
+  if (c) return c.name;
+  const o = OTHERS.get(id);
+  return o ? (o.name || id) : id;
+}
+function setStatus(text, level) {
+  if (typeof document === 'undefined') return;
+  const el = document.getElementById('io-status');
+  if (!el) return;
+  el.textContent = text;
+  el.className = level || '';
+}
+
+/* ---------- 从 .tres 文本里把名单抠出来 ---------- */
+function parseDayTres(text, fileName) {
+  const ext = {};
+  for (const m of text.matchAll(/\[ext_resource [^\]]*path="res:\/\/([^"]+)" id="([^"]+)"\]/g)) ext[m[2]] = m[1];
+
+  const ids = [];
+  const arr = text.match(/candidates = Array\[[^\]]*\]\(\[([\s\S]*?)\]\)/);
+  if (arr) {
+    for (const m of arr[1].matchAll(/ExtResource\("([^"]+)"\)/g)) {
+      const p = ext[m[1]];
+      if (p) ids.push(p.split('/').pop().replace(/\.tres$/, ''));
+    }
+  }
+  if (!arr) {   // 数组那行坏了就按文件里出现的顺序兜底
+    for (const m of text.matchAll(/res:\/\/data\/candidates\/([A-Za-z0-9_]+)\.tres/g)) ids.push(m[1]);
+  }
+
+  const di = text.match(/^day_index = (\d+)$/m);
+  const sl = text.match(/^slots = (\d+)$/m);
+  const uid = (text.match(/^\[gd_resource[^\]]*uid="(uid:\/\/[^"]+)"/m) || [])[1] || '';
+  const fromName = Number((fileName.match(/day_(\d+)/) || [])[1]) || 0;
+  return { day: fromName || (di ? Number(di[1]) : 0), ids, slots: sl ? Number(sl[1]) : Math.max(1, ids.length - 1), uid };
+}
+
+/* ---------- 把读到的名单塞进编辑器 ---------- */
+function applyImported(entries, source) {
+  let days = 0, people = 0;
+  const unknown = new Set();
+  entries.slice().sort((a, b) => a.day - b.day).forEach(e => {
+    if (!e.day || !DAY_META.some(m => m.d === e.day)) return;
+    state.plan[e.day] = e.ids.slice();
+    state.slots[e.day] = e.slots;
+    state.uids[e.day] = e.uid || '';
+    days++; people += e.ids.length;
+    e.ids.forEach(id => { if (!BY_ID.has(id) && !OTHERS.has(id)) unknown.add(id); });
+  });
+  state.source = source;
+  saveState();
+  renderAll();
+  setStatus('已读取 ' + days + ' 天 / ' + people + ' 位' +
+    (unknown.size ? '（其中 ' + unknown.size + ' 个 id 在 data/candidates 里查不到）' : ''), unknown.size ? 'warn' : 'ok');
+}
+
+/* ---------- 目录句柄存 IndexedDB ---------- */
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('yuusha.roster', 1);
+    req.onupgradeneeded = () => { try { req.result.createObjectStore('h'); } catch (e) {} };
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbPut(key, value) {
+  const db = await idbOpen();
+  await new Promise((res, rej) => {
+    const tx = db.transaction('h', 'readwrite');
+    tx.objectStore('h').put(value, key);
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(key) {
+  try {
+    const db = await idbOpen();
+    return await new Promise(res => {
+      const tx = db.transaction('h', 'readonly');
+      const req = tx.objectStore('h').get(key);
+      req.onsuccess = () => res(req.result || null);
+      req.onerror = () => res(null);
+    });
+  } catch (e) { return null; }
+}
+
+async function ensurePermission(handle, write) {
+  if (!handle) return false;
+  const opts = { mode: write ? 'readwrite' : 'read' };
+  if (!handle.queryPermission) return true;
+  if (await handle.queryPermission(opts) === 'granted') return true;
+  if (!handle.requestPermission) return false;
+  return await handle.requestPermission(opts) === 'granted';
+}
+
+/* 用户挑的可能是 data/days，也可能是项目根目录 —— 都认 */
+async function resolveDaysDir(handle) {
+  const hasDays = async h => {
+    try { for await (const [name] of h.entries()) if (/^day_\d+\.tres$/.test(name)) return true; }
+    catch (e) {}
+    return false;
+  };
+  if (await hasDays(handle)) return handle;
+  try {
+    const dataDir = await handle.getDirectoryHandle('data');
+    if (await hasDays(dataDir)) return dataDir;
+    const daysDir = await dataDir.getDirectoryHandle('days');
+    if (await hasDays(daysDir)) return daysDir;
+  } catch (e) {}
+  try {
+    const daysDir = await handle.getDirectoryHandle('days');
+    if (await hasDays(daysDir)) return daysDir;
+  } catch (e) {}
+  return handle;
+}
+
+async function readFromDir() {
+  if (!FS.dir) return;
+  const entries = [];
+  FS.files.clear();
+  for await (const [name, handle] of FS.dir.entries()) {
+    if (!/^day_\d+\.tres$/.test(name) || handle.kind !== 'file') continue;
+    const text = await (await handle.getFile()).text();
+    const parsed = parseDayTres(text, name);
+    FS.files.set(name, { text, ids: parsed.ids, slots: parsed.slots, uid: parsed.uid });
+    entries.push(parsed);
+  }
+  if (!entries.length) { setStatus('这个文件夹里没有 day_XX.tres', 'bad'); return; }
+  applyImported(entries, 'dir');
+  document.getElementById('btn-read').disabled = false;
+  document.getElementById('btn-write').disabled = false;
+  document.getElementById('btn-connect').textContent = '重连 data/days';
+}
+
+async function connectDir() {
+  if (!FS.supported) {
+    setStatus('这个浏览器不能直接读写文件夹：用「导入文件…」，或导出后跑 apply_roster.ps1', 'warn');
+    return;
+  }
+  try {
+    const picked = await window.showDirectoryPicker({ id: 'yuusha-days', mode: 'readwrite' });
+    const dir = await resolveDaysDir(picked);
+    if (!await ensurePermission(dir, true)) { setStatus('没拿到写入权限', 'bad'); return; }
+    FS.dir = dir;
+    await idbPut('daysDir', dir);
+    await idbPut('daysName', dir.name);
+    await readFromDir();
+    if (FS.files.size) setStatus('已连接 ' + dir.name + '（可直接写回）', 'ok');
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    setStatus('连接失败：' + (e && e.message ? e.message : e), 'bad');
+  }
+}
+
+/* 重新打开工具时：句柄还在，但通常要一次点击才重新授权 */
+async function tryReconnect() {
+  if (!FS.supported) { setStatus('未连接（这浏览器不支持直连文件夹，用「导入文件…」）', ''); return; }
+  const handle = await idbGet('daysDir');
+  const savedName = await idbGet('daysName');
+  if (!handle) { setStatus('未连接', ''); return; }
+  let perm = 'granted';
+  if (handle.queryPermission) perm = await handle.queryPermission({ mode: 'readwrite' });
+  if (perm === 'granted') {
+    FS.dir = handle;
+    await readFromDir();
+    if (FS.files.size) setStatus('已连接 ' + (savedName || handle.name) + '（可直接写回）', 'ok');
+  } else {
+    setStatus('上次连过 ' + (savedName || handle.name) + '，点「连接 data/days」重新授权', 'warn');
+  }
+}
+
+/* ---------- 写回 ---------- */
+function dayFileName(d) { return 'day_' + String(d).padStart(2, '0') + '.tres'; }
+function differsFromDisk(d) {
+  if (!FS.files.size) return false;              // 还没连过，不标
+  const rec = FS.files.get(dayFileName(d));
+  if (!rec) return dayIds(d).length > 0;
+  return rec.ids.join(',') !== dayIds(d).join(',') || rec.slots !== state.slots[d];
+}
+
+async function writeToDir() {
+  if (!FS.dir) { setStatus('先「连接 data/days」', 'warn'); return; }
+  if (!await ensurePermission(FS.dir, true)) { setStatus('没拿到写入权限', 'bad'); return; }
+
+  const days = DAY_META.filter(m => differsFromDisk(m.d));
+  if (!days.length) { setStatus('十天都和磁盘上一致，没有要写的', 'ok'); return; }
+
+  const missing = [];
+  days.forEach(m => dayIds(m.d).forEach(id => {
+    if (!BY_ID.has(id) && !OTHERS.has(id)) missing.push('D' + m.d + ':' + id);
+  }));
+  const lines = days.map(m => {
+    const rec = FS.files.get(dayFileName(m.d));
+    return '  Day ' + m.d + '：' + dayIds(m.d).length + ' 位' + (rec ? '（磁盘上 ' + rec.ids.length + ' 位）' : '（磁盘上还没有这个文件）');
+  });
+  const msg = '要写回 ' + days.length + ' 天：\n' + lines.join('\n') +
+    (state.backup ? '\n\n旧的会存成 .bak' : '') +
+    (missing.length ? '\n\n⚠ ' + missing.length + ' 个 id 连 data/candidates 里都没有：\n  ' + missing.slice(0, 6).join('\n  ') : '');
+  if (!confirm(msg)) return;
+
+  let written = 0;
+  for (const m of days) {
+    const name = dayFileName(m.d);
+    const text = tresForDayWith(m.d, dayIds(m.d), state.slots[m.d], state.uids[m.d]);
+    try {
+      if (state.backup) {
+        const rec = FS.files.get(name);
+        if (rec) {
+          const bh = await FS.dir.getFileHandle(name + '.bak', { create: true });
+          const bw = await bh.createWritable();
+          await bw.write(rec.text);
+          await bw.close();
+        }
+      }
+      const fh = await FS.dir.getFileHandle(name, { create: true });
+      const w = await fh.createWritable();
+      await w.write(text);
+      await w.close();
+      FS.files.set(name, { text, ids: dayIds(m.d).slice(), slots: state.slots[m.d], uid: state.uids[m.d] || '' });
+      written++;
+    } catch (e) {
+      setStatus('写 ' + name + ' 失败：' + (e && e.message ? e.message : e), 'bad');
+      renderDays();
+      return;
+    }
+  }
+  renderDays();
+  setStatus('已写回 ' + written + ' 天' +
+    (missing.length ? '（⚠ ' + missing.length + ' 个 id 在 data/candidates 里查不到，游戏里会加载失败）' : '') +
+    '，回 Godot 点一下资源管理器就会重新导入', missing.length ? 'warn' : 'ok');
+}
+
+/* ---------- 兜底：手动导入文件 ---------- */
+async function importFiles(files) {
+  const entries = [];
+  let planObj = null;
+  for (const f of files) {
+    const text = await f.text();
+    if (/\.json$/i.test(f.name)) {
+      try { planObj = JSON.parse(text); } catch (e) { setStatus(f.name + ' 不是合法 JSON', 'bad'); return; }
+      continue;
+    }
+    entries.push(parseDayTres(text, f.name));
+  }
+  if (planObj && planObj.days) {
+    const list = Object.keys(planObj.days).map(d => ({
+      day: Number(d),
+      ids: Array.isArray(planObj.days[d]) ? planObj.days[d].slice() : [],
+      slots: Number((planObj.slots || {})[d]) || Math.max(1, (planObj.days[d] || []).length - 1),
+      uid: (planObj.uids || {})[d] || ''
+    }));
+    applyImported(list, 'file');
+    return;
+  }
+  if (!entries.length) { setStatus('没读到 day_XX.tres', 'warn'); return; }
+  applyImported(entries, 'file');
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+const $ = sel => document.querySelector(sel);
+
+function renderHeader() {
+  const placed = DAY_META.reduce((s, m) => s + dayIds(m.d).length, 0);
+  const blank = DAY_META.reduce((s, m) => s + Math.max(0, m.target - dayIds(m.d).length), 0);
+  const fake = [...new Set(DAY_META.flatMap(m => dayIds(m.d)))]
+    .map(id => BY_ID.get(id)).filter(Boolean).filter(c => askStampList(c).length).length;
+  $('#st-placed').textContent = placed;
+  $('#st-blank').textContent = blank;
+  $('#st-fake').textContent = fake;
+}
+
+function badge(text, cls) { return '<span class="badge ' + (cls || '') + '">' + text + '</span>'; }
+
+function renderPool() {
+  const q = ($('#q').value || '').trim().toLowerCase();
+  const job = $('#f-job').value;
+  const fake = $('#f-fake').value;
+  const stamp = $('#f-stamp').value;
+  const freeOnly = $('#f-free').checked;
+
+  const list = CAND.filter(c => {
+    if (job && c.job !== job) return false;
+    const fk = fakeLevelOf(c);
+    if (fake === '0' && fk !== 0) return false;
+    if (fake === '1' && fk === 0) return false;
+    if (stamp === 'real' && !c.stamp) return false;
+    if (stamp === 'none' && c.stamp) return false;
+    const at = placedAt(c.id);
+    if (freeOnly && at) return false;
+    if (q) {
+      const hay = (c.name + ' ' + c.id + ' ' + (c.traits || []).join(' ') + ' ' + (JOB_CN[c.job] || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const html = list.map(c => {
+    const at = placedAt(c.id);
+    const fk = fakeLevelOf(c);
+    const bs = [];
+    bs.push(badge('fake' + fk, fk === 0 ? 'ok' : (fk >= 3 ? 'bad' : 'warn')));
+    bs.push(badge(c.stamp ? '真章' : '无章', c.stamp ? 'ok' : 'bad'));
+    const over = overFlags(c);
+    if (over.length) bs.push(badge('越界', 'warn'));
+    const fs = askStampList(c);
+    if (fs.length) bs.push(badge('会露假章', 'bad'));
+    if (at) bs.push(badge('D' + at, 'info'));
+    return '<div class="card' + (at ? ' placed' : '') + '" data-id="' + c.id + '">' +
+      '<div class="nm">' + esc(c.name) + '</div>' +
+      '<div class="sub">' + (JOB_CN[c.job] || c.job) + ' · Lv' + c.level + ' · ' +
+        c.str + '/' + c.int + '/' + c.wis + ' · ' + esc(raceLabelOf(c)) + ' · ' + esc(c.id) + '</div>' +
+      '<div class="badges">' + bs.join('') + '</div>' +
+      '</div>';
+  }).join('');
+
+  $('#pool-list').innerHTML = html || '<p class="hint">没有符合条件的候选人。</p>';
+}
+
+function renderDays() {
+  const html = DAY_META.map(m => {
+    const ids = dayIds(m.d);
+    const cls = ids.length === m.target ? '' : (ids.length > m.target ? ' over' : ' miss');
+    const li = ids.map((id, i) => {
+      const c = BY_ID.get(id);
+      const known = !!c || OTHERS.has(id);
+      const nm = c ? c.name : nameOfId(id);
+      const fk = c ? fakeLevelOf(c) : 0;
+      const mark = [];
+      if (!known) mark.push('<span class="badge bad">查不到</span>');
+      if (c && !c.stamp) mark.push('<span class="badge bad">无章</span>');
+      if (fk >= 3) mark.push('<span class="badge bad">fake' + fk + '</span>');
+      if (c && hoverFlags(c)) mark.push('<span class="badge warn">越界</span>');
+      return '<li data-day="' + m.d + '" data-id="' + id + '" data-idx="' + i + '">' +
+        '<span class="i">' + (i + 1) + '</span>' +
+        '<span>' + esc(nm) + '</span>' +
+        '<span class="j">' + (c ? (JOB_CN[c.job] || '') : '') + '</span>' + mark.join('') +
+        '<span class="ops">' +
+          '<button data-act="up" title="上移">↑</button>' +
+          '<button data-act="down" title="下移">↓</button>' +
+          '<button data-act="del" title="移出">×</button>' +
+        '</span></li>';
+    }).join('');
+    const blank = m.target - ids.length;
+    const dirty = differsFromDisk(m.d);
+    return '<div class="day' + (state.activeDay === m.d ? ' active' : '') + '" data-day="' + m.d + '">' +
+      '<div class="hd" data-role="day-hd">' +
+        '<span class="t">Day ' + m.d + '</span>' +
+        '<span class="th">' + esc(m.theme) + ' · ' + esc(m.hint) + '</span>' +
+        '<span class="line-slot">名额 <input type="number" min="1" max="12" value="' + state.slots[m.d] + '" data-role="slots"></span>' +
+        '<span class="cnt' + cls + '"><span class="n">' + ids.length + '</span>/' + m.target + '</span>' +
+        (dirty ? '<span class="badge warn" title="和磁盘上的 day_XX.tres 不一样，写回才会生效">待写</span>' : '') +
+      '</div>' +
+      '<ul>' + li + '</ul>' +
+      (blank > 0 ? '<div class="empty">还空着 <b>' + blank + '</b> 位（这天目标 ' + m.target + ' 人）</div>' : '') +
+      '</div>';
+  }).join('');
+  $('#day-list').innerHTML = html;
+}
+function hoverFlags(c) { return overFlags(c).length > 0; }
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
+}
+
+function renderPreview() {
+  const id = state.selected;
+  const c = id && BY_ID.get(id);
+  if (!c) {
+    $('#preview-body').innerHTML = '<p class="hint">点左边的候选人卡，或点某天名单里的名字，看这份简历长什么样、哪些地方是假的。</p>';
+    return;
+  }
+  const v = verdictOf(c);
+  const checks = checksOf(c);
+  const at = placedAt(c.id);
+  const maxAttr = Math.max(20, c.str, c.int, c.wis);
+  const bar = (k, label) => {
+    const val = c[k] || 0;
+    const main = mainStatOf(c.job) === k;
+    return '<span class="k">' + label + (main ? ' ★' : '') + '</span>' +
+      '<span class="bar"><i class="' + (main ? 'main' : '') + '" style="width:' + Math.round(val / maxAttr * 100) + '%"></i></span>' +
+      '<span class="v">' + val + '</span>';
+  };
+  const entries = (c.entries || []).map((e, i) => {
+    const kind = e.kind === 'skill' ? '专长' : '经验';
+    const dlg = (e.ask || []).map(l =>
+      '<div><span class="who">' + esc(l.who) + '：</span>' + esc(l.text) +
+      (l.stamp ? ' <span class="stamp">［' + esc(STAMP_CN[l.stamp] || l.stamp) + '］</span>' : '') +
+      (l.popup && !l.stamp ? ' <span class="badge info">' + esc(l.popup) + '</span>' : '') +
+      '</div>').join('');
+    return '<div class="entry"><div><span class="kind">' + kind + ' ' + (i + 1) + '</span> · ' + esc(e.desc) + '</div>' +
+      (dlg ? '<div class="dlg">' + dlg + '</div>' : '') + '</div>';
+  }).join('');
+
+  $('#preview-body').innerHTML =
+    '<div class="sheet">' +
+      '<h3>' + esc(c.name) + '</h3>' +
+      '<div class="meta">' + esc(raceLabelOf(c)) +
+        (c.dispr ? ' <span class="muted">（race: ' + esc(RACE_CN[c.race] || c.race) + '）</span>' : '') +
+        ' · ' + (JOB_CN[c.job] || c.job) +
+        ' · Lv' + c.level + ' · ' + esc(c.gender) + ' · ' + c.age + ' 岁' +
+        (at ? ' · <span class="badge info">已排在 Day ' + at + '</span>' : ' · <span class="muted">未排</span>') +
+      '</div>' +
+      '<div class="verdict ' + v.level + '"><b>' +
+        (v.level === 'ok' ? '看起来没问题' : v.level === 'warn' ? '有可疑之处' : '明显有问题') +
+        '</b>：' + esc(v.label) + '</div>' +
+      '<div class="attrs">' + bar('str', '力量') + bar('int', '智力') + bar('wis', '智慧') + '</div>' +
+      '<div class="muted" style="font-size:12px">三项总和 ' + sumOf(c) +
+        (sumOf(c) > TOTAL_OVER ? '（<span class="warn">超 ' + TOTAL_OVER + '</span>）' : '') + '</div>' +
+      '<div class="chips">' + ((c.traits || []).length
+        ? c.traits.map(t => '<span class="chip ' + (/^fake[1-9]$/.test(t) ? 'bad' : '') + '">' + esc(TRAIT_CN[t] || t) + '</span>').join('')
+        : '<span class="muted">（无特质）</span>') + '</div>' +
+      '<div class="chips">' + (c.stamp ? '<span class="chip ok">简历上：真章</span>' : '<span class="chip bad">简历上：没有章</span>') +
+        (askStampList(c).map(s => '<span class="chip bad">追问会盖出 ' + esc(STAMP_CN[s.stamp] || s.stamp) + '</span>').join('')) +
+      '</div>' +
+      '<div class="sec"><div class="lb">简历条目（含追问原文）</div>' + (entries || '<div class="muted">（空）</div>') + '</div>' +
+      (c.declaration ? '<div class="sec"><div class="lb">团队宣言</div><div class="decl">' + esc(c.declaration) + '</div></div>' : '') +
+      '<div class="sec"><div class="lb">检查清单</div><ul class="check">' +
+        checks.map(k => '<li class="' + k.level + '">' + (k.level === 'ok' ? '✓ ' : k.level === 'warn' ? '⚠ ' : '✗ ') + esc(k.text) + '</li>').join('') +
+      '</ul></div>' +
+      '<div class="judge"><div class="lb">判定（面试结束后的真相）</div>' + esc(c.judgment || '（无）') + '</div>' +
+      '<div class="row" style="margin-top:10px">' +
+        '<button data-act="add-active">加到 Day ' + state.activeDay + '</button>' +
+        (at ? '<button data-act="unplace">从 Day ' + at + ' 移出</button>' : '') +
+      '</div>' +
+    '</div>';
+}
+
+function renderAll() { renderHeader(); renderPool(); renderDays(); renderPreview(); }
+
+/* ============================================================
+   导出面板
+   ============================================================ */
+function exportTabs() {
+  const tabs = DAY_META.map(m => ({ key: String(m.d), label: 'day_' + String(m.d).padStart(2, '0') }));
+  tabs.push({ key: 'md', label: '名单.md' });
+  tabs.push({ key: 'json', label: 'roster_plan.json' });
+  return tabs;
+}
+function exportText(key) {
+  if (key === 'md') return planMarkdown();
+  if (key === 'json') return JSON.stringify(planSnapshot(), null, 2);
+  const d = Number(key);
+  return tresForDayWith(d, dayIds(d), state.slots[d]);
+}
+function renderExport() {
+  const tabs = exportTabs();
+  $('#tabs').innerHTML = tabs.map(t =>
+    '<button data-tab="' + t.key + '" aria-pressed="' + (state.exportTab === t.key) + '">' + t.label + '</button>').join('');
+  $('#export-text').value = exportText(state.exportTab);
+}
+function openExport(key) {
+  if (key) state.exportTab = key;
+  renderExport();
+  $('#exportDialog').showModal();
+}
+
+/* ============================================================
+   事件
+   ============================================================ */
+function boot() {
+  loadState();
+  if (!state.selected && CAND.length) state.selected = CAND[0].id;
+
+  /* 池：点卡 = 选预览 + 加到当前天 */
+  $('#pool-list').addEventListener('click', e => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const id = card.dataset.id;
+    const at = placedAt(id);
+    if (at) { state.selected = id; state.activeDay = at; saveState(); renderAll(); }
+    else { addToDay(state.activeDay, id); }
+  });
+
+  /* 天：点标题设为当前天；点名字看预览；↑↓× */
+  $('#day-list').addEventListener('click', e => {
+    if (e.target.tagName === 'INPUT') return;   // 名额输入框：让用户安静地打字
+    const dayEl = e.target.closest('.day');
+    if (!dayEl) return;
+    const d = Number(dayEl.dataset.day);
+
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      e.stopPropagation();
+      const li = act.closest('li');
+      const idx = Number(li.dataset.idx);
+      if (act.dataset.act === 'del') removeFromDay(d, idx);
+      if (act.dataset.act === 'up') moveInDay(d, idx, -1);
+      if (act.dataset.act === 'down') moveInDay(d, idx, 1);
+      return;
+    }
+    if (e.target.closest('[data-role=day-hd]')) {
+      state.activeDay = d;
+      saveState();
+      renderDays();
+      const li = e.target.closest('li');
+      if (li) { state.selected = li.dataset.id; saveState(); renderPreview(); }
+      return;
+    }
+    const li = e.target.closest('li');
+    if (li) {
+      state.selected = li.dataset.id;
+      state.activeDay = d;
+      saveState();
+      renderDays(); renderPreview();
+    }
+  });
+
+  $('#day-list').addEventListener('input', e => {
+    if (e.target.dataset.role !== 'slots') return;
+    const d = Number(e.target.closest('.day').dataset.day);
+    const v = Math.max(1, Math.min(12, Number(e.target.value) || 1));
+    state.slots[d] = v;
+    saveState();
+  });
+
+  /* 预览面板上的按钮 */
+  $('#preview-body').addEventListener('click', e => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    if (act.dataset.act === 'add-active' && state.selected) addToDay(state.activeDay, state.selected);
+    if (act.dataset.act === 'unplace' && state.selected) {
+      const d = placedAt(state.selected);
+      if (d) { dayIds(d).splice(dayIds(d).indexOf(state.selected), 1); saveState(); renderAll(); }
+    }
+  });
+
+  /* 筛选 */
+  ['#q','#f-job','#f-fake','#f-stamp','#f-free'].forEach(sel => {
+    const el = $(sel);
+    el.addEventListener(el.type === 'text' ? 'input' : 'change', renderPool);
+  });
+
+  /* 读写 data/days */
+  $('#btn-connect').addEventListener('click', connectDir);
+  $('#btn-read').addEventListener('click', () => { if (FS.dir) readFromDir(); else connectDir(); });
+  $('#btn-write').addEventListener('click', writeToDir);
+  $('#chk-bak').checked = state.backup;
+  $('#chk-bak').addEventListener('change', e => { state.backup = e.target.checked; saveState(); });
+  $('#btn-import').addEventListener('click', () => $('#file-import').click());
+  $('#file-import').addEventListener('change', async e => {
+    const files = [...e.target.files];
+    e.target.value = '';
+    if (files.length) await importFiles(files);
+  });
+  tryReconnect();
+
+  /* 顶部按钮 */
+  $('#btn-default').addEventListener('click', () => {
+    if (!confirm('恢复成 docs/day_roster.md 里的方案？（当前调整会丢）')) return;
+    state.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
+    DAY_META.forEach(m => { state.slots[m.d] = Math.max(1, dayIds(m.d).length - 1); });
+    state.selected = null; state.activeDay = 1;
+    saveState(); renderAll();
+  });
+  $('#btn-clear').addEventListener('click', () => {
+    if (!confirm('清空所有天的名单？')) return;
+    DAY_META.forEach(m => { state.plan[m.d] = []; });
+    saveState(); renderAll();
+  });
+  $('#btn-export').addEventListener('click', () => openExport());
+
+  /* 导出面板 */
+  $('#tabs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-tab]');
+    if (!b) return;
+    state.exportTab = b.dataset.tab;
+    renderExport();
+  });
+  $('#btn-close').addEventListener('click', () => $('#exportDialog').close());
+  $('#btn-copy').addEventListener('click', async () => {
+    const el = $('#export-text');
+    try { await navigator.clipboard.writeText(el.value); }
+    catch (err) { el.select(); document.execCommand('copy'); }
+    flash($('#btn-copy'), '已复制');
+  });
+  $('#btn-dl').addEventListener('click', () => {
+    downloadOne(state.exportTab);
+  });
+  $('#btn-dl-all').addEventListener('click', () => {
+    const jobs = DAY_META.map((m, i) => () => downloadOne(String(m.d)));
+    jobs.push(() => downloadOne('md'), () => downloadOne('json'));
+    let i = 0;
+    const tick = () => { if (i >= jobs.length) return; jobs[i++](); setTimeout(tick, 220); };
+    tick();
+  });
+
+  renderAll();
+}
+
+function flash(btn, text) {
+  const old = btn.textContent;
+  btn.textContent = text;
+  setTimeout(() => { btn.textContent = old; }, 900);
+}
+
+function fileNameFor(key) {
+  if (key === 'md') return 'roster_plan.md';
+  if (key === 'json') return 'roster_plan.json';
+  return 'day_' + String(Number(key)).padStart(2, '0') + '.tres';
+}
+function downloadOne(key) {
+  download(fileNameFor(key), exportText(key));
+}
+function download(name, text) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+/* 浏览器里才启动；Node 里只取纯函数做自检 */
+if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.getElementById('day-list')) {
+  boot();
+}
+</script>
+</body>
+</html>

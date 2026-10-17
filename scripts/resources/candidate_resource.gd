@@ -80,6 +80,26 @@ extends Resource
 ##作为最终在战报上呈现出的对这个人的评价
 @export var judgment: String = ""
 
+## 造假程度：**不上任何界面**，只作为后续机制（还没做）的参考值。
+##
+## 0 = 没造假，1~3 = 一 / 二 / 三级。这批数据照着导入时文件夹名里的 `fake0`~`fake3`
+## 标注填（`candidates_tmp/*/c_XXXX_ct fake1 …`），所以和那几个 `fakeN` 特质同源 ——
+## 但两者**互不替代**：特质参与相性计算，这个字段不参与。
+##
+## ⚠️ 现在**没有任何代码读它**（战力、相性、简历纸面都不读）。留着是为了以后真要
+## 「按造假程度算风险 / 举报 / 派系反应」时，不用回头再翻一遍文件名。
+## 默认 0：老 .tres 里没有这一行 = 没造假。
+@export var fake_level: int = 0
+
+## 简历上**显示**的种族名。
+##
+## 空 = 照旧用 `race.display_name`；非空 = 简历那一栏就印这一串（例如 race 是 `elf`
+## 的皮尔莉，纸面上可以印成「仙灵」）。**只换纸面那一个字**，不动 `race` 本身 ——
+## 相性、叙事规则、`_is_race()` 那些判定读的仍然是 `race`，所以改这里不会顺手改掉玩法。
+## 立绘另有一套 `portrait_race`，也不受影响。取值走 `shown_race_name()`。
+## （要改这两个字段：编辑器 tools/candidate_generator.html；排班预览里也会显示。）
+@export var display_race: String = ""
+
 ## 立绘（可选，UI 用）
 @export var portrait: Texture2D
 
@@ -180,3 +200,21 @@ func true_intelligence() -> int:
 ## 实际感知
 func true_wisdom() -> int:
 	return true_attribute(&"wisdom")
+
+
+# ---------------------------------------------------------------------------
+# 简历上显示的名字（纸面 ≠ 玩法）
+# ---------------------------------------------------------------------------
+
+
+## 简历上该印的种族名：`display_race` 非空就优先用它，否则回退 `race.display_name`。
+##
+## **只给 UI 用**（resume.gd）。玩法一侧请照旧读 `race`（相性 / 叙事规则 / _is_race），
+## 别拿它去判种族 —— 否则「显示成仙灵」会悄悄变成「真的按仙灵算」。
+func shown_race_name() -> String:
+	var custom: String = display_race.strip_edges()
+	if not custom.is_empty():
+		return custom
+	if race == null:
+		return ""
+	return race.display_name

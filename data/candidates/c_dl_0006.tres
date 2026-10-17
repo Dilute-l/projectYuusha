@@ -40,6 +40,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "我不太想写宣言，这没有什么意义。"
 judgment = "拉埃洛尔的水平还算可以，但是他对魔法的理解似乎和常人不太一样，显得非常野路子。"
+fake_level = 3
 portrait_race = &"el"
 portrait_eye = 102
 portrait_hair = 101
