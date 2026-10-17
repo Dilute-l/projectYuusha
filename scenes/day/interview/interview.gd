@@ -732,8 +732,8 @@ func _on_notice_board_pressed() -> void:
 
 
 ## 打开手册时先看哪一条。
-## 占位：等关键词检索 / 图鉴列表做出来之后，这里换成「按玩家点的那条」传进去。
-const HANDBOOK_PLACEHOLDER_ID := &"slime"
+## 手册的起始页不在这里 —— 现在**每次打开都从封面开始**，那条约定收在
+## `Handbook.open()`（`COVER_ENTRY_ID = &"stamp"`）里，本场景只喊一声 open()。
 
 
 func _on_handbook_button_pressed() -> void:
@@ -750,7 +750,9 @@ func _on_handbook_button_pressed() -> void:
 	if _animating:
 		return
 
-	if not _handbook.open_entry(HANDBOOK_PLACEHOLDER_ID):
+	# **每次都从封面（stamp 那一页）开始翻** —— 起始页的约定收在 Handbook.open() 里，
+	# 这里不传 id：将来做「点图鉴跳到某一条」时走 open_entry(id) 那条路。
+	if not _handbook.open():
 		return
 	_set_scene_interaction_enabled(false)
 

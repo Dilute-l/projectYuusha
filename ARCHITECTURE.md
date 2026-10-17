@@ -427,6 +427,21 @@ signal run_finished(ending_id: StringName)
 `data/handbook/` 的条目承担两件事：
 给出魔物弱点、同时给出**常识基线**（例如"初级剑士不可能单人讨伐食人魔"），让撒谎能被推理而不是靠猜。
 
+#### 每次都从封面（`stamp`）页开始翻
+
+入口只有一个：`Handbook.open()` → `open_entry(COVER_ENTRY_ID = &"stamp")`。
+
+- `stamp` 是一条**普通条目**（`data/handbook/stamp.tres`），内容就是那张手绘的
+  「如何识别印章」—— 讲真章长什么样、哪几种是假的。它 **`unlock_condition` 为空 = 一开始就有**。
+- 它是**恒定的第 0 页**：页序按「条件最早成立的天数 → id 字典序」排，唯一无条件的条目必然排最前
+  （`stamp` 在 id 字典序里也靠前，两条依据同向）。**「每次从封面开始」就是靠这个前提成立的** ——
+  哪天给封面加了 `unlock_condition`，它会先被 `smoke_handbook` 拦住。
+- 关掉再打开**不记住上次翻到哪**，仍回封面（`open()` 每次都重新组页 + 从第 0 页铺）。
+- `open_entry(entry_id)` 仍然保留「直接翻到某一条」的能力（目前没人用，留给以后的关键词检索 /
+  图鉴跳页）；传进去的 id 不存在或还没解锁时**安静退回第一页**（= 封面）。
+- ⚠️ **不要再在调用方传起始页**：早先 `interview.gd` 里有个 `HANDBOOK_PLACEHOLDER_ID = &"slime"`，
+  于是每次打开都跳到史莱姆那页。现在那条常量已删除，起始页的约定只收在 `Handbook.open()` 一处。
+
 **页序 = 解锁账本的顺序**（`RunState.handbook_unlocked` 这个有序数组，页码就是下标）：
 `GameState.record_handbook_unlocks()` 把新满足条件的条目按「条件最早成立的天数 → id 字典序」补登，
 新解锁的排在最后一页；**登记即既成事实**，条件日后变假也不移除、不重排。
@@ -443,6 +458,26 @@ signal run_finished(ending_id: StringName)
 `texture_click_mask` 决定。美术切好的那张 mask 精确到笔画本身（next 65×52、last 66×39），
 鼠标偏几个像素就点不中，手感很差 —— 所以 `_ready()` 里把两张 mask 换成
 **贴下角的 200×200 正方形**：图形一个字没动，变的只有「能点到哪儿」。
+
+#### 自检（`smoke_handbook`）
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_handbook.tscn
+```
+
+19 → 22 项，钉住「每次从封面开始」这条约定和它成立的前提：
+
+- 封面条目存在、**无条件**、**排在账本第一位**（这三条是「封面恒为第 0 页」的依据）；
+- `open()` 打开后停在 `stamp` 页；往后翻一页再 `close()` → 重新 `open()` **仍回封面**
+  （证明不记住上次翻到哪）；
+- 可翻页数 = 账本条数；
+- `open_entry(id)` 仍能直接跳页；传不存在的 id **安静退回第一页**（= 封面），不报错；
+- 边界按钮：封面是第一页 → 没有「上一页」；
+- **集成**：真的实例化 `interview.tscn`、拨到 INTERVIEW、`skip_animation()` 之后
+  点手册按钮 → 停在封面。这条盯的是**调用方**（光测 `Handbook.open()` 拦不住
+  「调用方自己传了个 id 进去」那种回归，`HANDBOOK_PLACEHOLDER_ID` 就是这么来的）。
+
+全绿退出码 0。
 
 ### 6.4 相性与组队
 `synergy_calculator.gd` 读取 `TraitInteractionTable`，对队伍做两两配对：

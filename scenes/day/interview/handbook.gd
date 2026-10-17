@@ -15,6 +15,17 @@ extends Control
 ## 图标目录。路径集中在这里，以后挪目录只改这一行。
 const ICON_DIR := "res://assets/art/interview/Handbook/"
 
+## 手册的**封面页**（= 第一条，讲怎么识别真假印章的那一页）。
+##
+## 它照样是一条普通条目（`data/handbook/stamp.tres`，`unlock_condition` 为空 =
+## **一开始就有**），所以不需要任何特殊通道 —— 这里只记住它的 id，
+## 把「打开手册先看封面」这条约定收在一处。
+##
+## ⚠️ 页序 = 解锁顺序（`GameState.get_handbook_unlock_order()`）。封面是唯一
+##   无条件条目，按「条件最早哪天成立 + id 兜底」排序后恒为**第 0 页** ——
+##   这正是「每次从封面开始翻」能成立的前提。哪天给它加了条件，它会被挤到后面去。
+const COVER_ENTRY_ID := &"stamp"
+
 ## 翻页按钮的**可点区域**：边长（画布坐标），两个按钮各贴一个下角。
 ##
 ## 为什么要在代码里给：美术切好的 texture_click_mask 精确到笔画本身
@@ -146,8 +157,19 @@ func _install_square_hitbox(button: TextureButton, canvas: Vector2i, rect: Rect2
 # ---------------------------------------------------------------------------
 
 
+## 打开手册，**每次都从封面页开始**。
+##
+## 这是手册唯一的对外开法（`interview.gd` 的按钮走这里）。想「翻到某一条」时
+## 用 open_entry()，那是另一条路 —— 目前还没人用，留给以后的关键词检索 / 图鉴跳转。
+func open() -> bool:
+	return open_entry(COVER_ENTRY_ID)
+
+
 ## 打开手册，并翻到 entry_id 那一页。
 ## 该条目现在不可见（条件没满足）时退回第一页；一条可看的都没有就返回 false。
+##
+## ⚠️ 「打开手册先看封面」这条约定不在这里 —— 它走 open()，别让调用方各自传 id：
+##   传进来的是哪个条目就翻到哪个，是**刻意**留的能力（将来点图鉴跳页要用）。
 func open_entry(entry_id: StringName) -> bool:
 	_build_entries()
 	if _entries.is_empty():
