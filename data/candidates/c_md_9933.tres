@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "哈基城吃白饭大赛第一二三四届冠军，创下连吃五十碗白饭的记录"
+ask_path = "res://data/asks/c_md_9933_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "哈基卫兵团现役卫兵"
+ask_path = "res://data/asks/c_md_9933_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "敲击贝壳和一切硬物"
+ask_path = "res://data/asks/c_md_9933_3.json"
+
+[sub_resource type="Resource" id="Resource_e3"]
+script = ExtResource("2_entry")
+description = "游泳"
+ask_path = "res://data/asks/c_md_9933_4.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_md_9933"
+display_name = "马斯特蒂"
+level = 3
+strength = 33
+intelligence = 33
+wisdom = 33
+true_attributes = { "strength": 18, "intelligence": 10, "wisdom": 10 }
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"男"
+age = 33
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
+team_declaration = "海獭是世界上最伟大的生物！你们不知道？我真不信！"
+judgment = "马斯特蒂不仅热爱这份工作，还相当努力。没人知道他的上限在哪里。"
+portrait_race = &"hu"
+portrait_eye = 9933
+portrait_hair = 9933
+portrait_mouth = 9933
+portrait_hat = 9933

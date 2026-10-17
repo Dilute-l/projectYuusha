@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/timid.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/fake1.tres" id="7_tr1"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "咒语吟唱一级甲等"
+ask_path = "res://data/asks/c_ct_0024_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "龙族学识"
+ask_path = "res://data/asks/c_ct_0024_2.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0024"
+display_name = "皮皮纳拉"
+level = 2
+strength = 10
+intelligence = 14
+wisdom = 9
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"男"
+age = 22
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
+team_declaration = "如，如果能真的遇到一条龙的话……我会努力！"
+judgment = "皮皮纳拉事实上从来没见过龙，更别说屠龙了。"
+portrait_race = &"hu"
+portrait_eye = 102
+portrait_hair = 103
+portrait_mouth = 101
+portrait_hat = 0
+resume_stamp = ExtResource("8_stamp")

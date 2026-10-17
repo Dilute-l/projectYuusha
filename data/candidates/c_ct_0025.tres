@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/fake0.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/prideful.tres" id="7_tr1"]
+[ext_resource type="Resource" path="res://data/traits/fourth_wall.tres" id="8_tr2"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="9_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "窥见世间真理"
+ask_path = "res://data/asks/c_ct_0025_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "看破第四面墙"
+ask_path = "res://data/asks/c_ct_0025_2.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0025"
+display_name = "杰克·真知"
+level = 3
+strength = 6
+intelligence = 13
+wisdom = 17
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"男"
+age = 187
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
+team_declaration = "我将会把我看到的世界真理展现给每一个人……每一个！"
+judgment = "他真的看到你了，但别担心，我出手了;)"
+portrait_race = &"el"
+portrait_eye = 106
+portrait_hair = 106
+portrait_mouth = 103
+portrait_hat = 0
+resume_stamp = ExtResource("9_stamp")

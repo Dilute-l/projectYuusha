@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TraitDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"trait.dwarf_joke"
+display_name = "PLACEHOLDER TRAIT (dwarf_joke)"
+category = 1
+synergy_tags = Array[StringName]([&"dwarf_joke"])
+description = "PLACEHOLDER DESC (dwarf_joke) -- pending design"

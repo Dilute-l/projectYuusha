@@ -7,3 +7,7 @@
 # 这一条兜的是「user 目录被指进项目里」：自检 / CI 走的就是把 APPDATA 指到 tmp_userdata/（§15.4）。
 saves/
 tmp_userdata/
+
+# 候选人导入的原始素材包：只做一次性导入，不进版本库。
+# 成品在 data/candidates/*.tres 与 data/asks/*.json，编号对照见 docs/candidates_index.md
+candidates_tmp/

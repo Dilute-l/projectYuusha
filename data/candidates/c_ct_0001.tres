@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/fake1.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/caring.tres" id="7_tr1"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "王国学生魔法水平六级"
+ask_path = "res://data/asks/c_ct_0001_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "照顾他人"
+ask_path = "res://data/asks/c_ct_0001_2.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0001"
+display_name = "梅索西斯"
+strength = 8
+intelligence = 14
+wisdom = 10
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"女"
+age = 101
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
+team_declaration = "我会用我的魔法照顾好所有人的哦。"
+judgment = "虽然确实很体贴，但梅索西斯在属性上撒谎了。"
+portrait_race = &"el"
+portrait_eye = 201
+portrait_hair = 201
+portrait_mouth = 101
+portrait_hat = 0

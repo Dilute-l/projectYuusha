@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/fake1.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/bard.tres" id="7_tr1"]
+[ext_resource type="Resource" path="res://data/traits/active.tres" id="8_tr2"]
+[ext_resource type="Resource" path="res://data/traits/harpy_slayer.tres" id="9_tr3"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "王国好声音真人秀 人气第一"
+ask_path = "res://data/asks/c_ct_0021_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "音乐"
+ask_path = "res://data/asks/c_ct_0021_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "抚慰人心"
+ask_path = "res://data/asks/c_ct_0021_3.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0021"
+display_name = "弥思特瑞"
+level = 3
+strength = 7
+intelligence = 8
+wisdom = 9
+true_attributes = { "intelligence": 15 }
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"女"
+age = 133
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2"), ExtResource("9_tr3")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("Resource_e2")])
+team_declaration = "啊~我会用音乐为队伍带来胜利的哦~"
+judgment = "弥思特瑞是个吟游诗人。但是他的音乐鼓舞了士气。"
+portrait_race = &"el"
+portrait_eye = 202
+portrait_hair = 202
+portrait_mouth = 102
+portrait_hat = 0

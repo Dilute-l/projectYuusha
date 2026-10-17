@@ -1,0 +1,16 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "可以看一下你的证书吗。"
+	},
+	{
+		"speaker_name": "黛·博德",
+		"text": "嗯，可以哦。",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
+	},
+	{
+		"speaker_name": "黛·博德",
+		"text": "我在王国周边地区进行过很多次支教呢。"
+	}
+]

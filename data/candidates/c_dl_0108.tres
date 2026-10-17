@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/active.tres" id="6_tr0"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "曾经在飞翼族卫队任职"
+ask_path = "res://data/asks/c_dl_0108_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "作为冒险者，和小队一起鏖战一大队哥布林并且取胜"
+ask_path = "res://data/asks/c_dl_0108_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "盾牌运用"
+ask_path = "res://data/asks/c_dl_0108_3.json"
+
+[sub_resource type="Resource" id="Resource_e3"]
+script = ExtResource("2_entry")
+description = "飞行"
+ask_path = "res://data/asks/c_dl_0108_4.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_dl_0108"
+display_name = "伊戈"
+level = 3
+strength = 15
+intelligence = 7
+wisdom = 12
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"男"
+age = 23
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
+team_declaration = "飞翼一族的战士伊戈，愿为讨伐魔王事业尽微薄之力。"
+judgment = "伊戈的战斗方式稳健得就像一堵城墙，队友在他的保护下十分安全。"
+portrait_race = &"hu"
+portrait_eye = 101
+portrait_hair = 101
+portrait_mouth = 101
+portrait_hat = 201
+resume_stamp = ExtResource("7_stamp")

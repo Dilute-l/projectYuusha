@@ -1,0 +1,16 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "还有这种比赛吗……有证书吗？"
+	},
+	{
+		"speaker_name": "依斯尔",
+		"text": "啊，有的！",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
+	},
+	{
+		"speaker_name": "依斯尔",
+		"text": "因为是学校里的小比赛，所以您可能没听说过……"
+	}
+]

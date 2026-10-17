@@ -1,0 +1,12 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "可以出示一下你的毕业证吗"
+	},
+	{
+		"speaker_name": "拜伦·斯沃特",
+		"text": "是的，这是我的毕业证，我是325届的学生",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
+	}
+]

@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/fake2.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/rude.tres" id="7_tr1"]
+[ext_resource type="Resource" path="res://data/traits/ghost_slayer.tres" id="8_tr2"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_fake2.png" id="9_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "持有神殿大祭司职称"
+ask_path = "res://data/asks/c_ct_0017_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "王国神术水平六级"
+ask_path = "res://data/asks/c_ct_0017_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "驱散不死生物"
+ask_path = "res://data/asks/c_ct_0017_3.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0017"
+display_name = "玛纳斯"
+level = 3
+strength = 11
+intelligence = 12
+wisdom = 20
+true_attributes = { "wisdom": 15 }
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"女"
+age = 140
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
+team_declaration = "别让其他废物拖我后腿。"
+judgment = "玛纳斯在简历上造了两处假。"
+portrait_race = &"el"
+portrait_eye = 204
+portrait_hair = 202
+portrait_mouth = 103
+portrait_hat = 0
+resume_stamp = ExtResource("9_stamp")

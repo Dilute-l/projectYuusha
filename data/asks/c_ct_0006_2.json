@@ -1,0 +1,12 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "你的奖状，可以向我出示一下吗。"
+	},
+	{
+		"speaker_name": "\"大铁锤\"斯坦",
+		"text": "当然，你知道吗，我在这个比赛里杀了不少史莱姆呢！",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
+	}
+]

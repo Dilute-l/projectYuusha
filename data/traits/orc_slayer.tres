@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TraitDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"trait.orc_slayer"
+display_name = "PLACEHOLDER TRAIT (orc_slayer)"
+category = 1
+synergy_tags = Array[StringName]([&"orc_slayer"])
+description = "PLACEHOLDER DESC (orc_slayer) -- pending design"

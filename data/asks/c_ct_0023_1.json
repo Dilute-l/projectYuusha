@@ -1,0 +1,11 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "可以看一下你的证书吗？"
+	},
+	{
+		"speaker_name": "狄尔克娜",
+		"text": "可以，这是我的优秀学员证书",
+		"popup": "AwardPhd"
+	}
+]
