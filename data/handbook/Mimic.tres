@@ -11,4 +11,5 @@ body = "听说有的精灵活了几千年还不知道怎么分辨拟身怪……
 栖息地：地底、地下城、迷宫
 战斗方式：诱骗人打开然后吞食、拟足
 弱点：缓慢的移动速度"
+unlock_condition = "day>=3"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

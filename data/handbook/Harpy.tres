@@ -11,4 +11,5 @@ body = "听说鸟妖们很喜欢吃带有恶魔血统的小孩，但是那些小
 栖息地：海边、山丘
 战斗方式：使用歌声诱惑人类，爪击
 弱点：耳塞、沉默魔法"
+unlock_condition = "day>=3"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

@@ -10,5 +10,6 @@ title = "哥布林"
 body = "其实哥布林算是精灵的远亲，以及，他们烧的饭还挺好吃的，真的。
 栖息地：森林、草原居多
 战斗方式：迅捷的移动、各种卑鄙手段
-弱点："
+弱点：群攻手段，爱与阳光"
+unlock_condition = "day>=3"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"

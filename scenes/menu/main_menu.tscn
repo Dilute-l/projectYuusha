@@ -17,35 +17,11 @@
 [ext_resource type="Texture2D" uid="uid://uta2kam4gwa0" path="res://assets/art/Menu/MenuBookHover.png" id="13_gdhp0"]
 [ext_resource type="BitMap" uid="uid://daoqtwnd8x65d" path="res://assets/art/Menu/MenuBook.tres" id="14_gdhp0"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qgo02"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vovv2"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1k4da"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4i75y"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p1nwe"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_prbor"]
-
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fp42q"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_27h4x"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_isoef"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1bhjn"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_bbqo6"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_d4hu8"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_gdhp0"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pstia"]
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_41tvm"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_contn"]
 
@@ -54,6 +30,30 @@
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_conth"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_contd"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qgo02"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vovv2"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1k4da"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1bhjn"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_bbqo6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_d4hu8"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4i75y"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_p1nwe"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_prbor"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_gdhp0"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pstia"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_41tvm"]
 
 [node name="MainMenu" type="Control" unique_id=913117480]
 layout_mode = 3
@@ -246,13 +246,13 @@ offset_right = -8.0
 [connection signal="pressed" from="Exitgame" to="." method="_on_exitgame_pressed"]
 [connection signal="pressed" from="Startgame" to="." method="_on_startgame_pressed"]
 [connection signal="pressed" from="Typertest" to="." method="_on_typertest_pressed"]
-[connection signal="pressed" from="StartgameText" to="." method="_on_startgame_pressed"]
-[connection signal="pressed" from="ContinuegameText" to="." method="_on_continuegame_pressed"]
-[connection signal="mouse_exited" from="ExitgameText" to="." method="_on_exitgame_mouse_exited"]
-[connection signal="pressed" from="ExitgameText" to="." method="_on_exitgame_pressed"]
 [connection signal="pressed" from="Title" to="." method="_on_title_pressed"]
 [connection signal="pressed" from="Title2" to="." method="_on_title_pressed"]
+[connection signal="pressed" from="ContinuegameText" to="." method="_on_continuegame_pressed"]
+[connection signal="pressed" from="StartgameText" to="." method="_on_startgame_pressed"]
 [connection signal="pressed" from="Credits" to="." method="_on_credits_pressed"]
+[connection signal="mouse_exited" from="ExitgameText" to="." method="_on_exitgame_mouse_exited"]
+[connection signal="pressed" from="ExitgameText" to="." method="_on_exitgame_pressed"]
 [connection signal="pressed" from="PlaceHolderButton" to="." method="_on_place_holder_button_pressed"]
 [connection signal="pressed" from="SealButton" to="." method="_on_seal_button_pressed"]
 [connection signal="pressed" from="InkButton" to="." method="_on_ink_button_pressed"]

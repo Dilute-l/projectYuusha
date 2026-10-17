@@ -11,4 +11,5 @@ body = "某种由腐蚀性凝胶组成的巨大活体生物，其威胁性大于
 栖息地：森林，地下的潮湿处
 战斗方式：潜伏，突袭，将人吞入后消化腐蚀
 弱点：体内的核心"
+unlock_condition = "day>=3"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"
