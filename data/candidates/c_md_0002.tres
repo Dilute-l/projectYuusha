@@ -9,26 +9,26 @@
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
 description = "王国胜利第一魔法学院优秀毕业生"
-ask_path = "res://data/asks/c_md_0104_1.json"
+ask_path = "res://data/asks/c_md_0002_1.json"
 
 [sub_resource type="Resource" id="Resource_e1"]
 script = ExtResource("2_entry")
 description = "普通高等魔法学院招生全国统一考试710分"
-ask_path = "res://data/asks/c_md_0104_2.json"
+ask_path = "res://data/asks/c_md_0002_2.json"
 
 [sub_resource type="Resource" id="Resource_e2"]
 script = ExtResource("2_entry")
 description = "魔法水平专业八级"
-ask_path = "res://data/asks/c_md_0104_3.json"
+ask_path = "res://data/asks/c_md_0002_3.json"
 
 [sub_resource type="Resource" id="Resource_e3"]
 script = ExtResource("2_entry")
 description = "魔法"
-ask_path = "res://data/asks/c_md_0104_4.json"
+ask_path = "res://data/asks/c_md_0002_4.json"
 
 [resource]
 script = ExtResource("1_script")
-id = &"c_md_0104"
+id = &"c_md_0002"
 display_name = "拜伦·斯沃特"
 level = 3
 strength = 12

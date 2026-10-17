@@ -3,46 +3,45 @@
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
 [ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
-[ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
-[ext_resource type="Resource" path="res://data/traits/slime_slayer.tres" id="6_tr0"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+[ext_resource type="Resource" path="res://data/traits/prideful.tres" id="6_tr0"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
-description = "曾经在魔网上发表过论文"
-ask_path = "res://data/asks/c_dl_0104_1.json"
+description = "雷斯卡利家族首席魔法顾问"
+ask_path = "res://data/asks/c_dl_0006_1.json"
 
 [sub_resource type="Resource" id="Resource_e1"]
 script = ExtResource("2_entry")
-description = "王国国立魔法大学学生"
-ask_path = "res://data/asks/c_dl_0104_2.json"
+description = "曾经参加过对一只白龙的讨伐战"
+ask_path = "res://data/asks/c_dl_0006_2.json"
 
 [sub_resource type="Resource" id="Resource_e2"]
 script = ExtResource("2_entry")
-description = "理论魔法研究"
-ask_path = "res://data/asks/c_dl_0104_3.json"
+description = "古代精灵魔法"
+ask_path = "res://data/asks/c_dl_0006_3.json"
 
 [resource]
 script = ExtResource("1_script")
-id = &"c_dl_0104"
-display_name = "盖斯"
-level = 3
+id = &"c_dl_0006"
+display_name = "拉埃洛尔"
+level = 4
 strength = 8
-intelligence = 15
-wisdom = 10
+intelligence = 18
+wisdom = 8
+true_attributes = { "intelligence": 15 }
 race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"男"
-age = 32
+age = 402
 traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
-team_declaration = "发表多篇学术论文，具有丰富研究经验，希望在讨伐魔王的实战中实践自己的理论。"
-judgment = "虽然不是很适应战场，但是盖斯的理论确实能在实战中发挥不错的作用。"
-portrait_race = &"hu"
-portrait_eye = 101
+team_declaration = "我不太想写宣言，这没有什么意义。"
+judgment = "拉埃洛尔的水平还算可以，但是他对魔法的理解似乎和常人不太一样，显得非常野路子。"
+portrait_race = &"el"
+portrait_eye = 102
 portrait_hair = 101
-portrait_mouth = 101
-portrait_hat = 201
-resume_stamp = ExtResource("7_stamp")
+portrait_mouth = 106
+portrait_hat = 0

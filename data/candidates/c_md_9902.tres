@@ -7,42 +7,43 @@
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
-description = "拯救过一个世界"
-ask_path = "res://data/asks/c_md_10000_1.json"
+description = "哈基城吃白饭大赛第一二三四届冠军，创下连吃五十碗白饭的记录"
+ask_path = "res://data/asks/c_md_9902_1.json"
 
 [sub_resource type="Resource" id="Resource_e1"]
 script = ExtResource("2_entry")
-description = "来的路上杀了很多魔物"
-ask_path = "res://data/asks/c_md_10000_2.json"
+description = "哈基卫兵团现役卫兵"
+ask_path = "res://data/asks/c_md_9902_2.json"
 
 [sub_resource type="Resource" id="Resource_e2"]
 script = ExtResource("2_entry")
-description = "徒手格斗"
-ask_path = "res://data/asks/c_md_10000_3.json"
+description = "敲击贝壳和一切硬物"
+ask_path = "res://data/asks/c_md_9902_3.json"
 
 [sub_resource type="Resource" id="Resource_e3"]
 script = ExtResource("2_entry")
-description = "持械格斗"
-ask_path = "res://data/asks/c_md_10000_4.json"
+description = "游泳"
+ask_path = "res://data/asks/c_md_9902_4.json"
 
 [resource]
 script = ExtResource("1_script")
-id = &"c_md_10000"
-display_name = "万阴"
-level = 5
-strength = 20
-intelligence = 12
-wisdom = 8
+id = &"c_md_9902"
+display_name = "马斯特蒂"
+level = 3
+strength = 33
+intelligence = 33
+wisdom = 33
+true_attributes = { "strength": 18, "intelligence": 10, "wisdom": 10 }
 race = ExtResource("4_race")
 job = ExtResource("3_job")
-gender = &"女"
-age = 20
+gender = &"男"
+age = 33
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
-team_declaration = "拯救世界的活我比较熟悉，交给我就好了。还有，如果你见到一个自称姓韩的家伙，请转告我。"
-judgment = "万阴的实力摧枯拉朽，这家伙是个天生向死而生的战士。"
+team_declaration = "海獭是世界上最伟大的生物！你们不知道？我真不信！"
+judgment = "马斯特蒂不仅热爱这份工作，还相当努力。没人知道他的上限在哪里。"
 portrait_race = &"hu"
-portrait_eye = 10000
-portrait_hair = 10000
-portrait_mouth = 10000
-portrait_hat = 10000
+portrait_eye = 9933
+portrait_hair = 9933
+portrait_mouth = 9933
+portrait_hat = 9933

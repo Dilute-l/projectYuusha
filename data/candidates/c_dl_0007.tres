@@ -11,26 +11,26 @@
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
 description = "曾经在飞翼族卫队任职"
-ask_path = "res://data/asks/c_dl_0108_1.json"
+ask_path = "res://data/asks/c_dl_0007_1.json"
 
 [sub_resource type="Resource" id="Resource_e1"]
 script = ExtResource("2_entry")
 description = "作为冒险者，和小队一起鏖战一大队哥布林并且取胜"
-ask_path = "res://data/asks/c_dl_0108_2.json"
+ask_path = "res://data/asks/c_dl_0007_2.json"
 
 [sub_resource type="Resource" id="Resource_e2"]
 script = ExtResource("2_entry")
 description = "盾牌运用"
-ask_path = "res://data/asks/c_dl_0108_3.json"
+ask_path = "res://data/asks/c_dl_0007_3.json"
 
 [sub_resource type="Resource" id="Resource_e3"]
 script = ExtResource("2_entry")
 description = "飞行"
-ask_path = "res://data/asks/c_dl_0108_4.json"
+ask_path = "res://data/asks/c_dl_0007_4.json"
 
 [resource]
 script = ExtResource("1_script")
-id = &"c_dl_0108"
+id = &"c_dl_0007"
 display_name = "伊戈"
 level = 3
 strength = 15
