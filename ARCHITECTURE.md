@@ -756,11 +756,40 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | 性别 | `GenderContainer` | `gender` |
 | 年龄 | `AgeContainer` | `age` |
 | 力量 / 智力 / 感知 | `Status/Str·Int·WisContainer` | `strength` / `intelligence` / `wisdom` |
-| 组队宣言 | `DeclarationContainer` | `team_declaration` |
+| 个人履历与奖项 | `ExperienceScroll/ExperienceContainer`（`ScrollContainer` → `VBoxContainer`） | `experience`，每条约一个 `ResumeToken` |
+| 专长 | `SkillScroll/SkillContainer`（`ScrollContainer` → `VBoxContainer`） | `skill`，每条约一个 `ResumeToken` |
+| 组队宣言 | `DeclarationScroll/DeclarationContainer` | `team_declaration` |
 | 印章 | `ResumeStamp` | `resume_stamp`（见下） |
 
 栏目标题（「姓名」「种族」…）是场景里另外一批 `*Label` 节点，**不是数据**。
 任一字段为空就把那一栏清空 —— 不写「未知」这种兜底字，免得看不出来数据漏了。
+
+#### 溢出滚动（履历 / 专长 / 组队宣言）
+
+三条「可长可短」的栏各包一个 `ScrollContainer`：内容超出栏位时纵向滚动条自动出现，
+没超出就看不到（`vertical_scroll_mode` 默认 `AUTO`）。长句靠 Label / Button 自带的
+`autowrap` 在栏宽内折行，所以正常情况下不会有横向滚动条。
+
+> ⚠️ **子节点必须 `size_flags_horizontal = 3`（SIZE_EXPAND_FILL）**。
+> `ScrollContainer` 默认只给子节点**最小尺寸**（`resume.gd` 用 `_reposition_children()` 的
+> `r.size = minsize`；只有带 `SIZE_EXPAND` 的那一轴才会拉成 `max(容器尺寸, 最小尺寸)`）——
+> 不设这个标志，`DeclarationContainer` 这个 autowrap Label 会缩成 1px 宽，每个字折一行。
+> 三个滚动区的子节点（`ExperienceContainer` / `SkillContainer` / `DeclarationContainer`）都设了。
+
+| 滚动节点 | 包住的栏 | 备注 |
+| --- | --- | --- |
+| `ExperienceScroll` | 个人履历与奖项 | 词条多了往下滚 |
+| `SkillScroll` | 专长 | 词条多了往下滚 |
+| `DeclarationScroll` | 组队宣言 | 整段自由文本超出一栏时滚 |
+
+
+- **滚动条只在装不下时出现**：`vertical_scroll_mode` 用默认的 `AUTO`，内容没超出一页就看不到滚动条。
+- **换人时滚回顶部**：`resume.gd::set_candidate()` 末尾调 `_reset_scrolls()` —— 同一张纸会被反复喂不同的
+  候选人（§11.2），不归零的话下一位的简历会停在上一页滚到一半的位置。
+- **改版面别把容器拆散**：`resume.gd` 按 `ExperienceScroll/ExperienceContainer` 这类路径取节点
+  （`get_node_or_null`，取不到就静默不铺那一栏），挪节点记得五个脚本 + 三个 smoke 一起改：
+  `resume.gd`、`tools/smoke_hover_gray.gd`（词条路径）、`tools/smoke_resume_menu.gd` 与
+  `tools/smoke_team_builder.gd`（`DeclarationScroll/DeclarationContainer`）。
 
 > ⚠️ **这里没有「抬头」了**。早先的 `CandidateResource.resume_header` 是「上半部分整段字，
 > 一个多行字符串说了算，`resume.gd` 一个字都不拼」。版面拆成一栏一格之后，它变成了重复的第二份文案，
@@ -859,7 +888,8 @@ resume_stamp = ExtResource("7_stamp")   # → assets/art/interview/resume/stamp/
 #### 词条：两个列表共用一套「扁平序号」
 
 `experience`（个人履历与奖项）与 `skill`（专长）各自铺进
-`ExperienceContainer` / `SkillContainer`，但**序号是连着往下发的**：
+`ExperienceContainer` / `SkillContainer`（两栏都包在 `ScrollContainer` 里，见上「溢出滚动」），
+但**序号是连着往下发的**：
 
 ```
 experience[0] → 0      experience[1] → 1      skill[0] → 2   …

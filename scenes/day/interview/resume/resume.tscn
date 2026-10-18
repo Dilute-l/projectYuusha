@@ -28,25 +28,47 @@ centered = false
 [node name="TokenMenu" parent="." unique_id=336728073 instance=ExtResource("4_menu")]
 visible = false
 
-[node name="ExperienceContainer" type="VBoxContainer" parent="." unique_id=1728211313]
+[node name="ExperienceScroll" type="ScrollContainer" parent="." unique_id=3000000001]
 layout_mode = 0
 offset_left = 744.0
 offset_top = 200.0
 offset_right = 959.0
 offset_bottom = 415.0
 
-[node name="ResumeToken" parent="ExperienceContainer" unique_id=793925309 instance=ExtResource("3_yu2w1")]
+[node name="ExperienceContainer" type="VBoxContainer" parent="ExperienceScroll" unique_id=1728211313]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResumeToken" parent="ExperienceScroll/ExperienceContainer" unique_id=793925309 instance=ExtResource("3_yu2w1")]
 layout_mode = 2
 
-[node name="SkillContainer" type="VBoxContainer" parent="." unique_id=223296492]
+[node name="SkillScroll" type="ScrollContainer" parent="." unique_id=3000000002]
 layout_mode = 0
 offset_left = 631.0
 offset_top = 466.0
 offset_right = 782.0
 offset_bottom = 556.0
 
-[node name="ResumeToken" parent="SkillContainer" unique_id=1212916358 instance=ExtResource("3_yu2w1")]
+[node name="SkillContainer" type="VBoxContainer" parent="SkillScroll" unique_id=223296492]
 layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResumeToken" parent="SkillScroll/SkillContainer" unique_id=1212916358 instance=ExtResource("3_yu2w1")]
+layout_mode = 2
+
+[node name="DeclarationScroll" type="ScrollContainer" parent="." unique_id=3000000007]
+layout_mode = 0
+offset_left = 808.0
+offset_top = 470.0
+offset_right = 964.0
+offset_bottom = 557.0
+
+[node name="DeclarationContainer" type="Label" parent="DeclarationScroll" unique_id=881726501]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_yu2w1")
+autowrap_mode = 3
 
 [node name="NameLabel" type="Label" parent="." unique_id=199047638]
 layout_mode = 0
@@ -180,16 +202,6 @@ scale = Vector2(0.775, 0.775)
 theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("5_yu2w1")
 text = "组队宣言"
-
-[node name="DeclarationContainer" type="Label" parent="." unique_id=881726501]
-layout_mode = 0
-offset_left = 808.0
-offset_top = 470.0
-offset_right = 964.0
-offset_bottom = 557.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_fonts/font = ExtResource("5_yu2w1")
-autowrap_mode = 3
 
 [node name="Status" type="Button" parent="." unique_id=1861720150]
 layout_mode = 0

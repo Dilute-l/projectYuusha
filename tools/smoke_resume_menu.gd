@@ -59,18 +59,29 @@ func _run() -> void:
 	vp.disable_3d = true
 	get_tree().root.add_child(vp)
 
-	# 简历内容全部来自数据：开一局 → 从第 1 天名单里挑**条目最多**的那一位 → 喂给简历。
+	# 简历内容全部来自数据：从**全部候选人**里挑一位「前两条是履历、第 3 条起是专长」且条目最多的。
 	# 这里**不**造一份测试用简历，测的就是「data/candidates/*.tres → 纸面」这条路。
 	#
 	# ⚠️ 为什么不是「名单第一位」：本测试后面要用到**第 3 条**词条（下标 2），
-	# 名单里谁条目多完全由数据决定 —— 写死「第一位」会在数据一改就红，
-	# 而那根本不是这个测试该管的事（数据覆盖度是 smoke_m0 的活，§11.4）。
-	GameState.start_new_run(20261010)
+	# 而「序号 2 落在专长上」是两条断言的前提（专长 → 菜单摆左边）。
+	# 名单里谁条目多、谁在哪天出场完全由 data/days 的排班决定 —— 绑上去会在排班一改就红，
+	# 而那根本不是这个测试该管的事（排班覆盖度是 smoke_m0 的活，§11.4）。
+	# 所以：先在候选人池里找「恰好 2 条履历 + 至少 1 条专长」的人，再取条目最多的那位。
 	var candidate: CandidateResource = null
-	for c in GameState.current_candidates:
-		if candidate == null or Resume.entries_of(c).size() > Resume.entries_of(candidate).size():
+	for id in DataDB.get_ids(&"candidates"):
+		var c := DataDB.get_candidate(id)
+		if c == null:
+			continue
+		var kept := Resume.entries_of(c)
+		var experience_count := 0
+		for entry in c.experience:
+			if entry != null:
+				experience_count += 1
+		if experience_count != 2 or kept.size() < 3:
+			continue
+		if candidate == null or kept.size() > Resume.entries_of(candidate).size():
 			candidate = c
-	_check(candidate != null, "第 1 天名单里有候选人")
+	_check(candidate != null, "候选人池里有「2 条履历 + 至少 1 条专长」的人（第 3 条是专长）")
 	if candidate == null:
 		_report()
 		return
@@ -116,7 +127,7 @@ func _run() -> void:
 	_check(resume.token_count() == entries.size(),
 			"铺出来的词条数 = 履历 + 专长条数（%d）" % entries.size())
 	_check(not candidate.team_declaration.strip_edges().is_empty(), "候选人在数据里填了组队宣言")
-	var declaration: Label = resume.get_node("DeclarationContainer")
+	var declaration: Label = resume.get_node("DeclarationScroll/DeclarationContainer")
 	_check(declaration.text == candidate.team_declaration,
 			"组队宣言把数据里那一段字原样铺上去（不做拼接）")
 	var name_value: Label = resume.get_node("NameContainer")

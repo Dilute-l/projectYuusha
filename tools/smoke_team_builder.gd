@@ -187,7 +187,7 @@ func _run() -> void:
 	_check(ui.expanded_entry() == entry, "UI 记得现在展开的是这一条")
 	_check(ui.slots_visible(), "点头像 → 右下角的名额空位露出来")
 
-	var declaration: Label = resume.get_node("DeclarationContainer")
+	var declaration: Label = resume.get_node("DeclarationScroll/DeclarationContainer")
 	_check(declaration.text == candidates[0].team_declaration,
 			"组队宣言 = 这一位数据里的 team_declaration")
 	_check(resume.token_count() == Resume.entries_of(candidates[0]).size(),

@@ -93,9 +93,9 @@ func _check_resume(hover: StyleBox) -> void:
 	print("[10.6] 简历页")
 	var resume := RESUME.instantiate()
 	_check_anchor(resume.get_node_or_null("Status"), hover, "力量 / 智力 / 感知（属性值栏）")
-	_check_anchor(resume.get_node_or_null("ExperienceContainer/ResumeToken"), hover,
+	_check_anchor(resume.get_node_or_null("ExperienceScroll/ExperienceContainer/ResumeToken"), hover,
 			"个人履历与奖项（词条）")
-	_check_anchor(resume.get_node_or_null("SkillContainer/ResumeToken"), hover, "专长（词条）")
+	_check_anchor(resume.get_node_or_null("SkillScroll/SkillContainer/ResumeToken"), hover, "专长（词条）")
 	_check_anchor(resume.get_node_or_null("TokenMenu/Options/OptionList/AskButton"), hover,
 			"词条菜单里的「追问」")
 	resume.free()

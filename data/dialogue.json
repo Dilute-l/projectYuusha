@@ -27,73 +27,73 @@
 	{ "speaker_name": "棍木", "text": "规则很简单：十天内，每天挑一支队伍去讨伐魔物。" },
 	{ "speaker_name": "棍木", "text": "挑错了也不要紧——反正挨打的不是我。" }
   ],
-	"handbook_hint": [
+  "handbook_hint": [
 	{ "speaker_name": "棍木", "text": "手册随时可以翻，里面写着魔物的弱点，也写着常识。" },
 	{ "speaker_name": "棍木", "text": "比如——初级剑士不可能单枪匹马讨伐魔物。" },
 	{ "speaker_name": "棍木", "text": "他要是这么说，你就该知道他在撒谎了。" }
   ],
-	"Boardery": [
+  "Boardery": [
 	{ "speaker_name": "阿板", "text": "Mysteries wind~" }
   ],
-	"Watercooler": [
+  "Watercooler": [
 	{ "speaker_name": "饮水机", "sound": "silent", "text": "散发出一股强大的气场。" },
 	{ "speaker_name": "饮水机", "text": "没人知道为什么在一个剑与魔法的世界中会有这东西。" }
   ],
-	"Watercooler_Night": [
+  "Watercooler_Night": [
 	{ "speaker_name": "饮水机", "text": "下班了。" }
   ],
-	"Sorry":[
+  "Sorry": [
 	{ "speaker_name": "手册", "text": "魔法手册认为你应该在开始游戏之后再来读它，而不是在菜单页面。" }
   ],
-	"WhatN1zHasDone":[
+  "WhatN1zHasDone": [
 	{ "speaker_name": "腻子", "text": "旷工了。" }
   ],
-	"Liuxu":[
+  "Liuxu": [
 	{ "speaker_name": "柳絮", "text": "我们的分辨率没有问题" }
   ],
-	"NZ":[
+  "NZ": [
 	{ "speaker_name": "腻子", "text": "我们的游戏采用粗糙手绘风的原因是美工真的只会画粗糙的手绘" }
   ],
-	"Dilute":[
+  "Dilute": [
 	{ "speaker_name": "lulu", "text": "制作组的其他几个人没有人知道知道这个人的头像究竟是谁" },
-	{ "speaker_name": "真·lulu", "text": "其实是我的 oc 来着，虽然经常被错认成其他角色就是了"}
+	{ "speaker_name": "真·lulu", "text": "其实是我的 oc 来着，虽然经常被错认成其他角色就是了" }
   ],
-	"Midu":[
+  "Midu": [
 	{ "config": { "sound": "normal", "extra_silent": "獭" } },
 	{ "speaker_name": "大米", "text": "我们现在用的这个字体里面有獭这个字" }
   ],
-	"MenuSeal":[
+  "MenuSeal": [
 	{ "speaker_name": "腻子", "text": "这里本来是一个印章的 ^1但是看起来太像清凉油，于是只好改成了火漆" }
   ],
-	"day1_briefing":[
+  "day1_briefing": [
 	{ "speaker_name": "柳絮", "text": "这是酷炫占位符" },
 	{ "speaker_name": "柳絮", "text": "来，先在这块牌子上签个字。", "popup": "Contract", "popup_signature": "signature" }
   ],
-	"day-1_briefing":[
+  "day-1_briefing": [
 	{ "speaker_name": "柳絮", "text": "这是酷炫占位符\nif you see this means something goes wrong" }
   ],
-	"day1_spevent":[
+  "day1_spevent": [
 	{ "speaker_name": "柳絮", "text": "no special event yet" }
   ],
-	"day-1_spevent":[
+  "day-1_spevent": [
 	{ "speaker_name": "柳絮", "text": "no special event yet\nif you see this means something goes wrong" }
   ],
-	"day1_driver":[
+  "day1_driver": [
 	{ "speaker_name": "面试官", "text": "回威利奇村。" },
 	{ "speaker_name": "马车夫", "text": "先生您一看就是达官贵人，是在王城上班吧" },
 	{ "speaker_name": "面试官", "text": "的确。" },
 	{ "speaker_name": "马车夫", "text": "您需不需要专车服务啊，每天早晚都是我给你包车给您往返，长期包月有优惠。" },
 	{ "speaker_name": "面试官", "text": "也不是不行……" },
 	{ "speaker_name": "马车夫", "text": "好嘞，以后我每天这个点都在这准时接您回家，您坐好咯！" }
-	],
-	"day2_driver":[
+  ],
+  "day2_driver": [
 	{ "speaker_name": "马车夫", "text": "先生您今天工作还顺利吗？" },
 	{ "speaker_name": "面试官", "text": "谢谢，还算顺利吧。" },
 	{ "speaker_name": "马车夫", "text": "在王城上班可是件美差啊，先生真是有福气。" },
 	{ "speaker_name": "面试官", "text": "如果你见过那帮家伙有多烦人，你就不会这么说了。" },
 	{ "speaker_name": "马车夫", "text": "总比我们这些每天出力气，在马车上颠簸一整天的家伙好。" }
-	],
-	"day3_driver":[
+  ],
+  "day3_driver": [
 	{ "speaker_name": "马车夫", "text": "先生不觉得这两天王城很多奇怪的人吗。" },
 	{ "speaker_name": "面试官", "text": "可能是国王最近在选勇者吧。" },
 	{ "speaker_name": "马车夫", "text": "勇者？魔王又来了吗。" },
@@ -102,8 +102,8 @@
 	{ "speaker_name": "面试官", "text": "何出此言啊。" },
 	{ "speaker_name": "马车夫", "text": "先生，我不是说您，您一看就是好人，但是有些大贵族们一出生就养尊处优，自己什么也不干，我们的钱就往他们兜里流。" },
 	{ "speaker_name": "马车夫", "text": "这王宫富丽堂皇的，哪里不是用我们的钱盖的，把自己孩子送到这种地方，能指望有什么好待遇，不是被欺负，就是同流合污。" }
-	],
-	"day4_driver":[
+  ],
+  "day4_driver": [
 	{ "speaker_name": "马车夫", "text": "哎，先生，您最近没去王城哪家老男人理发店吧？" },
 	{ "speaker_name": "面试官", "text": "没有，怎么了。" },
 	{ "speaker_name": "马车夫", "text": "那就好啊，听说那家理发师是个巫师，还沾上不干净的东西了，他家的狗也是魔物变的。" },
@@ -112,22 +112,22 @@
 	{ "speaker_name": "面试官", "text": "那既然又交税，又不会害人，对你们来说又有什么威胁呢。" },
 	{ "speaker_name": "马车夫", "text": "嗐，那不是，心里毕竟还是过意不去嘛，谁知道会不会出事，等出事那可就晚了！" },
 	{ "speaker_name": "面试官", "text": "我知道了。" }
-	],
-	"day5_driver":[
+  ],
+  "day5_driver": [
 	{ "speaker_name": "马车夫", "text": "王城东南那边怎么这么热闹，今天看见好多人都聚在那边，还搭了个大尖篷子。" },
 	{ "speaker_name": "面试官", "text": "听说是来自中原的一个马戏团，今天刚到王城。" },
 	{ "speaker_name": "马车夫", "text": "原来是马戏团啊，听起来还不错的样子，怪不得那么多人去围观，可惜我没时间去看。" },
 	{ "speaker_name": "面试官", "text": "你可以带你的妻子和孩子去看看，小孩子应该会喜欢这种东西。" },
 	{ "speaker_name": "马车夫", "text": "您说的一点都对，先生，我该想个办法多挣点钱，再抽点时间带她们去看看了。" }
-	],
-	"day6_driver":[
+  ],
+  "day6_driver": [
 	{ "speaker_name": "马车夫", "text": "王后大道西到，王后大道东~王后大道东，人民如潮涌~" },
 	{ "speaker_name": "面试官", "text": "看来你今天心情不错？" },
 	{ "speaker_name": "马车夫", "text": "是啊，今天接了不少大单子，整条王后大道都跑遍了，又赚了不少呢。" },
 	{ "speaker_name": "面试官", "text": "这是好事啊。" },
 	{ "speaker_name": "马车夫", "text": "今天早点回去，让马也歇歇，先生知不知道王城哪里有卖好东西的地方，比如点心之类的，我想买点带回家。" }
-	],
-	"day7_driver":[
+  ],
+  "day7_driver": [
 	{ "speaker_name": "马车夫", "text": "……" },
 	{ "speaker_name": "面试官", "text": "……" },
 	{ "speaker_name": "马车夫", "text": "……" },
@@ -141,8 +141,8 @@
 	{ "speaker_name": "马车夫", "text": "算了，先生，我说的太多了，可能打扰到你的心情了，车马上就到。" },
 	{ "speaker_name": "马车夫", "text": "明天见，先生。" },
 	{ "speaker_name": "面试官", "text": "……明天见。" }
-	],
-	"day8_driver":[
+  ],
+  "day8_driver": [
 	{ "speaker_name": "面试官", "text": "……" },
 	{ "speaker_name": "马车夫", "text": "先生。" },
 	{ "speaker_name": "面试官", "text": "你说吧。" },
@@ -163,8 +163,8 @@
 	{ "speaker_name": "面试官", "text": "给自己放个假吧，你该休息休息了。" },
 	{ "speaker_name": "面试官", "text": "这是我从家里带的特产，不嫌弃的话，收下吧。" },
 	{ "speaker_name": "马车夫", "text": "谢谢您，先生。" }
-	],
-	"day9_driver":[
+  ],
+  "day9_driver": [
 	{ "speaker_name": "马车夫", "text": "先生，原谅我，这可能是我最后一次接送您了。" },
 	{ "speaker_name": "面试官", "text": "你考虑好了？" },
 	{ "speaker_name": "马车夫", "text": "是的，先生，我考虑好了，明天起，我想去旅游，只有我和我的马车，去我之前走过却没停下来仔细看过的那些地方。" },
@@ -174,25 +174,25 @@
 	{ "speaker_name": "面试官", "text": "旅游也需要钱，你总不能一直不工作，不过，如果你需要一个稳定的乘客，随时回来找我。到时候，记得给我讲讲你旅途中见到的事情吧。这些钱，就当听故事的定金了。" },
 	{ "speaker_name": "马车夫", "text": "您是我的恩人，先生。" },
 	{ "speaker_name": "面试官", "text": "谢谢，你也是。" }
-	],
-	"day10_driver":[
+  ],
+  "day10_driver": [
 	{ "speaker_name": "面试官", "text": "回威利奇村。" },
 	{ "speaker_name": "马车夫（全新）", "text": "好嘞，您坐好咯。" }
-	],
-	"day-1_driver":[
+  ],
+  "day-1_driver": [
 	{ "speaker_name": "车夫", "text": "if you see this means something goes wrong" }
   ],
-	"team_not_full":[
+  "team_not_full": [
 	{ "speaker_name": "面试官", "text": "队伍还没有组满……\n如果一定要就这样出发的话，就再点一次按钮吧。" }
   ],
-	"team_over":[
+  "team_over": [
 	{ "speaker_name": "面试官", "text": "带的人比名额多，这样是出不了门的。\n先从名单上划掉几位吧。" }
   ],
-	"ask_missing":[
+  "ask_missing": [
 	{ "speaker_name": "面试官", "text": "这个地方好像没有什么好问的……" }
   ],
-	"开场": [
-	{ "speaker_name": "旁白", "text": "希瓦·盆塔格莱王国立法333年，3年一度的魔王肆虐限时活动再次返场了。" },
+  "opening": [
+	{ "speaker_name": "旁白", "text": "凯多姆王国立法333年，3年一度的魔王肆虐限时活动再次返场了。" },
 	{ "speaker_name": "旁白", "text": "为了对付被王国定义为邪恶的魔王，王国遵循祖宗之法，让历代相传的英雄之剑选出对抗魔王的传说中的勇者。" },
 	{ "speaker_name": "旁白", "text": "按照往年的经验来看，只要选出那位传说的勇者之后，只要再配备几位最好的魔法师和牧师之类，魔王的危机就会迎刃而解。" },
 	{ "speaker_name": "旁白", "text": "可是今年不知道为什么，英雄之剑阴差阳错的选出了超超！超！！超！！！多名勇者！！！" },
@@ -202,12 +202,70 @@
 	{ "speaker_name": "旁白", "text": "挑选勇者只有两个两个条件：第一，要足够强大，至少要能够打过讨伐魔王路上的任何一只魔物。" },
 	{ "speaker_name": "旁白", "text": "第二，勇者的总数量要比王城的野狗少！！！\n数量比野狗还多的！怎么可能是勇者呢！！！！！" }
   ],
-	"Ending_Good":[
-		{"speaker_name":" ","text":"你作为面试官的十天实习期结束了。"},
-		{"speaker_name":" ","text":"通过某种精妙的魔法算法，我们得以把你对讨伐魔王的奉献量化为分数。"},
-		{"speaker_name":" ","text":"你在这十天里的得分总计是……{total_score}。"}
-	],
-	"Ending_Bad":[
-		{"speaker_name":" ","text":"坏结局占位文本"},
-	]
+  "Ending_Good": [
+	{ "speaker_name": "旁白", "text": "魔王，被击败了。", "sound": "击败！" },
+	{ "speaker_name": "旁白", "text": "这是好事啊。" },
+	{ "speaker_name": "国王", "text": "这场宴会呢，主要是为了庆祝我们在取得的胜利，天佑盆塔·希瓦王国，我们又一次战胜了魔王！" },
+	{ "speaker_name": "国王", "text": "也感谢各位面试官们的辛苦付出！如果没有你们的的努力，是没法选拔出来这些勇者们的。" },
+	{ "speaker_name": "国王", "text": "让我们一同举杯欢庆吧！干杯！" },
+	{ "speaker_name": "群臣", "text": "干杯！" },
+	{ "speaker_name": "面试官前辈", "text": "哈啊——又度过了一次危机呢。" },
+	{ "speaker_name": "面试官", "text": "是啊，这段时间辛苦死了，不过不知道接下来要干什么呢？已经不需要再筛选勇者了，我会去哪里上班呢。" },
+	{ "speaker_name": "面试官前辈", "text": "别……别想这么多了，先享受眼前的东西好了。你看这大龙虾，可真龙虾啊。" },
+	{ "speaker_name": "面试官", "text": "嗯……确实很龙虾。" },
+	{ "speaker_name": "面试官前辈", "text": "来吧，大口吃大口喝，咱老哥俩干一杯，今天不醉不归！" },
+	{ "speaker_name": "面试官", "text": "不醉不归——" },
+	{ "speaker_name": "面试官", "text": "……" },
+	{ "speaker_name": "面试官", "text": "…………" },
+	{ "speaker_name": "面试官", "text": "头好晕，昨天喝多了。" },
+	{ "speaker_name": "面试官", "text": "对了！今天的工作！" },
+	{ "speaker_name": "面试官", "text": "不，筛选勇者的工作已经结束了，那我该去哪工作呢。" },
+	{ "speaker_name": "面试官", "text": "总之先去以前上班的地方问问吧。" },
+	{ "speaker_name": "王宫侧门", "text": "" },
+	{ "speaker_name": "面试官", "text": "这是……怎么不开门" },
+	{ "speaker_name": "卫兵", "text": "喂！干什么的？" },
+	{ "speaker_name": "面试官", "text": "我是之前筛选勇者的面试官，我来问问今天还有什么工作。" },
+	{ "speaker_name": "卫兵", "text": "上面说了，选勇者活动早就结束了，面试官也用不到了，以后就不再有这个岗位了！回家吧，这边不需要你了。" },
+	{ "speaker_name": "面试官", "text": "可是……我的工作？" },
+	{ "speaker_name": "卫兵", "text": "听不懂吗，你的工作结束了，你再这样下去，我的工作也要结束了！快走快走。想要上班的话，三年之后再来吧！" },
+	{ "speaker_name": "面试官", "text": "怎么会这样……还是先回家吧。" },
+	{ "speaker_name": "威利奇村", "text": "" },
+	{ "speaker_name": "面试官", "text": "唉……怎么会这样。自己好不容易找到的工作，就这样结束了。" },
+	{ "speaker_name": "面试官", "text": "明天去成立找个地方打工吧，不知道我这样的人有没有地方要。" },
+	{ "speaker_name": "路边的一条野狗", "text": "汪——汪—！（摇尾巴）" },
+	{ "speaker_name": "面试官", "text": "别叫了，今天没有吃的给你了，我现在自身也难保，过得还不如你呢。" },
+	{ "speaker_name": "路边的一条野狗", "text": "汪！汪————（呲牙）" },
+	{ "speaker_name": "面试官", "text": "你你你你你…………" },
+	{ "speaker_name": "面试官", "text": "你居然敢咬我！！！！！！！！！！！！！！！！！！" },
+	{ "speaker_name": " ", "text": "你作为面试官的十天实习期结束了。" },
+	{ "speaker_name": " ", "text": "通过某种精妙的魔法算法，我们得以把你对讨伐魔王的奉献量化为分数。" },
+	{ "speaker_name": " ", "text": "你在这十天里的得分总计是……{total_score}。" }
+  ],
+  "Ending_Bad": [
+	{ "speaker_name": "国王", "text": "没用的东西！你看看你招进来的都是什么废物！连一只魔物都打不过，白白浪费纳税人的钱！！" },
+	{ "speaker_name": "国王", "text": "来人！！给我把这个玩忽职守的家伙拖出去斩了！！" }
+  ],
+  "Ending_True": [
+	{ "speaker_name": "旁白", "text": "三年之期已到，魔王又一次按照规定的日期卷土重来了。凯多姆王国又一次笼罩在魔王的阴影下。" },
+	{ "speaker_name": "官员", "text": "你是三年前的面试官，对吧？" },
+	{ "speaker_name": "面试官", "text": "你……你们，还要来纠缠吗？" },
+	{ "speaker_name": "面试官", "text": "三年前把我一脚踢开的也是你们，现在又要我回去继续干？想得美！" },
+	{ "speaker_name": "官员", "text": "哎呀，年轻人，我劝你不要让我们太难办，你知道违背王国的旨意是什么下场吧。" },
+	{ "speaker_name": "卫兵", "text": "（用手中沉重的武器敲击了一下地面，激起了一大堆灰尘）" },
+	{ "speaker_name": "面试官", "text": "…………" },
+	{ "speaker_name": "官员", "text": "放心，待遇依旧，不过你要好好干，就像之前一样，这样我们都方便。" },
+	{ "speaker_name": "面试官", "text": "好吧……早点结报酬。" },
+	{ "speaker_name": "官员", "text": "这才是我们王国的好公民嘛！" },
+	{ "speaker_name": "", "text": "（工作日）" },
+	{ "speaker_name": "面试官", "text": "为什么……今天的要选的勇者最好能针对神导术？最好还有与人格斗的专长？" },
+	{ "speaker_name": "面试官", "text": "之后还要考虑选择能够破解黑魔法的，和对付持械战斗有经验的？" },
+	{ "speaker_name": "面试官", "text": "这都什么跟什么啊！我们要对付的难道不是魔物吗！" },
+	{ "speaker_name": "面试官另一位前辈", "text": "管那么多干什么，你照做就是了，前线有情报是好事，到时候还得分析怎么对付魔王呢." },
+	{ "speaker_name": "面试官", "text": "我照做就是了，真想见见魔王什么模样啊。" },
+	{ "speaker_name": "面试官另一位前辈", "text": "哎，这不就有了，前线刚送来的最新战报，这上面还有魔王的画像。" },
+	{ "speaker_name": "面试官", "text": "我看看！" },
+	{ "speaker_name": "面试官", "text": "！！！" },
+	{ "speaker_name": "面试官", "text": "这不明明是！！！！" },
+	{ "speaker_name": "面试官", "text": "是他啊！！！！！！！" }
+  ]
 }

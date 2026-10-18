@@ -7,10 +7,13 @@ extends Control
 ##
 ##   姓名 / 种族 / 职业 / 性别 / 年龄   → 各自的 *Container（Label）
 ##   力量 / 智力 / 感知                 → Status 按钮里的 *Container
-##   个人履历与奖项                     → ExperienceContainer 里一串 ResumeToken
-##   专长                              → SkillContainer 里一串 ResumeToken
-##   组队宣言                           → DeclarationContainer（一整段自由文本）
+##   个人履历与奖项                     → ExperienceScroll 里一串 ResumeToken
+##   专长                              → SkillScroll 里一串 ResumeToken
+##   组队宣言                           → DeclarationScroll（一整段自由文本）
 ##   印章                              → ResumeStamp（Sprite2D；有没有图由数据决定，见 _apply_stamp）
+##
+## 履历 / 专长 / 组队宣言 都包在 ScrollContainer 里：内容超出栏位时
+## 纵向滚动条自动出现（长句靠换行折行；子节点设了 SIZE_EXPAND_FILL 才会拉满栏宽），见 _reset_scrolls()。
 ##
 ## ⚠️ 数据来源：**全部来自 CandidateResource**（data/candidates/*.tres）。
 ##   本脚本里没有一句候选人文案，也没有「默认履历」这种兜底 ——
@@ -49,8 +52,11 @@ const STAMP_NODE_NAMES: Array[StringName] = [&"ResumeStamp", &"ResumeStampPhd"]
 @onready var _token_menu: ResumeTokenMenu = get_node_or_null("TokenMenu") as ResumeTokenMenu
 @onready var _page: Sprite2D = get_node_or_null("ResumePagePhd") as Sprite2D
 @onready var _status: Button = get_node_or_null("Status") as Button
-@onready var _experience_list: VBoxContainer = get_node_or_null("ExperienceContainer") as VBoxContainer
-@onready var _skill_list: VBoxContainer = get_node_or_null("SkillContainer") as VBoxContainer
+@onready var _experience_scroll: ScrollContainer = get_node_or_null("ExperienceScroll") as ScrollContainer
+@onready var _skill_scroll: ScrollContainer = get_node_or_null("SkillScroll") as ScrollContainer
+@onready var _declaration_scroll: ScrollContainer = get_node_or_null("DeclarationScroll") as ScrollContainer
+@onready var _experience_list: VBoxContainer = get_node_or_null("ExperienceScroll/ExperienceContainer") as VBoxContainer
+@onready var _skill_list: VBoxContainer = get_node_or_null("SkillScroll/SkillContainer") as VBoxContainer
 
 ## 盖在纸上的那枚印章。显不显示、用哪张图全看 CandidateResource.resume_stamp ——
 ## 这里是它唯一的落点（见 _apply_stamp）。
@@ -62,7 +68,7 @@ const STAMP_NODE_NAMES: Array[StringName] = [&"ResumeStamp", &"ResumeStampPhd"]
 @onready var _class_value: Label = get_node_or_null("ClassContainer") as Label
 @onready var _gender_value: Label = get_node_or_null("GenderContainer") as Label
 @onready var _age_value: Label = get_node_or_null("AgeContainer") as Label
-@onready var _declaration_value: Label = get_node_or_null("DeclarationContainer") as Label
+@onready var _declaration_value: Label = get_node_or_null("DeclarationScroll/DeclarationContainer") as Label
 @onready var _str_value: Label = get_node_or_null("Status/StrContainer") as Label
 @onready var _int_value: Label = get_node_or_null("Status/IntContainer") as Label
 @onready var _wis_value: Label = get_node_or_null("Status/WisContainer") as Label
@@ -155,6 +161,18 @@ func set_candidate(candidate: CandidateResource) -> void:
 	_fill_fields(candidate)
 	_fill_tokens(candidate)
 	_apply_stamp(candidate)
+	_reset_scrolls()
+
+
+## 滚动位置归零。同一张纸会被反复喂不同的候选人（§11.2 换人时整体重刷），
+## 不重置的话，下一位的简历会停在上一页滚到一半的位置。
+func _reset_scrolls() -> void:
+	if _experience_scroll != null:
+		_experience_scroll.scroll_vertical = 0
+	if _skill_scroll != null:
+		_skill_scroll.scroll_vertical = 0
+	if _declaration_scroll != null:
+		_declaration_scroll.scroll_vertical = 0
 
 
 ## 当前铺在纸上的候选人；没有则 null
