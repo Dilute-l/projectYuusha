@@ -33,6 +33,13 @@ extends Control
 ## 一段对话全部结束（且玩家已点击收起对话框）
 signal dialogue_ended
 
+## 玩家在牌子的签名画布上签好了（key 来自对话那一行的 popup_signature）。
+##
+## ⚠️ 本脚本**只转发、不落盘**：Dialoguer 不认识 GameState（见文件头）。真正把它写进
+##    RunState 的是 GameState 自己 —— 它订阅 EventBus.signature_signed（§16.7），
+##    所以场景侧一根线都不用接。本信号留给「这一段播完想顺便做点别的」的调用方。
+signal signature_signed(signature_key: StringName, signature: Signature)
+
 ## 正文 Label（挂 typer.gd）
 @onready var typer: Typer = get_node_or_null("Dialogue") as Typer
 
@@ -69,6 +76,9 @@ func _ready() -> void:
 		typer.line_started.connect(_on_line_started)
 	if not typer.line_finished.is_connected(_on_line_finished):
 		typer.line_finished.connect(_on_line_finished)
+	# 牌子上签了字 → 往上转发（本脚本不落盘，见 signature_signed 的说明）
+	if _popup != null and not _popup.signature_signed.is_connected(_on_popup_signature_signed):
+		_popup.signature_signed.connect(_on_popup_signature_signed)
 
 
 ## 显示对话框并从已 load_dialogue() 选好的那段对话的第 0 行开始播。
@@ -100,6 +110,18 @@ func _input(event: InputEvent) -> void:
 	if not is_playing():
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# ⚠️ 牌子正在等玩家签字 → 这一下**属于画布**：既不推进对话，也不吃掉事件。
+		#    顺序很关键 —— 本方法在 GUI 输入**之前**跑，这里一 return，事件就会
+		#    照常落到画布的 _gui_input 上（落笔）；若在这里 set_input_as_handled()，
+		#    画布就永远收不到这一下，玩家签不了字。
+		#    签好之后 blocks_advance() 变假，点击恢复推进 —— 语义正好是「签完才能往下走」。
+		#
+		# ⚠️ 但「这一句还在逐字显示」时别抢：玩家点一下是想把字快进完，不是想落笔。
+		#    这时候照常吃掉这一下、照常 advance()（逐字中它只 skip_line，不会翻页），
+		#    画布收不到事件，于是不会平白多一个墨点。打完字之后的点击才归画布。
+		var waiting_for_signature := _popup != null and _popup.blocks_advance()
+		if waiting_for_signature and not typer.is_typing:
+			return
 		# 放在 _input 而非 _unhandled_input，是为了在对话框开着时
 		# 决定「这次点击要不要穿透到主菜单按钮上」——见下面的两分支。
 		if not _pass_through:
@@ -114,6 +136,43 @@ func _input(event: InputEvent) -> void:
 ## 本次对话要用来填牌子的候选人。谁播对话谁在 play() 之前调它。
 func set_candidate(candidate: CandidateResource) -> void:
 	_candidate = candidate
+
+
+## 先把一份**已知的**签名喂给牌子（读档之后想让它显示出旧签名就调一次）。
+##
+## 透传给 Popup —— 调用方只碰 Dialoguer，不必知道底下那块画布叫什么。
+func set_known_signature(signature_key: StringName, signature: Signature) -> void:
+	if _popup != null:
+		_popup.remember_signature(signature_key, signature)
+
+
+## 牌子此刻是否正等着玩家签字（为真时左键不推进对话，见 _input）。
+func blocks_advance() -> bool:
+	return _popup != null and _popup.blocks_advance()
+
+
+## 牌子报「签好了」：往上报，并且**自动进入下一句**。
+##
+## 「松手 = 这一句办完了」—— 玩家刚把笔抬起来，这时候还要再点一下才能继续，
+## 手感是断的：他这一下的意图已经表达完了。所以签完就自动翻页。
+##
+## ⚠️ 隔着一次 `call_deferred`：这次签字正是**松开左键**引发的，此刻还站在画布的
+##    `_gui_input` 里。等这一轮输入处理完再翻页，免得翻页顺手把牌子和画布藏掉，
+##    而画布自己还在往下走自己的收尾逻辑。
+func _on_popup_signature_signed(signature_key: StringName, signature: Signature) -> void:
+	signature_signed.emit(signature_key, signature)
+	_advance_after_signature.call_deferred()
+
+
+## 签字之后自动翻页（见 _on_popup_signature_signed）。
+##
+## 只翻**一句**：`typer.advance()` 在「本行已打完」时是 next_line()，逐字中才是 skip_line()。
+## 签字那一句必然是打完的（没打完时点击都不给画布，见 _input），所以这里一定翻页。
+func _advance_after_signature() -> void:
+	# deferred 到这一帧末尾时，对话可能已经被收掉了（例如整段结束把 Dialoguer 藏了）
+	if not is_playing() or typer == null:
+		return
+	typer.advance()
 
 
 ## 给这次对话设变量：对话文本里的 `{total_score}` 之类会被替换成值。
@@ -148,6 +207,7 @@ func _on_line_started(index: int, _text: String) -> void:
 		StringName(String(line.get("popup", "")).strip_edges()),
 		_candidate,
 		StringName(String(line.get("popup_stamp", "")).strip_edges()),
+		StringName(String(line.get("popup_signature", "")).strip_edges()),
 	)
 
 
@@ -171,6 +231,7 @@ func _on_typer_dialogue_finished() -> void:
 	visible = false
 	# 牌子也要收 —— line_finished 通常已经收过一道了，这里再兜一次，
 	# 免得「最后一句刚亮起牌子就被玩家点掉」时那块牌子留在画面上。
+	# 牌子收起来时会把签名画布的拾取一起松开（§16）。
 	if _popup != null:
 		_popup.hide_all()
 	# 模式跟着这次播放一起结束，免得下次 play() 忘了传参数还留着穿透

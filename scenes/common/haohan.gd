@@ -12,6 +12,10 @@ extends Control
 
 @onready var _hand: Sprite2D = get_node_or_null("Hand")
 
+## 落笔之前手上是哪个贴图。签名结束时**还原成它**，而不是直接还原成默认白手 ——
+## 主菜单里 MenuInk 那类按钮本来就把手换黑了，签完字顺手抹回白色等于把人家踩掉。
+var _texture_before_signing: Texture2D = null
+
 ## 当前在树上的 haohan 数量。
 ##
 ## 为什么要计数：切换阶段场景走的是 `queue_free()` + `add_child()`，而 queue_free 是
@@ -31,15 +35,47 @@ func _ready() -> void:
 	_live_count += 1
 	# 隐藏系统光标，并限制在窗口内，避免手跑出窗口卡住
 	Input.set_mouse_mode(Input.MOUSE_MODE_CONFINED_HIDDEN)
+	# 签名期间换成蘸了墨的那只（§16）。走总线而不是让画布来找手：
+	# 画布埋在 Popup → Dialoguer 底下，穿三层引用才能碰到手；而且每挂一次新场景
+	# 都要重新接线。订阅之后换场景、加新场合都不用改一行（见 event_bus.gd 那一节）。
+	if not EventBus.signature_signing_started.is_connected(_on_signing_started):
+		EventBus.signature_signing_started.connect(_on_signing_started)
+	if not EventBus.signature_signing_finished.is_connected(_on_signing_finished):
+		EventBus.signature_signing_finished.connect(_on_signing_finished)
 
 
 func _exit_tree() -> void:
+	# 先摘信号再离开树（§5.5：queue_free() 之前先 disconnect）——
+	# 手被释放之后信号还在，下一次签名就会打到一只已经没了的节点上。
+	if EventBus.signature_signing_started.is_connected(_on_signing_started):
+		EventBus.signature_signing_started.disconnect(_on_signing_started)
+	if EventBus.signature_signing_finished.is_connected(_on_signing_finished):
+		EventBus.signature_signing_finished.disconnect(_on_signing_finished)
 	_live_count = maxi(_live_count - 1, 0)
 	if _live_count > 0:
 		# 还有别的手在（通常就是刚挂上来的那个新场景）：别把系统光标放出来
 		return
 	# 手全没了：恢复光标，否则回到菜单会没有光标点不了按钮
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+
+## 玩家开始落笔 → 手蘸上墨
+func _on_signing_started() -> void:
+	if _hand == null:
+		return
+	_texture_before_signing = _hand.texture
+	_set_texture(hand_black_texture)
+
+
+## 这一笔结束（无论签成没有）→ 把手还回原样
+func _on_signing_finished() -> void:
+	if _hand == null:
+		return
+	if _texture_before_signing != null:
+		_hand.texture = _texture_before_signing
+	else:
+		use_default_hand()
+	_texture_before_signing = null
 
 
 func _process(_delta: float) -> void:

@@ -20,9 +20,39 @@ signal phase_finished()
 ## 当前正在演出的战报（可能为 null：当天还没生成）
 var _report: BattleReport = null
 
+## 点完「确认」之后，在右下角把开场签的那一笔重描出来，这么久播完（秒）。
+const SIGNATURE_REPLAY_SECONDS := 1.0
+
+## 要回放哪一份签名 —— 第一天开场逼玩家签的那份「入职合同」（data/dialogue.json 的
+## day1_briefing，key 就是 `signature`）。
+const SIGNATURE_KEY := &"signature"
+
+## 回放画布的位置与大小 —— **落在纸面内的那块空白上**。
+##
+## 量出来的三个硬边界（都不是猜的，是采像素扫出来的）：
+##   · 纸张实体（paper.png 的不透明外接框）：x 592..988, y 30..570 —— 不是整屏 1152×648！
+##     画布出了这个框就是吊在空气里，所以它必须整块待在框内。
+##   · 报告正文的墨迹到 y≈290 为止（`ReportContent` 的矩形框更大，但字没铺满）；
+##   · 「总分：72.5」那一行在 y 487..516、「确认」在 x 736..839 / y 533..561。
+## 于是纸面中间剩下一条干净的横带 y 310..470，本画布就取它的下半截：
+##   (610,340)–(970,469)，360×129。
+##
+## ⚠️ 宽高比锁在 970:348（≈2.788），就是录制时那块画布的比：360/129 = 2.791，
+##    差 0.1%，肉眼看不出。Pad 的渲染是「归一化坐标 × 当前矩形」，比例一变字就被拉变形 ——
+##    要改尺寸请等比缩放，别只动一边。
+const SIGNATURE_PAD_RECT := Rect2(610, 340, 360, 129)
+
+const SIGNATURE_PAD_SCENE := preload("res://ui/components/signature_pad.tscn")
+
 @onready var _confirm: Button = get_node_or_null("BattleReportPhd/Confirm") as Button
 @onready var _content: RichTextLabel = get_node_or_null("BattleReportPhd/ReportContent") as RichTextLabel
 @onready var _score: Label = get_node_or_null("BattleReportPhd/ScoreContainer") as Label
+
+## 右下角那块**只用来回放**的签名画布（第一次点确认时才建，见 _ensure_signature_pad）
+var _signature_pad: SignaturePad = null
+
+## 已经按下确认、正在放签名动画。用来挡重复点击（不然会 emit 两次 phase_finished）
+var _confirming: bool = false
 
 
 func _ready() -> void:
@@ -147,5 +177,64 @@ func _on_driver_dialoge_active_timeout() -> void:
 ## 这里**不加阶段守卫**：本场景只在 BATTLE_REPORT 阶段被 day_loop 挂载，
 ## 按钮也只存在于这个场景里；加守卫反而会让单独按 F6 跑本场景时点不动。
 ## （对比 interview.gd：那一个场景承载四个阶段，按钮必须分阶段限制。）
+##
+## ⚠️ 顺序是「先把签名画出来 → 等它画完 → 才报 phase_finished」。
+##    day_loop 一收到 phase_finished 就会换阶段 / 换天，**这个场景连同动画会被一起拆掉**；
+##    先 emit 的话，玩家只会看到闪一下。所以这里必须 await。
 func _on_confirm_pressed() -> void:
+	if _confirming:
+		return
+	_confirming = true
+
+	var saved := GameState.get_signature(SIGNATURE_KEY)
+	if saved == null or saved.is_empty():
+		# 没签过（理论上走不到：第一天开场不签就翻不了页）。别为了动画把流程卡住。
+		phase_finished.emit()
+		return
+
+	_play_signature(saved)
+	await get_tree().create_timer(SIGNATURE_REPLAY_SECONDS).timeout
+	# 等这一秒的功夫，场景可能已经被别人换掉了（换阶段 / 回菜单）
+	if not is_inside_tree():
+		return
 	phase_finished.emit()
+
+
+## 在右下角把这一笔重描出来（1 秒内播完，见 SIGNATURE_REPLAY_SECONDS）。
+func _play_signature(saved: Signature) -> void:
+	var pad := _ensure_signature_pad()
+	if pad == null:
+		return
+	pad.play_signature(saved, SIGNATURE_REPLAY_SECONDS)
+
+
+## 第一次要点时才建那块画布：没人点确认就什么都不多做。
+##
+## 挂在 `BattleReportPhd`（那张纸）底下，而不是场景根下 —— 这样它画在纸之上、
+## 但仍在 Haohan（跟光标的那只手）之下，手不会被签名挡住。
+func _ensure_signature_pad() -> SignaturePad:
+	if _signature_pad != null:
+		return _signature_pad
+	var pad := SIGNATURE_PAD_SCENE.instantiate() as SignaturePad
+	if pad == null:
+		push_error("[BattleReport] 签名画布实例化失败（ui/components/signature_pad.tscn）")
+		return null
+	# 战报本身就是一整张纸：不要再糊一块白底和一圈边线上去，只留墨迹
+	pad.backdrop_color = Color(0, 0, 0, 0)
+	pad.border_width = 0.0
+	# 这块画布只负责回放，不该出现「按住左键签名」那行提示字
+	pad.show_hint = false
+	# 缩小后线会跟着细到看不见；比「严格等比缩」稍粗一点点，读得清
+	pad.ink_width_ratio = 0.016
+
+	var host := get_node_or_null("BattleReportPhd")
+	if host == null:
+		host = self
+	host.add_child(pad)
+	pad.position = SIGNATURE_PAD_RECT.position
+	pad.size = SIGNATURE_PAD_RECT.size
+
+	# 回放画布不收输入：它只是「演出」，别让它挡住底下任何东西
+	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_signature_pad = pad
+	return _signature_pad

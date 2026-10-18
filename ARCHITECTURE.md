@@ -554,6 +554,22 @@ priority = 10
 
 路径：`user://saves/slot_{n}.json`，另存一份 `user://saves/auto.json` 用于**每天开始**的自动存档。
 
+玩家签的字也在这里（§16）。平时没有这一节，签过才有：
+
+```jsonc
+"signatures": {
+  "contract.day1": {
+    "canvas": [270, 160],                        // 录制时画布多大，回放时等比换算
+    "strokes": [
+      { "p": [0.31,0.42, 0.32,0.44, 0.35,0.47],  // 归一化坐标，扁平存放（不存像素）
+        "t": [0, 40, 80],                        // 本笔内的相对毫秒
+        "g": 0 }                                 // 距上一笔结束停了多久（一笔画恒为 0）
+    ]
+  }
+}
+```
+
+
 - **存档目录在 `user://` 下**（Windows：`%APPDATA%\Godot\app_userdata\Yuusha\saves`），
   **不在 `res://` 里**：导出之后 `res://` 是只读的，往那儿写迟早写不进去。
   所以 `.gitignore` 里那条 `saves/` 平时是空转的，它兜的是「user 目录被指进项目里」
@@ -825,11 +841,17 @@ resume_stamp = ExtResource("7_stamp")   # → assets/art/interview/resume/stamp/
   共用一个根下的槽会踩两个坑（都是自检当场抓出来的）：
   ① 「这一句没写 `popup_stamp`」的**沿用**语义会跨牌子生效 —— 换牌子时把上一块的章
 	 按旧位置盖到新牌子上；② 牌子收起来时章自己的 `visible` 还是 true（父节点盖着看不出来），
-	 谁把牌子重新显示出来它就诈尸。所以 `hide_all()` 是**递归**的，换绑时还要把旧槽的
-	 `texture` 一起摘干净（「空就是空」，和简历那枚同一条规矩）。
+	 谁把牌子重新显示出来它就诈尸。所以 `hide_all()` 收牌子时**单独把章槽也藏掉**，换绑时
+	 还要把旧槽的 `texture` 一起摘干净（「空就是空」，和简历那枚同一条规矩）。
+- **`hide_all()` 只藏「牌子根节点 + 它的章槽」这一层，不往肚子里的 Label 递归**：
+  牌子里 `Name` / `Awardto` / `Gerat` 这类 Label 的 `visible` 是**版面**（Popup.tscn 里写的），
+  跟着牌子走；行级的显隐状态只有「亮哪块牌子」这一档。早先这里对整棵子树递归置 `false`，
+  而 `show_for()` 只把牌子根节点恢复成 `true` —— 结果是**牌子和章都亮了、字一个都不出来**。
 - **这块牌子没有章槽、数据却写了 `popup_stamp`** → `push_warning` 且不盖（不会去盖别人家的槽）。
 - 位置 / 缩放 / `centered` 同样**不碰**（写在 `Popup.tscn` 上），换一张尺寸不同的章不用改代码。
 - 自检见下面的 `smoke_dialogue_popup`。
+- 同一行还能写 **`popup_signature`**（让玩家在牌子的空白画布上签一笔，笔迹进存档并可以重放）——
+  那是另一套东西，见 **§16**。章槽那套「白名单 + 挂在牌子底下」的思路它整套照搬。
 
 #### 词条：两个列表共用一套「扁平序号」
 
@@ -1896,3 +1918,269 @@ $env:APPDATA = Join-Path <项目根> "tmp_userdata"
 > `SubViewport` 里推事件，拾取结果全是「无」—— 菜单树根那个 `Control` 的尺寸是 **0×0**
 > （它只有 `anchors_preset = 0` 的偏移，没人给它撑尺寸），拾取在那一层就断了。
 > 挂到 root 下（和它平时当 `current_scene` 时一样）一切正常，所以自检里用的是 root。
+
+---
+
+## 16. 签名（玩家在牌子上写字）
+
+一句台词可以让玩家在牌子的空白画布上**签一笔**，这笔字进存档，之后还能把「当时怎么写的」
+重放出来：
+
+```jsonc
+// data/asks/xxx.json —— 某一行
+{ "speaker_name": "勇者协会", "text": "签个字吧。",
+  "popup": "Contract",                        // 牌子（底下带着一块 SignaturePad）
+  "popup_signature": "contract.day1" }        // 这一句签的是哪一份
+```
+
+`popup_signature` 和 §10.6 的 `popup_stamp` 是同一套设计：**键写在台词上，落到牌子上**。
+加一行数据就能用，不用给某个具体场景加代码。
+
+**现在真的有一句在用**：`data/dialogue.json` 的 `day1_briefing`（第一天开场，由
+`interview.gd` 在 DAY_BRIEFING 播）第 2 句 —— 牌子 `Contract`，key 就是 `signature`：
+
+```jsonc
+	"day1_briefing":[
+	{ "speaker_name": "柳絮", "text": "这是酷炫占位符" },
+	{ "speaker_name": "柳絮", "text": "来，先在这块牌子上签个字。",
+	  "popup": "Contract", "popup_signature": "signature" }
+  ],
+```
+
+这句话的后果是：**没签完就翻不到第 3 句**（那里现在没有第 3 句，签完再点一下就播完收场）。
+玩家签的那一笔落在 `RunState.signatures["signature"]` 并当场存进 `auto.json`。
+
+### 16.1 文件
+
+| 文件 | 管什么 |
+| --- | --- |
+| `scripts/resources/signature.gd`（`Signature`） | 笔迹的数据形状 + 归一化换算 + 存档字典 |
+| `ui/components/signature_pad.tscn` / `.gd`（`SignaturePad`） | 画布：录入 / 回放 / 边界吸附 |
+| `scenes/common/Popup.tscn` 的 `Contract` 牌子 | 屏幕上那一大片空白画布（没有底图、没有 Label） |
+| `scenes/common/popup.gd` | `popup_signature` → arm 画布、`blocks_advance()` |
+| `scenes/common/dialoguer.gd` | 等签名时**不推进对话**，并把 `signature_signed` 往上转发 |
+| `autoload/event_bus.gd` | `signature_signing_started` / `_finished` / `signature_signed` |
+| `scenes/common/haohan.gd` | 落笔时换成蘸墨那只手，签完还原 |
+| `autoload/game_state.gd` / `save_service.gd` / `RunState` | 落盘（§7 的 `signatures` 一节） |
+
+### 16.2 数据形状：归一化坐标 + 每点时间戳
+
+```gdscript
+signature.canvas = Vector2(270, 160)       # 录制时画布多大
+signature.strokes = [ { "p": PackedVector2Array, "t": PackedFloat32Array, "g": int } ]
+```
+
+三条都是踩过才知道的：
+
+- **坐标归一化到 0..1**（`Signature.to_normalized()` / `to_canvas()`，**换算只写在那一处**）。
+  存像素的话，同一段字放到缩略图 / 手册页 / 结算页里就漂了，而这块牌子注定要在好几个尺寸下出现。
+  存 `canvas` 是为了「窄长画布上写的字放进方画布别变形」。
+- **每一点都带时间戳**，不是「每笔记一个总时长」。人写字是起笔慢、行笔快、收笔顿，
+  速度变化发生在**一笔之内**；只记总时长、笔内匀速描，回放一眼就假。量化到 10ms
+  （`TIME_QUANTUM_MS`），300 个点也就多一两 KB —— 存档里塞得下，不必为它另开文件。
+- **时间戳必须严格递增**（`_append_point` 里兜的 `+1ms`）：同一毫秒里落下两个点时，
+  整段 `duration` 会变成 0，回放时所有点在一帧里糊上去。人手写不出同毫秒的两点，
+  这条钉的是真实鼠标的高频采样、以及自检里那种一口气推完的合成输入。
+- **点存成扁平 float 数组**（`[x0,y0,x1,y1,…]`）而不是 `[{"x":…,"y":…}]`：同一个意思，
+  JSON 体积差一倍以上。这是唯一值得为体积做的取舍。
+- **不要塞进 `flags`**：`SaveService.from_dict()` 的 `_normalize_number()` 会把整数型 float
+  掰回 int，归一化坐标里的 `0.0` / `1.0` 一旦被掰，笔迹就被**静默**改坏一处。
+
+### 16.3 录入与回放是同一个渲染函数
+
+`SignaturePad._draw()` 只认一个变量：`_playhead_ms`（回放进度）。
+
+- **录入** = 一边往笔迹里追加点，一边以「全部画完」渲染（`_live_points`）；
+- **静态显示** = `show_signature(sig)`，playhead 直接放到终点（`_end_playhead()`，
+  比总时长多 1ms —— 时间戳量化后极短的一笔总时长可能是 0，停在 0 就一笔都画不出来）；
+- **动画复现** = `play_signature(sig, fit_seconds = 0)`，`_process` 按实际倍速推进 playhead。
+
+`fit_seconds` 是「**在这么多秒内播完**」，用于播放位置有硬时限的场合：战报点确认后要在
+1 秒内把字盖上去、再播完就该翻页（§16.9）。倍速 = `原时长 / 目标时长`，笔画顺序与相对
+快慢都不变，只是整体变快。两档互斥：`fit_seconds > 0` 时它盖过 `playback_speed`；
+真要慢放用 `playback_speed`。
+
+所以「复现签名的过程」不是另写的功能，只是让 playhead 从头跑一趟；将来要做倍速、
+拖动进度条、只播一半，都只是改这一个数。段内还按时间比例插值补点，
+否则 10ms 量化下 60fps 的回放是一跳一跳的。
+
+**为什么用 `Control._draw()` 而不是一堆 `Line2D`**：不用每帧重建 `points`；不留节点尸体
+（「牌子收起来、章却诈尸」那类坑，§10.6）；换尺寸时归一化坐标现场乘即可。
+
+### 16.3.1 画布自己长什么样：一大片空白纸，不是奖状
+
+`Contract` 牌子**没有底图、也没有 Label** —— 它就是一个铺在屏幕下方的空白画布
+（`(90,280)`–`(1060,628)`，970×348，让开上方 y 15..258 的对话框底板，否则点不到：
+`Popup` 在 `dialoguer.tscn` 里是 `z_index = -2`，压不过对话框）。
+
+- 纸面 / 边线 / 墨迹全在 `SignaturePad._draw()` 里按顺序画：**先铺纸、再描边、最后落墨**。
+  层级只由语句顺序决定，不需要 `show_behind_parent` 这类隐式规则，也不多一个节点。
+- `backdrop_color` 的 alpha 设成 0 就是「不铺垫子」，将来盖在自家美术上的牌子直接用它。
+- `border_width = 0` 就是不描边。没有边线的话，一大片白更像「渲染漏了」而不是「一块画布」。
+- `ink_width_ratio` 在 `Contract` 这个实例上覆写成 `0.012`（348 高 → 约 4px 的笔）。
+  全局默认 `0.020` 是给 160 高的小牌子留的，直接套在大画布上会变成马克笔。
+
+### 16.4 一笔画：松手 = 签名结束
+
+**松手代表整份签名结束**，不是「这一笔结束」。所以 `_gui_input` 里签过之后
+（`_signed`）就不再接受落笔，要重签得调 `clear()`。
+
+- 数据层（`strokes` 是数组、每笔带 `"g"` 笔间停顿）本来就是多笔的，想改回多笔签名，
+  放开 `_gui_input` 里那一句 `if _signed: return` 即可，存档格式不用动。
+- **按下就松的一次误点不算签名**（`min_length_px`）：玩家想点一下推进会不小心把字
+  「签」了，这条把它挡回去 —— 笔迹总长不够就擦掉、留在等签状态。
+
+### 16.5 出界吸附：只挪笔迹，不挪鼠标
+
+鼠标跑到画布外面时，`_clamp_pos()` 把**笔迹**吸附到最近的边界上，**绝不去动系统光标** ——
+那只手是玩家自己的（`Haohan`），挪它就是抢方向盘。
+
+- 顺序是**先吸附、再去抖**（`_append_point`）：反过来的话，鼠标在画布外反复挪动会给
+  同一个吸附点记上几十个时间戳，回放时那一段会「停」很久。
+- 这条能成立的前提是「按住左键后跑到画布外，`_gui_input` 还收得到 motion」——
+  这是 Godot 的 `gui.mouse_focus` 行为，**自检里用真实事件钉住了**（见 16.8 第 9 条），
+  不是想当然。
+
+### 16.6 没签完不许翻页
+
+`Dialoguer._input()` 里，每次左键先问一句 `_popup.blocks_advance()`：
+为真就直接 `return` —— **既不推进对话，也不 `set_input_as_handled()`**。
+后者很关键：`_input` 在 GUI 之前跑，一旦把事件吃掉，画布就永远收不到这一下，玩家签不了字。
+
+签好之后 `blocks_advance()` 变假，下一击恢复推进 —— 语义正好是「签完才能往下走」。
+
+⚠️ **但「这一句还在逐字显示」时别抢**：玩家点一下是想把字快进完，不是想落笔。所以门禁
+多加半句条件 —— `waiting_for_signature and not typer.is_typing` 才 `return`；逐字显示期间
+照常吃掉这一下并 `advance()`（逐字中它只 `skip_line()`、不会翻页），画布收不到事件，
+于是**不会平白多一个墨点**。打完字之后的点击才归画布。
+
+#### 松手就自动进下一句
+
+签完不需要再点一下：`Dialoguer._on_popup_signature_signed()` 会 `call_deferred` 一个
+`typer.advance()`。玩家的意图在抬笔那一刻已经表达完了，还要再点一下，手感是断的。
+
+- **为什么要 deferred**：这次签字正是**松开左键**引发的，此刻还站在画布的 `_gui_input` 里。
+  等这一轮输入处理完再翻页，免得翻页顺手把牌子和画布藏掉、而画布自己还在走收尾逻辑。
+- 只翻**一句**：签字那一句必然是打完的（没打完时点击都不给画布），所以 `advance()` 走的是
+  `next_line()`，不会连翻两页。
+
+### 16.7 换手与落库：都走总线，不靠场景接线
+
+画布埋在 `Popup → Dialoguer` 底下，而手是**每个场景自己的孩子**、`RunState` 又是
+`GameState` 的。两条线都要往上穿三层，而且每挂一个新场景就得重接一次 —— 漏接一个的后果
+分别是「签名时手不对」和**「签了个寂寞，存档里什么都没有」**，都是静默的。所以反过来做：
+画布广播，需要知道的自己订阅。
+
+```
+SignaturePad.signing_started  ──┐
+                                ├→ DialoguePopup 转成 ─→ EventBus ─→ haohan.gd 换手
+SignaturePad.signing_finished ──┘                       │
+                                                        ├→ EventBus.signature_signed
+SignaturePad.signature_completed → DialoguePopup ───────┘        → GameState 落库 + 存一档
+```
+
+- `haohan.gd` 在 `_ready` 里订阅、`_exit_tree` 里**先断开再离开树**（§5.5）。
+- 还原时回到**落笔之前那张图**（`_texture_before_signing`），不是直接回到默认白手 ——
+  主菜单里 `MenuInk` 那类按钮本来就把手换黑了，签完字顺手抹白等于把人家踩掉。
+- `GameState._on_signature_signed()` 既落库又**当场 `SaveService.autosave()`**：
+  玩家签完就退出是最常见的路径，等到「第二天早上那份自动存档」那笔字就没了（§15.1 之外的
+  新写档时机）。没有进行中的一局（`has_run()` 为假）就安静跳过，不凭空造一份档。
+- 于是**加一段签名对话只要写一行 json，场景侧一根线都不用接**。
+
+### 16.8 自检（`smoke_signature`）
+
+```
+& "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_signature.tscn
+```
+
+钉住十三条，都是**会静默失效**的那类：
+
+1. 归一化往返：画布正中 → (0.5,0.5) → 双倍画布上是 (270,160)；带偏移的画布也回原点；
+2. `Signature` 读数：点数 / 总时长 / 笔迹总长 / 空与非空；
+3. **存读一致**：`Signature` → JSON → `Signature`，点数不变、位置漂移 ≤ 1e-4
+   （时长允许半个量化量子）、画布尺寸也存了；缺一半坐标的数据跳过而不报错；
+4. 画布尺寸取自场景；没 arm 时不抢拾取（`MOUSE_FILTER_IGNORE`）也不收输入；
+5. **一笔画**：签完再落笔不开新笔、点数不变；按下就松的误点不算签名；
+6. **时间戳严格递增**：同一帧里一口气推完的一串点，`t` 仍然递增、`duration > 0`
+   （不然回放会把整段一帧糊上去）；
+7. 出界吸附：所有点都在 0..1 里，跑到画布外的那个点落在角上；
+8. 回放：playhead=0 只看得见起笔点、=50ms 看见 0/25/50 三点、到底看见全部；
+9. Popup 联动：`Contract` 上真有画布、**且只剩画布**（没有 Label、没有底图）；
+   写了 `popup_signature` → arm + 拦翻页；签好 → `signature_signed(contract.smoke, sig)`
+   往上报、不再拦；已知签过的 key 直接显示旧笔迹；牌子上没画布时只警告不拦；
+   收牌子后画布松开拾取；
+10. **全链路落库**：签完 `GameState.has_signature()` 为真、笔迹点数对得上，
+    磁盘上那份自动存档里也有它 —— 这条挡的是「功能做好了、但没人调 `set_signature`」
+    （也就是签了个寂寞）；
+11. **真输入**：`push_input` 到 root viewport —— 画布是一大片、落在对话框底板下方
+    （y > 258），按住后把光标推到画布右边界外仍收得到 motion、那个点吸附到右边缘
+    （期望值按画布矩形现算，版面改了这条不会跟着烂）；
+12. **对话拦截 + 松手自动翻页**：`current_index` 在等签名时保持 0；**松手之后自己就变成 1**，
+    不用再点一下；
+13. **逐字显示中点击只是快进**：那一句还在打字时点一下，不翻页、也不落笔（不签名）。
+
+> ⚠️ 第 11、12、13 条**必须走 `push_input`**，别图省事直接调 `_gui_input` —— 直接调验的是
+> 画布自己的逻辑，验不了「事件到底有没有路由到画布上」。
+>
+> 第 10 条会真的写一份自动存档，所以跑之前照 §15.4 把 `APPDATA` 指进项目里。
+
+数据侧的对应检查在 `smoke_dialogue_popup`：它扫 `data/asks/*.json` **和** `data/dialogue.json`，
+凡是写了 `popup` / `popup_stamp` / `popup_signature` 的行都必须指到真牌子、真章名、
+带画布的牌子 —— 第一天开场那一句就是这么被盯着的（改错了自检当场红）。
+
+### 16.9 在对话框之外播放：战报右下角那枚签名
+
+`SignaturePad` 是个**自包含的 Control** —— 它不认识 `Popup` / `Dialoguer` / `GameState`，
+只依赖 `Signature`。所以想在哪播放就在哪播放，不需要对话、也不需要那块牌子。
+
+现在的落点：**每日战报**（`scenes/day/battle_report.tscn`）。点「确认」之后，
+纸面下方用 1 秒把开场签的那一笔重描出来，画完才真的收场。
+
+```
+玩家点确认
+  → _on_confirm_pressed()（battle_report.gd）
+      → GameState.get_signature(&"signature")
+      → _ensure_signature_pad()          # 第一次点才建，挂在 BattleReportPhd 底下
+      → pad.play_signature(saved, 1.0)   # §16.3 的 fit_seconds
+      → await 1 秒
+      → phase_finished.emit()
+```
+
+五条都是踩过才会明白的：
+
+- **必须先画完再 `emit`**。`day_loop` 一收到 `phase_finished` 就换阶段 / 换天，
+  这个场景连同动画会被**一起拆掉** —— 先 emit 的话玩家只会看到闪一下。
+- **画布挂在 `BattleReportPhd`（那张纸）底下**，不是场景根下。这样它画在纸之上、
+  但在 `Haohan`（跟光标的那只手）之下，手不会被签名挡住。
+- **`backdrop_color` 的 alpha 设成 0、`border_width` 设成 0、`show_hint = false`**：
+  战报本身就是一整张纸，再糊一块白底 + 一圈边线上去很脏；而这枚签名只负责回放，
+  没人会在这儿落笔，「按住左键签名」那行提示纯属误导。
+- **先量清「纸面」到底在哪，再定位置**。`paper.png` 是 1152×648 的图，但**纸张实体只占
+  `x 592..988, y 30..570`（396×540）** —— 不是整屏。画布出了这个框就是吊在空气里。
+  纸上又不平：报告正文的墨迹到 y≈290 为止，「总分：72.5」在 y 487..516、「确认」在
+  y 533..561。于是剩下的干净横带只有 **y 310..470**，画布取它的下半截：
+  **`(610,340)–(970,469)`，360×129**。
+- **宽高比锁 970:348**（录制时那块画布的比）。360/129 = 2.791 vs 2.787，差 0.1%，
+  肉眼看不出。Pad 的渲染是「归一化坐标 × 当前矩形」，比例一变字就被拉变形 ——
+  换尺寸请等比缩放。
+
+实测（真窗口，画前/画后**逐像素比对**）：
+
+```
+画布矩形 = [P: (610,340), S: (360,129)]      纸面 = [P: (592,30), S: (396,540)]
+画布整块都在纸面内 ✓   宽高比 2.791 vs 2.787 ✓
+1 秒内全部画完（60/60 点）
+画布内变化的像素 = 361，画布外变化的像素 = 0   ← 墨迹一个像素都没跑到纸外
+从点确认到 phase_finished = 1010 ms
+```
+
+> ⚠️ 验「墨迹有没有出纸」**不能靠数深色像素**：纸外是夜色背景（`ColorNight` 压过），
+> 本身就一片深色，数出来全是假的越界。要**画前 / 画后各存一帧再逐像素比对** ——
+> 只有签名会改动帧，改动的像素全落在画布内，才算证明了它没出框。
+
+> 想再加一个播放位（结局页 / 手册页）？照 `battle_report.gd::_ensure_signature_pad()`
+> 抄一份即可，没有别的耦合 —— 但要重新量那个界面的纸面/空档，别把这一块坐标抄过去。
+
+
+
+

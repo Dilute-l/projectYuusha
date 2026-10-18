@@ -192,46 +192,128 @@ func _run() -> void:
 	_check(name_label != null and name_label.text == who.display_name,
 			"不喂候选人时不改字（只显示不填）")
 
+	# ---- 4b. 牌子亮起来时，肚子里的字必须一起出来 ----
+	# 挡的是「牌子和章都亮了、字一个都不出来」那类 bug：hide_all() 早先对整棵子树递归置
+	# visible=false，而 show_for() 只把牌子**根节点**恢复成 true —— 三个 Label 就停在 false
+	# 上再也回不来。上面 4 那几条只比 text，看不见这件事，所以单独钉一遍 visible。
+	var card_labels: Array[String] = []
+	for child in popup.get_node("AwardPhd").get_children():
+		if child is Label:
+			card_labels.append(String(child.name))
+	_check(card_labels.size() > 0, "AwardPhd 底下有 Label（%s）" % ", ".join(card_labels))
+
+	popup.show_for(&"AwardPhd", null, DialoguePopup.STAMP_NONE)
+	await _settle()
+	var dark: Array[String] = []
+	for label_name in card_labels:
+		var label := popup.get_node_or_null("AwardPhd/" + label_name) as Label
+		if label == null or not label.visible:
+			dark.append(label_name)
+	_check(dark.is_empty(), "牌子亮起来时肚子里的 Label 全都可见（看不见的：%s）" % (
+			", ".join(dark) if not dark.is_empty() else "无"))
+
+	# 收起来只收「牌子 + 章槽」这一层：Label 自己的 visible 是版面，归场景管，不该被改写
+	popup.show_for(&"", null)
+	await _settle()
+	var clobbered: Array[String] = []
+	for label_name in card_labels:
+		var label := popup.get_node_or_null("AwardPhd/" + label_name) as Label
+		if label == null or not label.visible:
+			clobbered.append(label_name)
+	_check(clobbered.is_empty(), "收起牌子时不改写 Label 的 visible（被改动的：%s）" % (
+			", ".join(clobbered) if not clobbered.is_empty() else "无"))
+
 	# ---- 5. 数据链路：现有追问 json 里的 popup / popup_stamp 都能被认出来 ----
-	_check_data_lines()
+	_check_data_lines(popup)
 
 	popup.queue_free()
 	await _settle()
 
 
-## data/asks/*.json 里凡是写了 popup 的行，popup_stamp（若写了）必须在白名单里。
-## 这条挡的是「生成器里选了个名字、Godot 侧还没加」这类两边不同步的错。
-func _check_data_lines() -> void:
+## 数据里凡是写了 popup 的行（`data/asks/*.json` 每一份，加上 `data/dialogue.json` 每一段）：
+##   ① popup 那块牌子必须真的在 Popup.tscn 里（不然那句台词就是**静默不弹**，只有一个 push_error）；
+##   ② popup_stamp（若写了）必须在白名单里，或者是 STAMP_NONE（"none" 是合法值，不是错）；
+##   ③ popup_signature（若写了）必须挂在一块**带签名画布**的牌子上，否则玩家签不了字（§16）。
+## 这三条挡的是「生成器里选了个名字、Godot 侧还没加」这类两边不同步的错。
+##
+## 两份数据都扫：`data/dialogue.json` 里第一天的开场（day1_briefing）就是靠 popup_signature
+## 让玩家签字的 —— 只扫 asks 的话，那一句写错了没人会知道。
+func _check_data_lines(popup: Node) -> void:
+	var popup_lines := 0
+	var bad_stamp := 0
+	var bad_node := 0
+	var bad_signature := 0
+
+	# ---- ① data/asks/*.json：每份文件是一个行数组 ----
 	var dir := DirAccess.open("res://data/asks")
 	_check(dir != null, "data/asks 打得开")
-	if dir == null:
-		return
+	if dir != null:
+		for file_name in dir.get_files():
+			if not file_name.ends_with(".json"):
+				continue
+			var parsed: Variant = JSON.parse_string(
+				FileAccess.get_file_as_string("res://data/asks/" + file_name))
+			if not (parsed is Array):
+				continue
+			var report := _scan_lines(popup, file_name, parsed)
+			popup_lines += int(report["lines"])
+			bad_node += int(report["bad_node"])
+			bad_stamp += int(report["bad_stamp"])
+			bad_signature += int(report["bad_signature"])
 
-	var popup_lines := 0
-	var bad := 0
-	for file_name in dir.get_files():
-		if not file_name.ends_with(".json"):
-			continue
-		var parsed: Variant = JSON.parse_string(
-			FileAccess.get_file_as_string("res://data/asks/" + file_name))
-		if not (parsed is Array):
-			continue
-		for entry in parsed:
-			if not (entry is Dictionary):
+	# ---- ② data/dialogue.json：{ 段 id -> 行数组 } ----
+	var shared: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/dialogue.json"))
+	_check(shared is Dictionary, "data/dialogue.json 读得出来")
+	if shared is Dictionary:
+		var segments: Dictionary = shared
+		for segment_id in segments:
+			var lines: Variant = segments[segment_id]
+			if not (lines is Array):
 				continue
-			var line: Dictionary = entry
-			if String(line.get("popup", "")).strip_edges().is_empty():
-				continue
-			popup_lines += 1
-			var stamp_name := String(line.get("popup_stamp", "")).strip_edges()
-			if stamp_name.is_empty():
-				continue
-			if not DialoguePopup.STAMP_NAMES.has(StringName(stamp_name)):
-				bad += 1
-				print("      · %s 里的 popup_stamp「%s」不在白名单里" % [file_name, stamp_name])
+			var report := _scan_lines(popup, "dialogue.json / %s" % segment_id, lines)
+			popup_lines += int(report["lines"])
+			bad_node += int(report["bad_node"])
+			bad_stamp += int(report["bad_stamp"])
+			bad_signature += int(report["bad_signature"])
 
-	_check(popup_lines > 0, "data/asks 里至少有一行弹牌子（%d 行，数据链路真的在用）" % popup_lines)
-	_check(bad == 0, "数据里写的 popup_stamp 全在白名单里（不认识 %d 处）" % bad)
+	_check(popup_lines > 0, "数据里至少有一行弹牌子（%d 行，数据链路真的在用）" % popup_lines)
+	_check(bad_node == 0, "数据里写的 popup 都能在 Popup.tscn 里找到（找不到 %d 处）" % bad_node)
+	_check(bad_stamp == 0, "数据里写的 popup_stamp 全在白名单里（不认识 %d 处）" % bad_stamp)
+	_check(bad_signature == 0, "数据里写了 popup_signature 的牌子都挂着 SignaturePad（落不上 %d 处）" % bad_signature)
+
+
+## 扫一份「行数组」，返回 { lines, bad_node, bad_stamp, bad_signature } 四个计数。
+func _scan_lines(popup: Node, source: String, entries: Array) -> Dictionary:
+	var report := {"lines": 0, "bad_node": 0, "bad_stamp": 0, "bad_signature": 0}
+	for entry in entries:
+		if not (entry is Dictionary):
+			continue
+		var line: Dictionary = entry
+		var popup_name := String(line.get("popup", "")).strip_edges()
+		if popup_name.is_empty():
+			continue
+		report["lines"] += 1
+		var card := popup.get_node_or_null(NodePath(popup_name))
+		if card == null:
+			report["bad_node"] += 1
+			print("      · %s 里的 popup「%s」在 Popup.tscn 里没有同名子节点" % [source, popup_name])
+		# 签名要落到一块有画布的牌子上（§16）；牌子本身不存在时上面已经记过一笔，不再重复数
+		var signature_key := String(line.get("popup_signature", "")).strip_edges()
+		if not signature_key.is_empty() and card != null \
+				and card.find_child("SignaturePad", true, false) == null:
+			report["bad_signature"] += 1
+			print("      · %s 里的 popup_signature「%s」落在牌子「%s」上，但那块牌子没有 SignaturePad" % [
+				source, signature_key, popup_name])
+		var stamp_name := String(line.get("popup_stamp", "")).strip_edges()
+		if stamp_name.is_empty():
+			continue
+		if StringName(stamp_name) == DialoguePopup.STAMP_NONE:
+			continue  # 「这一句明确不盖章」，合法值
+		if not DialoguePopup.STAMP_NAMES.has(StringName(stamp_name)):
+			report["bad_stamp"] += 1
+			print("      · %s 里的 popup_stamp「%s」不在白名单里" % [source, stamp_name])
+	return report
 
 
 func _report() -> void:

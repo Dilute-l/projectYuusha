@@ -1089,4 +1089,10 @@ func _normalize_line(entry: Dictionary) -> Dictionary:
 	var stamp_name := String(entry.get("popup_stamp", "")).strip_edges()
 	if not stamp_name.is_empty():
 		line["popup_stamp"] = stamp_name
+	# 行级弹窗上的**签名**（可选）：值是这一份签名的 key，例如 "contract.day1"。
+	# 写了 = 这一句要玩家在牌子的画布上签一笔，没签完不许翻页（见 dialoguer.gd::_input）。
+	# 和 popup_stamp 一样，只在同句写了 popup 时才有意义。
+	var signature_key := String(entry.get("popup_signature", "")).strip_edges()
+	if not signature_key.is_empty():
+		line["popup_signature"] = signature_key
 	return line

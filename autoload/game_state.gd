@@ -40,6 +40,9 @@ func _ready() -> void:
 	# 未开局时给一个空的 RunState：UI 可以无脑读 day / phase，不用到处判空
 	if run_state == null:
 		run_state = RunState.new()
+	# 玩家签字（§16）：落库 + 当场存一档。走总线，场景侧一根线都不用接。
+	if not EventBus.signature_signed.is_connected(_on_signature_signed):
+		EventBus.signature_signed.connect(_on_signature_signed)
 
 # ---------------------------------------------------------------------------
 # 局的生命周期
@@ -301,6 +304,51 @@ func add_flag(flag_name: StringName, amount: int = 1) -> int:
 	var value := int(run_state.flags.get(flag_name, 0)) + amount
 	run_state.flags[flag_name] = value
 	return value
+
+# ---------------------------------------------------------------------------
+# 签名（§16，随存档走）
+# ---------------------------------------------------------------------------
+
+
+## 玩家在牌子上签好了 → **落库 + 当场存一档**（本函数订阅在 _ready 里）。
+##
+## 为什么走总线而不是让每个场景自己接：Dialoguer 不认识 GameState（它只是个控件，
+## 被主菜单 / 面试 / 组队 / 战报一起复用），要穿三层才能传到这儿，而且每挂一个新场景
+## 都得重接一次、漏一个就静默不存。订阅 EventBus 之后，任何一段写了 popup_signature
+## 的对话都自动落库 —— 加需求时不用回头改任何场景。
+##
+## ⚠️ **当场写档**：玩家签完就退出是最常见的路径，等「第二天早上那份自动存档」就晚了，
+##    那一笔字等于白签。所以这里不等别人，自己存一次（§15.1 之外的新写档时机）。
+func _on_signature_signed(signature_key: StringName, signature: Signature) -> void:
+	if not has_run():
+		# 没有进行中的一局（例如只在主菜单试玩过一段对话）：没有存档可写，安静跳过
+		return
+	set_signature(signature_key, signature)
+	SaveService.autosave()
+
+
+## 记下一份签名。key 来自对话那一行的 popup_signature（例如 "contract.day1"）。
+func set_signature(signature_key: StringName, signature: Signature) -> void:
+	if signature_key == &"" or signature == null:
+		return
+	run_state.signatures[signature_key] = signature
+
+
+## 取一份签名；没签过返回 null（**不要**在这里造一份空的 —— 「没签」和「签了个空」是两回事）
+func get_signature(signature_key: StringName) -> Signature:
+	return run_state.signatures.get(signature_key) as Signature
+
+
+func has_signature(signature_key: StringName) -> bool:
+	return run_state.signatures.has(signature_key)
+
+
+## 签过的全部 key（结算页 / 手册要列签名时用）
+func get_signature_keys() -> Array[StringName]:
+	var keys: Array[StringName] = []
+	for key in run_state.signatures:
+		keys.append(key)
+	return keys
 
 # ---------------------------------------------------------------------------
 # 手册解锁

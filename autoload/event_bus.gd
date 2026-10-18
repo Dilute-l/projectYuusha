@@ -90,4 +90,25 @@ signal scene_changed(scene_key: StringName, scene_path: String)
 ## 音量变化：bus 名 -> 线性值 0..1
 signal volume_changed(bus_name: StringName, linear_volume: float)
 
+# ---------------------------------------------------------------------------
+# 签名（§16）：画布广播，光标自己响应
+# ---------------------------------------------------------------------------
+#
+# 为什么不写成「画布去调 Haohan」：那只手是**每个场景自己的孩子**，画布埋在
+# Popup → Dialoguer 底下，要够到它得穿三层转发，还得每次挂新场景时重新接线。
+# 走总线之后：画布只管广播「我开始落笔了 / 我这一笔结束了」，Haohan 自己订阅，
+# 换场景、加新场合都不用改一行 —— 这就是 EventBus 存在的理由（§5）。
+
+## 玩家在签名画布上按下左键开始落笔。光标据此换成蘸了墨的那只（haohan.gd）。
+signal signature_signing_started
+
+## 这一笔结束了（松手；无论有没有签成）。光标据此还原。
+signal signature_signing_finished
+
+## 一份签名签好了（key 来自对话那一行的 popup_signature）。
+##
+## **GameState 订阅它**：把笔迹记进 RunState，并顺手写一份自动存档（§16.7）。
+## 这样一来任何一段写了 popup_signature 的对话都自动落库，不必每个场景各接一根线。
+signal signature_signed(signature_key: StringName, signature: Signature)
+
 @warning_ignore_restore("unused_signal")

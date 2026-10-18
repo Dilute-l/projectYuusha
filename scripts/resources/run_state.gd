@@ -26,6 +26,15 @@ extends Resource
 ## 剧情 flag，例如 { "liar_hired": 3, "team_broke": 1 }
 @export var flags: Dictionary = {}
 
+## 玩家签过的字：signature_key -> Signature（§16）。
+##
+## key 来自对话那一行的 `popup_signature`（例如 "contract.day1"），和 popup_stamp 同一套路。
+##
+## ⚠️ **不要塞进 flags**：flags 是剧情计数器，而且 SaveService.from_dict() 里的
+##    _normalize_number() 会把整数值的 float 掰回 int —— 归一化坐标里 0.0 / 1.0
+##    这种值一旦被掰成 int，笔迹就被静默改坏一处。签名要有自己的字段。
+@export var signatures: Dictionary = {}
+
 ## 已解锁手册条目 ID，例如 ["monster.ogre", "job.sword"]
 @export var handbook_unlocked: Array[StringName] = []
 

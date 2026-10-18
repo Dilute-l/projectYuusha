@@ -221,6 +221,7 @@ static func to_dict(state: RunState) -> Dictionary:
 		"scores": Array(state.scores),
 		"roster": _names_to_strings(state.roster),
 		"flags": state.flags.duplicate(true),
+		"signatures": _signatures_to_dict(state.signatures),
 		"handbook_unlocked": _names_to_strings(state.handbook_unlocked),
 		"phase": String(state.phase),
 	}
@@ -259,6 +260,10 @@ static func from_dict(data: Dictionary) -> RunState:
 			flags[StringName(str(key))] = _normalize_number(raw_flags_dict[key])
 	state.flags = flags
 
+	# 签名（§16）：老存档里没有这个键 → 空字典，读档照常。
+	# 每一份走 Signature.from_dict()，坏数据（手改过 / 截断）不至于把整份存档读挂。
+	state.signatures = _signatures_from_dict(data.get("signatures", {}))
+
 	var unlocked: Array[StringName] = []
 	var raw_unlocked: Variant = data.get("handbook_unlocked", [])
 	if raw_unlocked is Array:
@@ -284,6 +289,31 @@ static func _names_to_strings(names: Array[StringName]) -> Array:
 	var result: Array = []
 	for entry_name in names:
 		result.append(String(entry_name))
+	return result
+
+
+## 签名表 -> JSON 形状。key 一律转 String（JSON 存不下 StringName）。
+static func _signatures_to_dict(signatures: Dictionary) -> Dictionary:
+	var result: Dictionary = {}
+	for key in signatures:
+		var signature := signatures[key] as Signature
+		if signature == null:
+			continue
+		result[String(key)] = signature.to_dict()
+	return result
+
+
+## JSON 形状 -> 签名表。读不出形状的条目直接跳过（宁可少一份字，不要整份存档读挂）。
+static func _signatures_from_dict(raw: Variant) -> Dictionary:
+	var result: Dictionary = {}
+	if not (raw is Dictionary):
+		return result
+	var table: Dictionary = raw
+	for key in table.keys():
+		var entry: Variant = table[key]
+		if not (entry is Dictionary):
+			continue
+		result[StringName(str(key))] = Signature.from_dict(entry)
 	return result
 
 

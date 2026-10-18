@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/components/signature_pad.gd" id="1_pad"]
+[ext_resource type="FontFile" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="2_font"]
+
+[node name="SignaturePad" type="Control"]
+layout_mode = 0
+offset_right = 270.0
+offset_bottom = 160.0
+script = ExtResource("1_pad")
+
+[node name="Hint" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.596078, 0.552941, 0.505882, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 26
+text = "在画布上按住左键，一笔签完"
+horizontal_alignment = 1
+vertical_alignment = 1
