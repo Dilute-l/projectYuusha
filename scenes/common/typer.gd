@@ -814,6 +814,24 @@ func is_active() -> bool:
 	return current_index >= 0
 
 
+## 当前装入的这段对话里有没有**至少一句看得见的东西**。
+##
+## 为什么需要它：`data/asks/` 里有一批「占位」json —— 行是有的，但 `speaker_name` / `text`
+## 全是空串（写手还没填词）。这种对话 `load_dialogue_from()` **会返回 true**，
+## 于是播出来就是一个空白框，还要点两下才收。调用方（面试追问 / 组队回忆）
+## 拿本方法把「文件在但一句话都没有」和「真的不存在」一起归成「这份对话没有内容」。
+##
+## 判定：某一行**有正文**，或这一行要**弹点东西**（`popup` / `popup_signature`，
+## 见 _normalize_line）—— 只亮牌子不写字的句子也是真内容，不能算空。
+func has_visible_line() -> bool:
+	for line in lines:
+		if not String(line.get("text", "")).strip_edges().is_empty():
+			return true
+		if line.has("popup"):
+			return true
+	return false
+
+
 ## 玩家点击时的默认推进：
 ##   本行还在逐字 → 立刻显示完；
 ##   本行已打完   → 进入下一行（最后一行则结束整段并发 dialogue_finished）

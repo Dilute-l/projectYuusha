@@ -426,6 +426,9 @@ signal run_finished(ending_id: StringName)
 > `EventBus.resume_entry_asked(candidate_id, entry_index)` → `interview.gd` 拿到
 > `ask_path`，用 `typer.load_dialogue_from(path)` 装入那份 json，再 `dialoguer.play()`。
 > 追问是临时对话，播完只收起对话框、**不推进阶段**。详见 §10.6。
+> 这条追问**没有内容**时（没配 `ask_path` / 文件不在 / json 里一句台词都没有）不播空白框，
+> 改播 `data/dialogue.json` 的 `ask_missing` 段（「面试官：这个地方好像没有什么好问的……」）。
+> 详见 §10.7 的「追问没有内容时播什么」。
 
 ### 6.3 手册（玩家能力锚点）
 `handbook.tscn` 是 interview 里的**模态浮层**：点手册按钮打开，翻页浏览当前已解锁的条目，点 X 关闭。
@@ -1029,9 +1032,11 @@ DayLoop (Node)
 									↓
 			  interview.gd._on_resume_entry_asked()
 									│  过守卫（阶段 / 不打断阶段对话 / 是不是这一位）
-									│  取 entry.ask_path，确认文件在
+									│  取 entry.ask_path，确认文件在、且里面有一句台词
 									↓
 					typer.load_dialogue_from(ask_path) ─→ dialoguer.play()
+									┊  没有内容（没配路径 / 文件不在 / 全是空占位行）
+									└─→ _play_ask_missing() ─→ dialoguer.play()
 ```
 
 | 落点 | 职责 |
@@ -1081,9 +1086,43 @@ var asked_entries: Dictionary = {}
 
 - **为什么在 GameState 而不是 `ResumeEntry`**：`ResumeEntry` 是被候选人共用的**资源**，
   往里写运行时状态会在「同一条被两个人引用」时串味，也会被编辑器当成数据改动。
-- **为什么「没播成就不算」**：`ask_path` 为空 / 文件不在 / 阶段不对时都没真的问出来，
-  这种条目在组队里不该亮起来（否则点开一片空白）。自检专门盯了这条。
+- **为什么「没有内容就不算问过」**：`ask_path` 为空 / 文件不在 / json 里一句台词都没有时，
+  这一条确实没问出任何东西 —— 它不该在组队里亮起来（「回忆」播的就是那份 json 的内容，
+  没有内容就没东西可回忆）。这几种情况**现在不再什么都不播**，而是播 `ask_missing`
+  那一句（见下），但仍然不记账。自检专门盯了这两面：播了默认那句、且记录没变。
 - 换天、开新局、读档、回主菜单都会把它清空（和 `passed_ids` 同命，见 `GameState` 里那四处 reset）。
+
+#### 追问没有内容时播什么
+
+`data/asks/` 里有一批**占位** json：行是有的，但 `speaker_name` / `text` 全是空串
+（写手还没填词）。这种文件 `load_dialogue_from()` 会**返回 true** ——
+照旧播就是一个空白对话框，还要点两下才收，比「没反应」更糟。
+
+所以 `interview.gd` 把下面三种都归成「这份对话不存在」，统一改播一句默认台词
+（`_play_ask_missing()`）：
+
+| 情况 | 以前 | 现在 |
+| --- | --- | --- |
+| 该条没配 `ask_path`（数据漏了） | 什么都不播 | 播 `ask_missing` |
+| `ask_path` 指到的 json 不在 | `push_error` 后什么都不播 | 播 `ask_missing`（仍 `push_error` 留痕） |
+| json 在，但没有一句看得见的台词 | **播一个空白框** | 播 `ask_missing` |
+
+台词的正本在 `data/dialogue.json` 的 `ask_missing` 段（写手改那句话不用碰脚本）：
+
+```json
+	"ask_missing":[
+	{ "speaker_name": "面试官", "text": "这个地方好像没有什么好问的……" }
+  ],
+```
+
+`interview.gd` 里另留了一份同文的常量（`ASK_MISSING_SPEAKER` / `ASK_MISSING_TEXT`）作**最后兜底**：
+连 `dialogue.json` 都读不出来时，也不能给玩家一个空白框。
+
+「有没有一句台词」的判定在 `typer.gd::has_visible_line()`：某一行**有正文**，
+或者这一行要**弹点东西**（`popup` / `popup_signature`）就算有内容 ——
+只亮牌子不写字的那一句也是真内容，不能被当成空对话顶掉。
+
+⚠️ 序号越界**不算**「没有内容」：那是接线 / 调用方的错，`interview.gd` 只 `push_warning` 并不播。
 
 #### 组队阶段的「回忆」（§12）
 

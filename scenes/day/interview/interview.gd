@@ -220,6 +220,9 @@ func _apply_judge_button(button: TextureButton, judging: bool) -> void:
 ##
 ## 之后的逐字显示、点一下推进、最后一句点一下收起，仍然全部由 Dialoguer / Typer 负责，
 ## 本脚本一行输入处理都不写。
+##
+## 这条追问**没有内容**时（没配 ask_path / 文件不在 / 文件在却没一句台词）不播空白框，
+## 改播一句默认的面试官台词 —— 见 _play_ask_missing() 与 ASK_MISSING_*。
 func _on_resume_entry_asked(candidate_id: StringName, entry_index: int) -> void:
 	# 第 1 层守卫（逻辑层）：只有追问环节能追问。简历在别的阶段本就是隐藏的，
 	# 走到这里说明有别的代码在乱发信号 —— 要响，不要吞。
@@ -247,25 +250,81 @@ func _on_resume_entry_asked(candidate_id: StringName, entry_index: int) -> void:
 	if candidate == null or candidate.id != candidate_id:
 		push_warning("[Interview] 追问的候选人 %s 不是当前在面试的那位，已忽略" % candidate_id)
 		return
+	# 序号越界是接线 / 调用方的错，不是「这条没有内容」：照旧不播，也不假装问过。
+	# 属性那条（STATUS_ENTRY_INDEX）由 ask_path_of 自己算成一个路径，不参与这条检查。
+	if entry_index != Resume.STATUS_ENTRY_INDEX:
+		var entry_count := Resume.entries_of(candidate).size()
+		if entry_index < 0 or entry_index >= entry_count:
+			push_warning("[Interview] 追问的序号 %d 越界（这一位只有 %d 条），已忽略" % [
+				entry_index, entry_count])
+			return
+
 	# 序号 → 对话文件这一层交给 Resume.ask_path_of()：它一处记住了
 	# 「experience 在前、skill 在后」以及「-1 = 属性追问」这两条约定。
 	var ask_path := Resume.ask_path_of(candidate, entry_index)
+
+	# 下面三种都算「这份对话不存在」，一律改播默认那句（见 _play_ask_missing）——
+	# 绝不给玩家一个空白对话框。每种单独报一句，好分清是数据漏了还是路径写错。
 	if ask_path.is_empty():
-		push_warning("[Interview] 追问的序号 %d 没有对应的对话（越界？还是没写 ask_path？）" % entry_index)
+		push_warning("[Interview] 追问的序号 %d 没配 ask_path，改播「没什么好问的」" % entry_index)
+		_play_ask_missing()
 		return
 	# 先自己确认文件在，再去 load：Typer 那层的报错是「JSON 读不出来」，
 	# 而这里最常见的错因其实是路径写错 / 文件忘了提交，分开报更好排查。
 	if not FileAccess.file_exists(ask_path):
-		push_error("[Interview] 追问 json 不存在：%s（第 %d 条简历 ask_path 指错了？）" % [
+		push_error("[Interview] 追问 json 不存在：%s（第 %d 条简历 ask_path 指错了？）改播「没什么好问的」" % [
 			ask_path, entry_index])
+		_play_ask_missing()
 		return
 
-	# 一份 json = 一条追问的一段对话，所以 id 留空（取文件里的第一段）
-	if not _dialoguer.typer.load_dialogue_from(ask_path):
+	# 一份 json = 一条追问的一段对话，所以 id 留空（取文件里的第一段）。
+	# 文件在、但一句台词都没有（data/asks/ 里那种全空占位 json 就是）→ 同属「没有内容」。
+	if not _dialoguer.typer.load_dialogue_from(ask_path) \
+			or not _dialoguer.typer.has_visible_line():
+		push_warning("[Interview] 追问 json 里没有可播的台词：%s（第 %d 条），改播「没什么好问的」" % [
+			ask_path, entry_index])
+		_play_ask_missing()
 		return
 	# 播成功才算「问过」：组队阶段的「回忆」照这份记录判断哪几条能点
-	# （阶段不对 / json 缺失都不该让那一条在组队时亮起来）。
+	# （阶段不对 / json 缺失 / 没有台词都不该让那一条在组队时亮起来）。
 	GameState.record_entry_asked(candidate.id, entry_index)
+	_dialoguer.play()
+
+
+# ---------------------------------------------------------------------------
+# 追问「没有内容」时播的那一句（§10.7）
+# ---------------------------------------------------------------------------
+#
+# 三种都算「这份对话不存在」，一律改播这一句（判定在 _on_resume_entry_asked）：
+#   · 该条没配 `ask_path`（数据漏了）；
+#   · `ask_path` 指到的 json 不在；
+#   · json 在，但里面没有一句看得见的台词（data/asks/ 里那种全空占位文件）。
+#
+# 台词的正本在 data/dialogue.json 的 `ask_missing` 段 —— 写手改那句话不用碰脚本；
+# 下面那份同文常量只是**最后兜底**：连 dialogue.json 都读不出来时，也不能给玩家一个空白框。
+
+## data/dialogue.json 里「没什么好问的」那一段的 id
+const ASK_MISSING_ID: String = "ask_missing"
+
+## dialogue.json 读不出来时用的兜底说话人与台词（与 ask_missing 段同文）
+const ASK_MISSING_SPEAKER: String = "面试官"
+const ASK_MISSING_TEXT: String = "这个地方好像没有什么好问的……"
+
+
+## 播出「没什么好问的」那一句。
+##
+## ⚠️ 播这一句**不算「问过」**（不调 record_entry_asked）：组队阶段的「回忆」播的是
+##    当时那份追问 json 的内容，这条没有内容可回忆，那条就该在组队里保持灰的 ——
+##    否则它会亮起来、点开却什么都没有。
+func _play_ask_missing() -> void:
+	var typer := _dialoguer.typer
+	if typer.load_dialogue(ASK_MISSING_ID):
+		_dialoguer.play()
+		return
+	# dialogue.json 里没有这一段（或者整个文件读不出来）→ 用脚本里那句。
+	# load_dialogue() 失败时已经清空了 lines，所以这里从零装一行，一样点一下收起。
+	typer.lines.clear()
+	typer.append_line(ASK_MISSING_SPEAKER, ASK_MISSING_TEXT)
 	_dialoguer.play()
 
 

@@ -15,6 +15,10 @@ extends Node
 ## **一句台词都不在脚本里**：期望值全部从 data/asks/*.json 里现读现比 ——
 ## 改文案、改说话人都不用动这个文件；但改 json 的结构（行数 / 字段名）会在这里报出来。
 ##
+## 后面还盯另一件事：追问**没有内容**时（没配 ask_path / 文件不在 / 文件在却没一句台词）
+## 不能弹一个空白框，而要播 data/dialogue.json 的 `ask_missing` 段，并且**不算「问过」**
+## （组队阶段的「回忆」播不出东西的那几条不该亮起来）。
+##
 ## 为什么要真的实例化 interview.tscn：追问的落点在 interview.gd 身上，
 ## 单独拿 resume.tscn 测只能测到「信号发出去了」，测不到「对话框真的播了那份 json」。
 
@@ -22,6 +26,12 @@ const INTERVIEW_SCENE := preload("res://scenes/day/interview/interview.tscn")
 
 ## 游戏的实际画布（project.godot 的 canvas_items 拉伸基准）
 const GAME_CANVAS := Vector2i(1152, 648)
+
+## 「这条追问没有内容」时播的那一段：正本在 data/dialogue.json（interview.gd 的兜底常量同 id）
+const ASK_MISSING_ID := "ask_missing"
+
+## 追问 json 的目录
+const ASKS_DIR := "res://data/asks"
 
 var _failures: Array[String] = []
 var _checks: int = 0
@@ -53,6 +63,66 @@ func _read_ask(path: String) -> Array:
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
 	return parsed if parsed is Array else []
+
+
+## 读 data/dialogue.json 里某一段的行数组（读不出来返回空数组）
+func _read_segment(id: String) -> Array:
+	var file := FileAccess.open("res://data/dialogue.json", FileAccess.READ)
+	if file == null:
+		return []
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary and (parsed as Dictionary).get(id) is Array:
+		return (parsed as Dictionary)[id]
+	return []
+
+
+## typer 当前装入的行与期望的行是否逐字一致（说话人 + 正文）
+func _lines_match(typer: Typer, want: Array) -> bool:
+	if typer.lines.size() != want.size():
+		return false
+	for i in want.size():
+		var expected: Variant = want[i]
+		if not (expected is Dictionary):
+			return false
+		var row := expected as Dictionary
+		if String(typer.lines[i].get("speaker_name", "")) != String(row.get("speaker_name", "")) \
+				or String(typer.lines[i].get("text", "")) != String(row.get("text", "")):
+			return false
+	return true
+
+
+## 找一份「能解析、但每一行都没有正文」的追问 json；找不到返回空串。
+##
+## 只认纯占位文件：行里带 popup（弹牌子）或 config（段级配置）的不算 ——
+## 那两种在 Typer 眼里是「有内容」，拿它们测会误报。
+## 写手哪天把这些占位文件都填上，这一条自检就自动跳过。
+func _find_empty_ask() -> String:
+	var dir := DirAccess.open(ASKS_DIR)
+	if dir == null:
+		return ""
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while entry != "":
+		if not dir.current_is_dir() and entry.ends_with(".json"):
+			var path := ASKS_DIR.path_join(entry)
+			var rows := _read_ask(path)
+			var all_blank := not rows.is_empty()
+			for row in rows:
+				if not (row is Dictionary):
+					all_blank = false
+					continue
+				var line := row as Dictionary
+				if line.has("popup") or line.has("config"):
+					all_blank = false
+				elif not String(line.get("text", "")).strip_edges().is_empty():
+					all_blank = false
+			if all_blank:
+				dir.list_dir_end()
+				return path
+		entry = dir.get_next()
+	dir.list_dir_end()
+	return ""
 
 
 func _run() -> void:
@@ -216,33 +286,63 @@ func _run() -> void:
 
 	# ---- 别人家的候选人：也该被拦下 ----
 	interview.set_phase(DayPhase.Phase.INTERVIEW)
+	# 重新进招人阶段会重播一次「面试者走进来」的出场演出，演出期间追问是被**故意**挡掉的
+	# （interview.gd 的 _animating 守卫）。下面几条测的是追问本身，所以先把演出跳到底，
+	# 否则它们会因为「演出中」而不是因为「没有内容」被挡掉 —— 那就测了个寂寞。
+	interview.skip_animation()
 	await _settle()
 	dialoguer.visible = false
 	EventBus.resume_entry_asked.emit(&"c_9999", 0)
 	await _settle()
 	_check(not dialoguer.visible, "不是当前在面试那位的追问被忽略")
 
-	# ---- 越界下标：不该炸，也不该播 ----
+	# ---- 越界下标：不该炸，也不该播（越界是接线错误，不是「这条没有内容」）----
 	dialoguer.visible = false
 	EventBus.resume_entry_asked.emit(candidate.id, 999)
 	await _settle()
 	_check(not dialoguer.visible, "越界的条目下标被忽略")
 
-	# ---- 档案忘配 ask_path：要拦住，而且不能拿上一份 json 顶包 ----
-	# 同时确认**没播成的追问不算「问过」** —— 否则组队里那条会亮起来，点开却什么也没有。
+	# ---- 追问「没有内容」→ 播默认那句，而不是一个空白框（§10.7）----
+	# 三种都算「这份对话不存在」：没配 ask_path / 文件不在 / 文件在但没有一句台词。
+	# 期望值同样从数据里现读（data/dialogue.json 的 ask_missing 段），改那句话不用动本文件。
+	var expect_missing := _read_segment(ASK_MISSING_ID)
+	_check(not expect_missing.is_empty(), "data/dialogue.json 里有 %s 段" % ASK_MISSING_ID)
+	if expect_missing.is_empty():
+		return
+
 	var saved: String = entries[0].ask_path
 	var asked_before := GameState.get_asked_entries(candidate.id)
+
 	entries[0].ask_path = ""
 	dialoguer.visible = false
 	EventBus.resume_entry_asked.emit(candidate.id, 0)
 	await _settle()
-	_check(not dialoguer.visible, "ask_path 为空 → 不播（也不拿上一份顶着）")
+	_check(dialoguer.visible, "ask_path 为空 → 播默认那句（不是空白框、也不是没反应）")
+	_check(_lines_match(typer, expect_missing),
+			"播的就是 %s 这一段（没拿上一份 json 顶包）" % ASK_MISSING_ID)
+
 	entries[0].ask_path = "res://data/asks/__not_there__.json"
+	dialoguer.visible = false
 	EventBus.resume_entry_asked.emit(candidate.id, 0)
 	await _settle()
-	_check(not dialoguer.visible, "ask_path 指向不存在的文件 → 不播")
+	_check(dialoguer.visible, "ask_path 指向不存在的文件 → 同样播默认那句")
+	_check(_lines_match(typer, expect_missing), "不存在的文件也播 %s" % ASK_MISSING_ID)
+
+	# 第三种：文件在、能解析，但每一行都没有正文（data/asks/ 里确实有这种占位文件）
+	var empty_ask := _find_empty_ask()
+	if empty_ask.is_empty():
+		print("  [SKIP] data/asks/ 里当前没有「全空占位」的追问 json，跳过这一条")
+	else:
+		entries[0].ask_path = empty_ask
+		dialoguer.visible = false
+		EventBus.resume_entry_asked.emit(candidate.id, 0)
+		await _settle()
+		_check(dialoguer.visible, "空占位的 json（%s）→ 也播默认那句" % empty_ask)
+		_check(_lines_match(typer, expect_missing), "空占位的 json 播的同样是 %s" % ASK_MISSING_ID)
+
+	# 播了这几次都**不算问过**：「回忆」播的是当时那份 json 的内容，没有内容就不该亮
 	_check(GameState.get_asked_entries(candidate.id) == asked_before,
-			"没播成的追问不记「问过」（记录仍是 %s）" % str(asked_before))
+			"没有内容的追问不记「问过」（记录仍是 %s）" % str(asked_before))
 	entries[0].ask_path = saved
 
 
