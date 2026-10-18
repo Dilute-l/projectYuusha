@@ -305,8 +305,8 @@ func _check_game_state() -> void:
 		day_last != null and GameState.current_candidates.size() == day_last.candidates.size(),
 		"换到最后一天时名单也跟着换（%d 人）" % GameState.current_candidates.size()
 	)
-	_check(GameState.get_total_score() == 550, "累计分 = 550（实际 %d）" % GameState.get_total_score())
-	_check(GameState.get_day_score(3) == 30, "单日分数按第 n 天索引")
+	_check(GameState.get_total_score() == 550.0, "累计分 = 550（实际 %.0f）" % GameState.get_total_score())
+	_check(GameState.get_day_score(3) == 30.0, "单日分数按第 n 天索引")
 
 	GameState.hire(&"c_0001")
 	_check(GameState.is_hired(&"c_0001") and not GameState.hire(&"c_0001"), "录用去重")

@@ -168,32 +168,48 @@ func _set_phase_silent(phase: int) -> void:
 # ---------------------------------------------------------------------------
 
 
-## 记录当日得分；breakdown = { true_power, synergy, lie_penalty, event_bonus, luck }
-func record_day_score(day_index: int, gained: int, breakdown: Dictionary = {}) -> void:
+## 记录当日得分；breakdown = { true_power, synergy, multiplier, ... }
+##
+## ⚠️ gained 是 **float**：当日分 = true_power × 羁绊倍率，乘数带小数。
+## 早期是 int，接上战报时会把小数截掉 —— 那是"规则看着生效、分数没动"的同类坑。
+##
+## 进来先收敛到两位小数：`420 × 1.1` 会算出 `462.0000000000001` 这种尾巴，
+## 它会一路传进存档、累计分和界面。两位小数足够表达所有倍率（±0.05 / ±0.3）。
+func record_day_score(day_index: int, gained: float, breakdown: Dictionary = {}) -> void:
 	if day_index < 1:
 		return
+	var value := snappedf(gained, 0.01)
 	while run_state.scores.size() < day_index:
-		run_state.scores.append(0)
-	run_state.scores[day_index - 1] = gained
+		run_state.scores.append(0.0)
+	run_state.scores[day_index - 1] = value
 	EventBus.day_scored.emit({
 		"day": day_index,
-		"gained": gained,
+		"gained": value,
 		"total": get_total_score(),
 		"breakdown": breakdown,
 	})
 
 
-func get_day_score(day_index: int) -> int:
+func get_day_score(day_index: int) -> float:
 	if day_index < 1 or day_index > run_state.scores.size():
-		return 0
+		return 0.0
 	return run_state.scores[day_index - 1]
 
 
-func get_total_score() -> int:
-	var total := 0
+func get_total_score() -> float:
+	var total := 0.0
 	for score in run_state.scores:
 		total += score
 	return total
+
+
+## 解锁条件求值用的累计分（**取整**）。
+##
+## UnlockSchedule 的表达式变量是 int（`total_score >= 100` 这种写法）；
+## 累计分本身是 float（羁绊是乘数），所以这里四舍五入成 int 再交出去 ——
+## 免得 eval 时 99.6 因为精度被当成不到 100。
+func _unlock_total_score() -> int:
+	return roundi(get_total_score())
 
 # ---------------------------------------------------------------------------
 # 录用名单
@@ -325,7 +341,7 @@ func record_handbook_unlocks() -> void:
 		if entry == null or is_handbook_unlocked(entry.id):
 			continue
 		if not UnlockSchedule.is_satisfied(
-			entry.unlock_condition, run_state.day, get_total_score(), get_roster().size()
+			entry.unlock_condition, run_state.day, _unlock_total_score(), get_roster().size()
 		):
 			continue
 		fresh.append(entry.id)
@@ -334,7 +350,7 @@ func record_handbook_unlocks() -> void:
 	if fresh.is_empty():
 		return
 	var day := run_state.day
-	var total_score := get_total_score()
+	var total_score := _unlock_total_score()
 	var hired_count := get_roster().size()
 	fresh.sort_custom(func(a: StringName, b: StringName) -> bool:
 		var day_a := UnlockSchedule.first_satisfied_day(conditions[a], day, total_score, hired_count)

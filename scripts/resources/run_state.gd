@@ -15,7 +15,10 @@ extends Resource
 @export var day: int = 1
 
 ## 每日得分，scores[0] 为第 1 天
-@export var scores: Array[int] = []
+##
+## ⚠️ 是 **float** 不是 int：当日分 = true_power × 羁绊倍率（见 combat_resolver.gd），
+##    乘数必然带小数。用 int 会在写入时静默截断，倍率的效果就丢了。
+@export var scores: Array[float] = []
 
 ## 已录用名单（CandidateResource.id）
 @export var roster: Array[StringName] = []

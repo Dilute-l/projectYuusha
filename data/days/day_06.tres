@@ -10,3 +10,4 @@ script = ExtResource("4_js4bt")
 day_index = 6
 candidates = Array[ExtResource("1_l0pa1")]([ExtResource("2_y562s"), ExtResource("3_nh0e8")])
 slots = 2
+score_request = 1

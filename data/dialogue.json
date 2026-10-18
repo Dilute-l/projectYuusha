@@ -180,7 +180,7 @@
 	{ "speaker_name": "马车夫（全新）", "text": "好嘞，您坐好咯。" }
 	],
 	"day-1_driver":[
-	{ "speaker_name": "车夫", "text": "恰拉拉，我还不会说话。\nif you see this means something goes wrong" }
+	{ "speaker_name": "车夫", "text": "if you see this means something goes wrong" }
   ],
 	"team_not_full":[
 	{ "speaker_name": "面试官", "text": "队伍还没有组满……\n如果一定要就这样出发的话，就再点一次按钮吧。" }
@@ -198,5 +198,13 @@
 	{ "speaker_name": "旁白", "text": "在听见这位勇者甚至连王城都没出去就因为左脚踏出大门而摔死之后，国王勃然大怒，从国库里拨出一笔巨款，命令大臣们挑选出合格的勇者们前去讨伐魔王。" },
 	{ "speaker_name": "旁白", "text": "挑选勇者只有两个两个条件：第一，要足够强大，至少要能够打过讨伐魔王路上的任何一只魔物。" },
 	{ "speaker_name": "旁白", "text": "第二，勇者的总数量要比王城的野狗少！！！\n数量比野狗还多的！怎么可能是勇者呢！！！！！" }
-  ]
+  ],
+	"Ending_Good":[
+		{"speaker_name":" ","text":"你作为面试官的十天实习期结束了。"},
+		{"speaker_name":" ","text":"通过某种精妙的魔法算法，我们得以把你对讨伐魔王的奉献量化为分数。"},
+		{"speaker_name":" ","text":"你在这十天里的得分总计是……{total_score}。"}
+	],
+	"Ending_Bad":[
+		{"speaker_name":" ","text":"坏结局占位文本"},
+	]
 }
