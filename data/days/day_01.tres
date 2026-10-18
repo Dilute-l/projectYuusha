@@ -11,4 +11,5 @@
 script = ExtResource("4_85kq1")
 candidates = Array[ExtResource("1_bn2or")]([ExtResource("2_qx7fi"), ExtResource("2_2bme4"), ExtResource("3_qx7fi"), ExtResource("5_pierli")])
 slots = 2
+score_request = 1
 tutorial_step = 1

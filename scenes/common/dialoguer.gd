@@ -116,6 +116,21 @@ func set_candidate(candidate: CandidateResource) -> void:
 	_candidate = candidate
 
 
+## 给这次对话设变量：对话文本里的 `{total_score}` 之类会被替换成值。
+##
+## 透传给 typer —— 调用方只碰 Dialoguer，不必知道底下是 Typer。
+## 键不带花括号；未在表里的占位符**原样保留**（见 typer.gd::_substitute）。
+func set_vars(values: Dictionary) -> void:
+	if typer != null:
+		typer.set_vars(values)
+
+
+## 清空变量（同一份 Dialoguer 换一段对话时用，免得上一段的值漏过来）。
+func clear_vars() -> void:
+	if typer != null:
+		typer.clear_vars()
+
+
 ## 某一**句开始播** → 按这一行的 "popup" / "popup_stamp" 键把牌子亮出来。
 ##
 ##   popup        牌子下面哪个子节点（例如 "AwardPhd"）；没写或写空就不弹。

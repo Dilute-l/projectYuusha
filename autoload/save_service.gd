@@ -233,11 +233,13 @@ static func from_dict(data: Dictionary) -> RunState:
 	state.run_seed = int(data.get("run_seed", 0))
 	state.day = clampi(int(data.get("day", 1)), 1, GameConfig.TOTAL_DAYS)
 
-	var scores: Array[int] = []
+	# scores 是 Array[float]（当日分带小数，见 RunState.scores）。
+	# 老存档里是整数，读进来由 float(...) 自然转 —— 不要 int()，那会截掉小数。
+	var scores: Array[float] = []
 	var raw_scores: Variant = data.get("scores", [])
 	if raw_scores is Array:
 		for value in raw_scores:
-			scores.append(int(value))
+			scores.append(float(value))
 	state.scores = scores
 
 	var roster: Array[StringName] = []
@@ -285,9 +287,11 @@ static func _names_to_strings(names: Array[StringName]) -> Array:
 	return result
 
 
-static func _sum_scores(raw: Variant) -> int:
-	var total := 0
+## 存档摘要里的累计分。返回 float —— 槽位摘要与 get_total_score() 必须是同一个口径，
+## 否则「存档里显示 550、读进来是 549.5」这种差异会让人怀疑读档坏了。
+static func _sum_scores(raw: Variant) -> float:
+	var total := 0.0
 	if raw is Array:
 		for value in raw:
-			total += int(value)
+			total += float(value)
 	return total

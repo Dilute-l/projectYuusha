@@ -197,6 +197,13 @@ var _sound_paths: Dictionary = {}
 ## 已加载的音效资源缓存：路径 -> AudioStream
 var _sound_cache: Dictionary = {}
 
+## 对话里可用的变量：`{total_score}` 这种占位符 → 值。谁播对话谁在 play() 之前塞。
+##
+## ⚠️ 为什么是 `{名字}` 而不是 `%s`：`%s` 是**位置**参数，一句里两个变量就只能靠顺序记忆，
+##    改文案极易错位；而且中文文案里常出现 `100%` 这种孤立的 `%`，和 `%` 格式化混用会直接崩。
+##    项目里 `NarrativeRule.template` / `{actor}` 已经是这个风格，保持一致。
+var vars: Dictionary = {}
+
 ## 当前行号；-1 表示还没开始
 var current_index: int = -1
 
@@ -379,6 +386,46 @@ func _clamp_frame_delta(delta: float) -> float:
 ## 单独的 `^`（后面不是数字）按普通字符原样显示。
 func load_dialogue(id: String = "") -> bool:
 	return _load_dialogue_from(dialogue_path, id)
+
+
+# ---------------------------------------------------------------------------
+# 对话里的变量（{total_score} 这类占位符）
+# ---------------------------------------------------------------------------
+
+
+## 设一个变量。键不带花括号（写 "total_score"，不是 "{total_score}"）。
+func set_var(key: String, value: Variant) -> void:
+	vars[String(key)] = value
+
+
+## 批量设置。值一律按 `str()` 转字符串 —— 文本里要的就是字面量。
+func set_vars(source: Dictionary) -> void:
+	for key in source:
+		vars[String(key)] = source[key]
+
+
+## 清空变量（换一段对话 / 换一个场景时用，免得上一段的值漏过来）。
+func clear_vars() -> void:
+	vars.clear()
+
+
+## 把文本里的 `{key}` 换成对应的值。
+##
+## ⚠️ **未定义的 key 原样保留**（不删、不报错）：留一个 `{xxx}` 在画面上，
+##    比悄悄删掉更容易发现问题 —— 后者会变成一句读得通、但意思错的话。
+##
+## ⚠️ 替换发生在**每行开始时**（start_line），不是 load_dialogue 时：
+##    变量是"播的时候"才知道的（当天分数、当前候选人），而且同一段对话会被重播
+##    （组队的"回忆"就是），放加载期会把第一次的值冻住。
+func _substitute(text: String) -> String:
+	if vars.is_empty() or text.is_empty():
+		return text
+	var out := text
+	for key in vars:
+		var token := "{%s}" % key
+		if out.contains(token):
+			out = out.replace(token, str(vars[key]))
+	return out
 
 
 ## 从**另一个** json 文件装入一段对话；`dialogue_path` 不动（成功返回 true）。
@@ -709,8 +756,10 @@ func start_line(index: int) -> void:
 
 	current_index = index
 	var line: Dictionary = lines[index]
+	# 先替换 `{变量}`，再交给动作语法解析 —— 顺序不能反：变量值里万一带 `^n`
+	# 之类记号，那是**数据里的普通字符**，不该被当成控制记号。
 	# 解析动作语法：剥掉 ^n 控制记号，把停顿记到对应字符上
-	_parse_line(String(line.get("text", "")))
+	_parse_line(_substitute(String(line.get("text", ""))))
 
 	# 先刷说话人再出字：本行该显示谁的名字
 	if _speaker_label != null:

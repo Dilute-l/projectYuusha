@@ -17,6 +17,7 @@ const SCENES: Dictionary = {
 	&"team_builder": "res://scenes/day/team_builder/team_builder.tscn",
 	&"battle_report": "res://scenes/day/battle_report.tscn",
 	&"ending": "res://scenes/ending/ending.tscn",
+	&"bad_ending": "res://scenes/ending/bad_ending.tscn",
 	&"credits_room": "res://scenes/credits/credits_room.tscn",
 }
 

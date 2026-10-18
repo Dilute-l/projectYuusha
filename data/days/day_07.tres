@@ -10,3 +10,4 @@
 script = ExtResource("5_75t0f")
 day_index = 7
 candidates = Array[ExtResource("1_rfe0m")]([ExtResource("2_7tmip"), ExtResource("3_5180w"), ExtResource("4_7vj7e")])
+score_request = 1
