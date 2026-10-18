@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/harpy_slayer.tres" id="6_tr0"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "王城附近最大帮派神鹰帮主理人"
+ask_path = "res://data/asks/c_md_0191_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "浮空术"
+ask_path = "res://data/asks/c_md_0191_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "噩梦缠绕"
+ask_path = "res://data/asks/c_md_0191_3.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_md_0191"
+display_name = "盖德·艾居"
+level = 4
+strength = 16
+intelligence = 12
+wisdom = 6
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"男"
+age = 20
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("Resource_e2")])
+team_declaration = "早就想跟那个什么魔王比划比划了，让他见识见识什么叫黑手！"
+judgment = "盖德·艾居实力还不错，跟他对上的魔物都被他打到半空中了。"
+portrait_race = &"hu"
+portrait_eye = 101
+portrait_hair = 103
+portrait_mouth = 103
+portrait_hat = 0
+resume_stamp = ExtResource("7_stamp")

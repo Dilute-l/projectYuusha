@@ -1,12 +1,16 @@
 [gd_resource type="Resource" script_class="DayConfig" format=3]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_n8w1n"]
-[ext_resource type="Resource" path="res://data/candidates/c_0010.tres" id="2_vgfqm"]
-[ext_resource type="Resource" path="res://data/candidates/c_0011.tres" id="3_4fn3f"]
-[ext_resource type="Resource" path="res://data/candidates/c_0012.tres" id="4_6xbuq"]
-[ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="5_3756t"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_cand"]
+[ext_resource type="Resource" path="res://data/candidates/c_ct_0004.tres" id="2_c0"]
+[ext_resource type="Resource" path="res://data/candidates/c_ct_0015.tres" id="3_c1"]
+[ext_resource type="Resource" path="res://data/candidates/c_ct_0018.tres" id="4_c2"]
+[ext_resource type="Resource" path="res://data/candidates/c_ct_0021.tres" id="5_c3"]
+[ext_resource type="Resource" path="res://data/candidates/c_md_9191.tres" id="6_c4"]
+[ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="7_script"]
 
 [resource]
-script = ExtResource("5_3756t")
+script = ExtResource("7_script")
 day_index = 5
-candidates = Array[ExtResource("1_n8w1n")]([ExtResource("2_vgfqm"), ExtResource("3_4fn3f"), ExtResource("4_6xbuq")])
+candidates = Array[ExtResource("1_cand")]([ExtResource("2_c0"), ExtResource("3_c1"), ExtResource("4_c2"), ExtResource("5_c3"), ExtResource("6_c4")])
+slots = 2
+tutorial_step = 0

@@ -1,0 +1,12 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "可以出示一下您的证件吗"
+	},
+	{
+		"speaker_name": "金·杰",
+		"text": "证书？证书……那当然是可以。",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_fake1"
+	}
+]
