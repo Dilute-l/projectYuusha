@@ -559,12 +559,12 @@ priority = 10
 ```jsonc
 "signatures": {
   "contract.day1": {
-    "canvas": [270, 160],                        // 录制时画布多大，回放时等比换算
-    "strokes": [
-      { "p": [0.31,0.42, 0.32,0.44, 0.35,0.47],  // 归一化坐标，扁平存放（不存像素）
-        "t": [0, 40, 80],                        // 本笔内的相对毫秒
-        "g": 0 }                                 // 距上一笔结束停了多久（一笔画恒为 0）
-    ]
+	"canvas": [270, 160],                        // 录制时画布多大，回放时等比换算
+	"strokes": [
+	  { "p": [0.31,0.42, 0.32,0.44, 0.35,0.47],  // 归一化坐标，扁平存放（不存像素）
+		"t": [0, 40, 80],                        // 本笔内的相对毫秒
+		"g": 0 }                                 // 距上一笔结束停了多久（一笔画恒为 0）
+	]
   }
 }
 ```
@@ -2073,9 +2073,9 @@ signature.strokes = [ { "p": PackedVector2Array, "t": PackedFloat32Array, "g": i
 
 ```
 SignaturePad.signing_started  ──┐
-                                ├→ DialoguePopup 转成 ─→ EventBus ─→ haohan.gd 换手
+								├→ DialoguePopup 转成 ─→ EventBus ─→ haohan.gd 换手
 SignaturePad.signing_finished ──┘                       │
-                                                        ├→ EventBus.signature_signed
+														├→ EventBus.signature_signed
 SignaturePad.signature_completed → DialoguePopup ───────┘        → GameState 落库 + 存一档
 ```
 
@@ -2110,13 +2110,13 @@ SignaturePad.signature_completed → DialoguePopup ───────┘     
    往上报、不再拦；已知签过的 key 直接显示旧笔迹；牌子上没画布时只警告不拦；
    收牌子后画布松开拾取；
 10. **全链路落库**：签完 `GameState.has_signature()` 为真、笔迹点数对得上，
-    磁盘上那份自动存档里也有它 —— 这条挡的是「功能做好了、但没人调 `set_signature`」
-    （也就是签了个寂寞）；
+	磁盘上那份自动存档里也有它 —— 这条挡的是「功能做好了、但没人调 `set_signature`」
+	（也就是签了个寂寞）；
 11. **真输入**：`push_input` 到 root viewport —— 画布是一大片、落在对话框底板下方
-    （y > 258），按住后把光标推到画布右边界外仍收得到 motion、那个点吸附到右边缘
-    （期望值按画布矩形现算，版面改了这条不会跟着烂）；
+	（y > 258），按住后把光标推到画布右边界外仍收得到 motion、那个点吸附到右边缘
+	（期望值按画布矩形现算，版面改了这条不会跟着烂）；
 12. **对话拦截 + 松手自动翻页**：`current_index` 在等签名时保持 0；**松手之后自己就变成 1**，
-    不用再点一下；
+	不用再点一下；
 13. **逐字显示中点击只是快进**：那一句还在打字时点一下，不翻页、也不落笔（不签名）。
 
 > ⚠️ 第 11、12、13 条**必须走 `push_input`**，别图省事直接调 `_gui_input` —— 直接调验的是
@@ -2139,11 +2139,11 @@ SignaturePad.signature_completed → DialoguePopup ───────┘     
 ```
 玩家点确认
   → _on_confirm_pressed()（battle_report.gd）
-      → GameState.get_signature(&"signature")
-      → _ensure_signature_pad()          # 第一次点才建，挂在 BattleReportPhd 底下
-      → pad.play_signature(saved, 1.0)   # §16.3 的 fit_seconds
-      → await 1 秒
-      → phase_finished.emit()
+	  → GameState.get_signature(&"signature")
+	  → _ensure_signature_pad()          # 第一次点才建，挂在 BattleReportPhd 底下
+	  → pad.play_signature(saved, 1.0)   # §16.3 的 fit_seconds
+	  → await 1 秒
+	  → phase_finished.emit()
 ```
 
 五条都是踩过才会明白的：
@@ -2180,7 +2180,3 @@ SignaturePad.signature_completed → DialoguePopup ───────┘     
 
 > 想再加一个播放位（结局页 / 手册页）？照 `battle_report.gd::_ensure_signature_pad()`
 > 抄一份即可，没有别的耦合 —— 但要重新量那个界面的纸面/空档，别把这一块坐标抄过去。
-
-
-
-

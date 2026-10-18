@@ -43,17 +43,16 @@
 	{ "speaker_name": "饮水机", "text": "下班了。" }
   ],
 	"Sorry":[
-	{ "speaker_name": "腻子", "text": "老大抱歉喵^1 这里我还没做出来喵^1 只做了个占位符喵" }
+	{ "speaker_name": "手册", "text": "魔法手册认为你应该在开始游戏之后再来读它，而不是在菜单页面。" }
   ],
 	"WhatN1zHasDone":[
 	{ "speaker_name": "腻子", "text": "旷工了。" }
   ],
 	"Liuxu":[
-	{ "speaker_name": "腻子", "text": "我们的分辨率没有问题" }
+	{ "speaker_name": "柳絮", "text": "我们的分辨率没有问题" }
   ],
 	"NZ":[
-	{ "speaker_name": "腻子", "text": "我们的游戏采用粗糙手绘风的原因是美工真的只会画粗糙的手绘" },
-	{ "speaker_name": "腻子", "text": "对话框重绘了。参考的是星露谷，但是只能画到这样了。再画下去就不是粗糙手绘风了。" }
+	{ "speaker_name": "腻子", "text": "我们的游戏采用粗糙手绘风的原因是美工真的只会画粗糙的手绘" }
   ],
 	"Dilute":[
 	{ "speaker_name": "lulu", "text": "制作组的其他几个人没有人知道知道这个人的头像究竟是谁" },
