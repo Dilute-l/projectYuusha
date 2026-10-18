@@ -85,11 +85,73 @@ func advance() -> void:
 				))
 			GameState.set_phase(next_phase)
 		DayDirector.Step.DAY_END:
+			# 战报看完了、要进下一天 —— 这是"这一天的分数算数了"的那一刻。
+			# 先记分，再判当天是否达标：没达标就当场判负、走坏结局，不进下一天。
+			_record_today_score()
+			if not _passes_score_request():
+				_enter_bad_ending()
+				return
 			GameState.advance_day()
 		DayDirector.Step.RUN_END:
+			# 最后一天的战报看完直接进结局：分数同样要落地，否则结局屏永远是 0 分。
+			_record_today_score()
+			if not _passes_score_request():
+				_enter_bad_ending()
+				return
 			GameState.set_phase(DayPhase.Phase.ENDING)
 			# 结局判定（ending_resolver）是 M4 的事，这里只负责把流程交给结局场景
 			SceneRouter.goto_scene(&"ending")
+
+
+## 把当天的战报分数写进 GameState（累计分 / 存档里的 scores 都靠这一步）。
+##
+## ⚠️ 为什么放在 `advance()` 里、而不是战报场景自己的 `_ready()`：
+##    战报可能是**重看**的（读档回来又进了战报阶段），一进场景就记分会把同一天记两遍。
+##    "这一天结束了"只有 `DayDirector` 的 DAY_END / RUN_END 能确定 —— 那才是记分的时机。
+##
+## 幂等性：`record_day_score` 是**按天覆盖**（`scores[day-1] = gained`），不是累加，
+## 所以哪怕这一天被记了两次，第二天的值也不会翻倍。
+func _record_today_score() -> void:
+	var report := GameState.get_battle_report()
+	if report == null:
+		# 没有战报就没有分数可记（空名单 / 跳过了战报）。别静默：这会让累计分凭空少一天。
+		push_warning("[DayLoop] 第 %d 天没有战报，本次不记分" % GameState.get_day())
+		return
+	GameState.record_day_score(GameState.get_day(), report.day_score, report.breakdown)
+
+
+## 今日分数是否达到 `DayConfig.score_request`。
+##
+## 规则（见 day_config.gd）：
+##   · `score_request <= 0` → **没有要求**，永远达标（老数据 / 教学日的默认行为）
+##   · 否则「今日分数 < score_request」→ 当天判负
+##
+## ⚠️ 比较用的是**今日分数**（`report.day_score`），不是累计分：
+##    「这一天有没有交够成绩」和「整局攒了多少」是两件事。
+##    当天没战报时（空名单）没有分数可判 —— 按"没达标"处理更符合直觉：
+##    打不出战报的日子不该算过关。但注意 score_request = 0 的日子仍然放行。
+func _passes_score_request() -> bool:
+	var config := DataDB.get_day_config(GameState.get_day())
+	if config == null:
+		# 没有当天配置就无从判断要求，按达标处理（不因为缺数据把玩家判死）
+		push_warning("[DayLoop] 第 %d 天没有 DayConfig，跳过 score_request 判定" % GameState.get_day())
+		return true
+	var required := config.score_request
+	if required <= 0:
+		return true
+	var today := GameState.get_day_score(GameState.get_day())
+	if today < float(required):
+		print("[DayLoop] 第 %d 天分数 %.2f < 要求 %d → 判负" % [
+			GameState.get_day(), today, required])
+		return false
+	return true
+
+
+## 进坏结局：播 `Ending_Bad`，播完自动回主界面（见 scenes/ending/bad_ending.gd）。
+func _enter_bad_ending() -> void:
+	# 阶段也标成 ENDING：这一局到此为止了，别再推进任何日流程
+	GameState.set_phase(DayPhase.Phase.ENDING)
+	SceneRouter.goto_scene(&"bad_ending")
 
 
 func _unlock_advance() -> void:
@@ -200,7 +262,9 @@ func _refresh() -> void:
 
 	_day_label.text = "Day %d / %d" % [day, GameConfig.TOTAL_DAYS]
 	_phase_label.text = "Phase %s  (%s)  %s" % [DayPhase.to_name(phase), progress, DayPhase.display_name(phase)]
-	_score_label.text = "Score %d     Hired %d     Saved %s" % [
+	# 累计分是 float（当日分 = 战力 × 羁绊倍率）。界面上按整数显示，但别用 %d —— 
+	# %d 配 float 在 GDScript 里会报错，%.0f 才是"显示成整数"的正确写法。
+	_score_label.text = "Score %.0f     Hired %d     Saved %s" % [
 		GameState.get_total_score(),
 		GameState.get_roster().size(),
 		"yes" if SaveService.has_auto_save() else "no",

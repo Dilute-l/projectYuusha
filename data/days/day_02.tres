@@ -12,4 +12,5 @@ script = ExtResource("6_script")
 day_index = 2
 candidates = Array[ExtResource("1_cand")]([ExtResource("2_c0"), ExtResource("3_c1"), ExtResource("4_c2"), ExtResource("5_c3")])
 slots = 2
+score_request = 1
 tutorial_step = 0

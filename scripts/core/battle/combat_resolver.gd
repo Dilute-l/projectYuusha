@@ -69,11 +69,14 @@ static func resolve(day_index: int, member_ids: Array[StringName]) -> BattleRepo
 	#                       下游（战报明细 / 自检）不用改。
 	var true_power := finalPowerCaculation(member_ids)
 	var multiplier := synergyMultiplier(day_index, member_ids, report)
-	report.day_score = true_power * multiplier
+	# 分数收敛到两位小数：`420 × 1.1` 的浮点尾巴（462.0000000000001）会一路传进
+	# 存档、累计分和界面。两位小数足够表达所有倍率（±0.05 / ±0.3）。
+	var score := snappedf(true_power * multiplier, 0.01)
+	report.day_score = score
 	report.breakdown = {
 		"true_power": true_power,
-		"synergy": report.day_score - true_power,
-		"multiplier": multiplier,
+		"synergy": snappedf(score - true_power, 0.01),
+		"multiplier": snappedf(multiplier, 0.0001),
 		"lie_penalty": 0,
 		"event_bonus": 0,
 		"luck": 0,

@@ -66,12 +66,12 @@ text = "返回"
 
 [node name="Sunflower" type="TextureButton" parent="." unique_id=39142167]
 layout_mode = 0
-offset_left = 784.99994
-offset_top = 314.00003
-offset_right = 858.99994
-offset_bottom = 387.00003
+offset_left = 725.0
+offset_top = 300.0
+offset_right = 2991.0
+offset_bottom = 2566.0
 rotation = 0.038397245
-scale = Vector2(3.6, 3.6)
+scale = Vector2(0.15, 0.15)
 texture_normal = ExtResource("4_j82at")
 texture_click_mask = ExtResource("5_28yq1")
 
