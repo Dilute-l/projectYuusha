@@ -47,12 +47,12 @@ layout_mode = 1
 
 [node name="Confirm" type="Button" parent="." unique_id=1282773667]
 layout_mode = 0
-offset_left = 154.0
-offset_top = 572.0
-offset_right = 354.0
-offset_bottom = 634.0
+offset_left = 700.0
+offset_top = 586.0
+offset_right = 900.0
+offset_bottom = 646.0
 theme_override_fonts/font = ExtResource("6_cljne")
-theme_override_font_sizes/font_size = 48
+theme_override_font_sizes/font_size = 46
 text = "组队完成"
 
 [node name="Haohan" parent="." unique_id=1395832866 instance=ExtResource("3_0x3h0")]

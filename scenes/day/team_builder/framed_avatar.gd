@@ -167,10 +167,12 @@ func _layout_layers(px: float) -> void:
 	# 立绘里的人物都画在立绘画布的正中（各部件 bbox 中心 x ≈ 288~304，即画布中心 300），
 	# 而取景窗自己的中心在头像框坐标系的 x = 26 + 254/2 = 153 —— 拿两个原点对齐，
 	# 画布中心就会落在窗口右侧 71% 的地方（160px 的头像上偏右约 28px），看着就是「人偏在右边」。
-	# 错开多少 = (窗口宽 - 立绘折算后的宽) / 2，按头像框坐标系算，与渲染边长 px 无关。
+	# 错开多少 = (窗口宽 - 立绘折算后的宽) / 2，在**取景窗自己的坐标系**里算 ——
+	# 立绘是 Clip 的子节点，Clip 的原点已经落在窗口左上角，所以这里**不能再加窗口原点**
+	# （加了就等于把「对齐两个原点」和「对齐两个中心」两个偏移叠在一起，人会稳稳地偏右）。
 	#
-	# 纵向仍然按窗口原点垫进去：脸在画布上的高度是各画各的（矮人那张脸就在画布最底部，
-	# 是他「大帽子」的既定观感，见 AvatarFrame.PORTRAIT_SCALE），不做任何自动垂直居中。
+	# 纵向仍然只按窗口原点垫进去、不做居中：脸在画布上的高度是各画各的（矮人那张脸就在
+	# 画布最底部，是他「大帽子」的既定观感，见 AvatarFrame.PORTRAIT_SCALE）。
 	var offset_x := _portrait_center_offset_x(window, portrait_size)
 	_portrait.position = Vector2(offset_x, -window.position.y)
 	_portrait.size = portrait_size
@@ -179,11 +181,13 @@ func _layout_layers(px: float) -> void:
 	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
 
 
-## 让「立绘画布中心」落在「取景窗中心」所需的水平位移（控件坐标）。
+## 让「立绘画布中心」落在「取景窗中心」所需的水平位移。**单位是取景窗（Clip）自己的坐标**。
 ##
+## 横向只减不加：`Clip.position = 窗口原点`，子节点坐标以它为原点，
+## 而纵向那一下（`-window.position.y`）正是把画布原点垫回框原点 —— 两者是同一套换算。
 ## 自检直接对这个不变量下断言（画布中心 == 窗口中心），改版面时不会悄悄偏回去。
 func _portrait_center_offset_x(window: Rect2, portrait_size: Vector2) -> float:
-	return window.position.x + (window.size.x - portrait_size.x) * 0.5
+	return (window.size.x - portrait_size.x) * 0.5
 
 
 func _notification(what: int) -> void:

@@ -5,7 +5,9 @@ extends Control
 ##
 ## 版面（§12.5）：
 ##
-##     左边     今日**通过面试**的候选人，一人一个**方头像框**（candidate.tscn）
+##     左边     今日**通过面试**的候选人，一人一个**方头像框**（candidate.tscn），
+##              整列垫在一块**灰色半透明的底板**上，装在一个**可滚动**的视口里
+##              （人比视口高的时候从中间滚着看，见 RosterScroll）
 ##     右边     简历（复用面试那一页 resume.tscn），**一进来是空的**，点过头像才铺
 ##     右下角   当天的名额空位：几个格子 = 今天最多能带几个人；进队的人依次填进去
 ##
@@ -37,10 +39,15 @@ const ENTRY_SCENE := preload("res://scenes/day/team_builder/candidate.tscn")
 const SLOT_SCENE := preload("res://scenes/day/team_builder/framed_avatar.tscn")
 
 ## ---- 左边头像列（§12.5）----
-## 头像列从左上角往下排。一条 160 高、行距 176，三条正好 28〜540，
-## 避开下面那颗「组队完成」按钮（y 572 起）。
-const ENTRY_LEFT := 116.0
-const ENTRY_TOP := 28.0
+## 头像列从左上角往下排：一条 160 高、行距 176。
+##
+## ⚠️ 这三个数是**滚动视口里**的坐标（RosterScroll 的内容坐标系），不是画布坐标：
+##    视口自己摆在画布 (26, 26)，所以头像在画布上是 122 起 —— 和原来那版基本对齐。
+##    左边留 96 是给 reject 按钮往左滑的（滑到 96−96+14 = 14，还在视口里）。
+##
+## 整列的内容高度不到视口高度时不出滚动条，比它高就滚 —— 高度由 `_layout_entries()` 现算。
+const ENTRY_LEFT := 96.0
+const ENTRY_TOP := 12.0
 const ENTRY_PITCH := 176.0
 
 ## ---- 右下角的名额空位（§12.5）----
@@ -50,7 +57,9 @@ const SLOT_GAP := 10.0
 const SLOT_RIGHT_MARGIN := 24.0
 const SLOT_BOTTOM_MARGIN := 2.0
 
-@onready var _roster: Control = $Roster
+@onready var _backdrop: Panel = $Backdrop
+@onready var _roster_scroll: ScrollContainer = $RosterScroll
+@onready var _roster: Control = $RosterScroll/Roster
 @onready var _slots: Control = $Slots
 
 ## 当日名额（来自 DayConfig.slots）；<= 0 = 数据还没填 → 不摆空位
@@ -108,6 +117,9 @@ func set_candidates(candidates: Array[CandidateResource]) -> void:
 			extra.visible = false
 
 	_layout_entries()
+	# 换了一份名单 → 滚动条回到最上面（不然会停在上一天那份名单的位置上，看着像没人）
+	if _roster_scroll != null:
+		_roster_scroll.scroll_vertical = 0
 	_apply_decisions()
 
 
@@ -190,6 +202,21 @@ func slots_control() -> Control:
 	return _slots
 
 
+## 左边那列的**灰色半透明底板**（自检量位置 / 查颜色用）
+func backdrop_control() -> Panel:
+	return _backdrop
+
+
+## 左边那列的**滚动视口**（自检要验证「人多的时候能滚」就找它）
+func roster_scroll() -> ScrollContainer:
+	return _roster_scroll
+
+
+## 视口里装条目的那个容器（内容坐标系的原点）
+func roster_control() -> Control:
+	return _roster
+
+
 # ---------------------------------------------------------------------------
 # 内部：条目
 # ---------------------------------------------------------------------------
@@ -213,10 +240,21 @@ func _connect_entry(entry: CandidateEntry) -> void:
 
 ## 头像列按固定行距往下摆（不用容器：按钮要滑到条目框**外面**去，
 ## 容器会把它们算进最小尺寸里，版面反而被撑歪）。
+##
+## 摆完顺手把**内容高度**报给滚动视口（`custom_minimum_size.y`）：条目是手摆的，
+## 视口量不出它们有多高 —— 不报的话 ScrollContainer 会以为内容只有视口那么高，
+## 人就多到画布外面去了也滚不动。
 func _layout_entries() -> void:
 	var list := entries()
 	for i in list.size():
 		list[i].position = Vector2(ENTRY_LEFT, ENTRY_TOP + float(i) * ENTRY_PITCH)
+	if _roster == null:
+		return
+	var content_height := 0.0
+	if not list.is_empty():
+		content_height = ENTRY_TOP * 2.0 + float(list.size() - 1) * ENTRY_PITCH \
+				+ float(CandidateEntry.AVATAR_SIZE)
+	_roster.custom_minimum_size = Vector2(0.0, content_height)
 
 
 func _on_entry_selected(entry: CandidateEntry) -> void:
@@ -242,6 +280,9 @@ func _expand(entry: CandidateEntry) -> void:
 	for other in entries():
 		other.set_expanded(other == entry)
 	_expanded = entry
+	# 展开的这条要是正好滚在视口外面（点在半个格子上），把人滚回来看得见的地方
+	if entry != null and _roster_scroll != null and _roster_scroll.is_inside_tree():
+		_roster_scroll.ensure_control_visible(entry)
 
 
 ## 判定同步到画面上：谁绿、谁红、谁还没决定，外加「进队按钮能不能点」

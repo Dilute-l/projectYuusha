@@ -17,6 +17,7 @@ extends Node
 ## 放进尺寸可控的 SubViewport 里才测得到「和面试同一个位置」这件事。
 
 const TEAM_BUILDER_SCENE := preload("res://scenes/day/team_builder/team_builder.tscn")
+const TEAM_BUILDER_UI_SCENE := preload("res://scenes/day/team_builder/team_builder_ui.tscn")
 const FRAMED_AVATAR_SCENE := preload("res://scenes/day/team_builder/framed_avatar.tscn")
 const INTERVIEW_SCENE := preload("res://scenes/day/interview/interview.tscn")
 const INTERVIEWEE_SCENE := preload("res://scenes/day/interview/interviewee.tscn")
@@ -154,7 +155,10 @@ func _run() -> void:
 					frame.pixel_size, frame.size])
 
 	# ---- 4b. 版面：谁在哪儿（§12.5）----
-	_check_layout(ui, entries)
+	_check_layout(ui, entries, builder)
+
+	# ---- 4c. 人多的时候能滚（左边那列是块灰色半透明底板 + 滚动视口）----
+	await _check_roster_scroll(vp)
 
 	# ---- 5. 按钮：先收在头像底下 ----
 	var avatar: FramedAvatar = entry.framed_avatar()
@@ -340,8 +344,15 @@ func _check_avatar_frame(
 
 	# 水平**居中**：立绘画布的中心必须落在取景窗的中心上（横向不偏）。
 	# 立绘里的人都画在画布正中，所以这条成立 = 画面里的人是居中的。
-	var portrait_center := portrait.position.x + portrait.size.x * 0.5
-	var window_center := window.position.x + window.size.x * 0.5
+	#
+	# ⚠️ 两边都换成**画布上的矩形**（global）来比 —— 立绘是 Clip 的子节点：
+	#   `portrait.position` 是 Clip 局部坐标、`window.position` 是头像框坐标，
+	#   拿这两个直接相减会算出「恰好相等」的假象（两套坐标系差一个窗口原点），
+	#   而真人其实偏右了 1/10 个头像宽 —— 这条断言就是被那个假象骗过去的。
+	var portrait_global := portrait.get_global_rect()
+	var window_global := clip.get_global_rect()
+	var portrait_center := portrait_global.position.x + portrait_global.size.x * 0.5
+	var window_center := window_global.position.x + window_global.size.x * 0.5
 	_check(is_equal_approx(portrait_center, window_center),
 			"立绘画布在取景窗里**水平居中**（画布中心 %.1f == 窗口中心 %.1f）" % [
 				portrait_center, window_center])
@@ -349,13 +360,47 @@ func _check_avatar_frame(
 	# ⚠️ 这两个值在 160px 的头像上是**负的**：立绘折算后宽 192 > 窗口宽 135，
 	#   居中就意味着两侧各被窗口盖掉一截（对称），这是「画布比窗口大」的正常结果，
 	#   不是版面错 —— 所以只断言左右相等，不断言正负。
-	var left_gap := portrait.position.x - window.position.x
-	var right_gap := window.position.x + window.size.x - (portrait.position.x + portrait.size.x)
+	var left_gap := window_global.position.x - portrait_global.position.x
+	var right_gap := portrait_global.end.x - window_global.end.x
 	_check(is_equal_approx(left_gap, right_gap),
 			"立绘左右两侧露出的余量相等（左 %.1f / 右 %.1f）" % [left_gap, right_gap])
-	_check(portrait.size.x > window.size.x and portrait.size.y > window.size.y,
+	_check(portrait_global.size.x > window_global.size.x
+			and portrait_global.size.y > window_global.size.y,
 			"立绘比取景窗大 → 超出边框的部分交给裁切切掉（立绘 %s / 窗口 %s）" % [
-				portrait.size, window.size])
+				portrait_global.size, window_global.size])
+
+	# 画布居中了不等于「**看得见的那个人**居中了」：量一下取景窗里真正露出来的那一块，
+	# 它也必须落在窗口中间附近（左右留白差不超过窗口宽的 5%）——
+	# 这条直接对着玩家眼睛看到的东西下断言。
+	if texture != null:
+		var image := texture.get_image()
+		if image != null:
+			var s := portrait_global.size.x / float(image.get_width())
+			var x0 := clampi(int(floorf((window_global.position.x - portrait_global.position.x) / s)),
+					0, image.get_width() - 1)
+			var x1 := clampi(int(ceilf((window_global.end.x - portrait_global.position.x) / s)),
+					x0 + 1, image.get_width())
+			var y0 := clampi(int(floorf((window_global.position.y - portrait_global.position.y) / s)),
+					0, image.get_height() - 1)
+			var y1 := clampi(int(ceilf((window_global.end.y - portrait_global.position.y) / s)),
+					y0 + 1, image.get_height())
+			var used := image.get_region(Rect2i(x0, y0, x1 - x0, y1 - y0)).get_used_rect()
+			_check(used.size.x > 0.0, "取景窗里看得到这位的立绘（不是一片空白）")
+			if used.size.x > 0.0:
+				var seen_center := portrait_global.position.x \
+						+ (float(x0 + used.position.x) + used.size.x * 0.5) * s
+				var seen_left := portrait_global.position.x + float(x0 + used.position.x) * s
+				var seen_right := portrait_global.position.x \
+						+ float(x0 + used.position.x + used.size.x) * s
+				var bias := seen_center - window_center
+				var half := window_global.size.x * 0.5
+				_check(absf(bias) <= half * 0.10,
+						"取景窗里**看得见的那个人**在窗口正中（偏 %+.1f px，窗口半宽 %.1f）" % [
+							bias, half])
+				_check(seen_left >= window_global.position.x - 0.5
+						and seen_right <= window_global.end.x + 0.5,
+						"人没有被窗口右 / 左边缘切掉一截（人 %s 〜 %s / 窗口 %s 〜 %s）" % [
+							seen_left, seen_right, window_global.position.x, window_global.end.x])
 
 	# 空位（没人）时立绘清空
 	var probe := FRAMED_AVATAR_SCENE.instantiate() as FramedAvatar
@@ -387,9 +432,29 @@ func _check_button_art(entry: CandidateEntry) -> void:
 				"按钮尺寸按美术宽高比算（%s，期望 %s）" % [button.size, want])
 
 
-## 版面（§12.5）：UI 容器顶满画布、头像列在左半边、右下角的空位贴着右下角
-## 且**躲在简历纸下缘之下**（纸面占 x 579〜1026 / y 29〜585），谁也不压谁。
-func _check_layout(ui: TeamBuilderUI, entries: Array[CandidateEntry]) -> void:
+## 版面（§12.5）：左边那列垫一块**灰色半透明底板**、装在一个**滚动视口**里；
+## 头像列贴底板左上角往下排；右下角的空位贴着右下角且**躲在简历纸下缘之下**
+## （纸面占 x 579〜1026 / y 29〜585）；「组队完成」挪到了选人列的右边，谁也不压谁。
+func _check_layout(ui: TeamBuilderUI, entries: Array[CandidateEntry], builder: Node) -> void:
+	var scroll := ui.roster_scroll()
+	var backdrop := ui.backdrop_control()
+	var roster := ui.roster_control()
+	_check(scroll != null and backdrop != null and roster != null,
+			"左边那列有底板（Backdrop）和滚动视口（RosterScroll）")
+	if scroll == null or backdrop == null or roster == null:
+		return
+
+	# 底板是**灰色**的：三个通道彼此接近（不许偏红 / 偏蓝成一块彩色玻璃）
+	var style := backdrop.get_theme_stylebox("panel") as StyleBoxFlat
+	_check(style != null, "底板挂着一块 StyleBoxFlat（不是默认主题）")
+	if style != null:
+		var color := style.bg_color
+		var spread := maxf(color.r, maxf(color.g, color.b)) - minf(color.r, minf(color.g, color.b))
+		_check(color.a > 0.0 and color.a < 1.0,
+				"底板是**半透明**的（alpha=%.2f，透得出底下的场景）" % color.a)
+		_check(spread <= 0.06, "底板是**灰色**的（三通道差 %.3f）" % spread)
+
+	# 条目在视口的**内容坐标系**里按行距排（滚动视口自己摆在画布上另说）
 	for i in entries.size():
 		var want := Vector2(
 			TeamBuilderUI.ENTRY_LEFT,
@@ -398,12 +463,55 @@ func _check_layout(ui: TeamBuilderUI, entries: Array[CandidateEntry]) -> void:
 		_check(entries[i].position.is_equal_approx(want),
 				"第 %d 个头像框摆在第 %d 行（%s）" % [i + 1, i + 1, entries[i].position])
 
+	# 视口整个在底板里（底板上留了一圈边）
+	var backdrop_rect := backdrop.get_global_rect()
+	var scroll_rect := scroll.get_global_rect()
+	_check(backdrop_rect.encloses(scroll_rect),
+			"滚动视口在底板里面（视口 %s / 底板 %s）" % [scroll_rect, backdrop_rect])
+
+	# 头像 + 滑出来的按钮这一整块都在底板里（展开时也不会戳出灰底）
+	var widest := Rect2()
+	var has_entry := false
+	for entry in entries:
+		var avatar := entry.get_global_rect()
+		var box := Rect2(
+			avatar.position.x - CandidateEntry.BUTTON_WIDTH + CandidateEntry.BUTTON_OVERLAP,
+			avatar.position.y,
+			float(CandidateEntry.AVATAR_SIZE) + 2.0 * (CandidateEntry.BUTTON_WIDTH
+					- CandidateEntry.BUTTON_OVERLAP),
+			avatar.size.y)
+		widest = box if not has_entry else widest.merge(box)
+		has_entry = true
+	if has_entry:
+		# 竖向只比第一屏：人多了本来就该滚到底板外面去（被视口裁掉），
+		# 横向则要整块落在底板里 —— approve / reject 滑出来也不许戳穿灰底。
+		var first_row := Rect2(widest.position.x, widest.position.y, widest.size.x, 0.0)
+		_check(first_row.position.x >= backdrop_rect.position.x
+				and first_row.end.x <= backdrop_rect.end.x,
+				"头像和滑出来的按钮都在底板里（%s ⊆ %s）" % [first_row, backdrop_rect])
+
 	# 展开之后最右边那一下也不能压到简历纸
-	var right_edge := TeamBuilderUI.ENTRY_LEFT + float(CandidateEntry.AVATAR_SIZE) \
-			+ CandidateEntry.BUTTON_WIDTH - CandidateEntry.BUTTON_OVERLAP
+	var right_edge := widest.end.x if has_entry else 0.0
 	_check(right_edge <= RESUME_PAPER.position.x,
 			"头像和滑出来的 approve 都在简历纸左边（最右 %d <= 纸面 %d）" % [
 				int(right_edge), int(RESUME_PAPER.position.x)])
+
+	# 「组队完成」：挪到选人列的右边，而且不压简历纸
+	var confirm: Button = builder.get_node_or_null("Confirm")
+	_check(confirm != null, "组队场景里有「组队完成」按钮")
+	if confirm != null:
+		var confirm_rect := confirm.get_global_rect()
+		_check(not confirm_rect.intersects(backdrop_rect),
+				"「组队完成」不和左边的选人列重合（按钮 %s / 底板 %s）" % [
+					confirm_rect, backdrop_rect])
+		_check(confirm_rect.position.x >= backdrop_rect.end.x,
+				"「组队完成」挪到了选人列的右边（左缘 %.1f >= 底板右缘 %.1f）" % [
+					confirm_rect.position.x, backdrop_rect.end.x])
+		_check(not confirm_rect.intersects(RESUME_PAPER),
+				"「组队完成」不压简历纸（按钮 %s / 纸面 %s）" % [confirm_rect, RESUME_PAPER])
+		_check(confirm_rect.end.x <= float(GAME_CANVAS.x)
+				and confirm_rect.end.y <= float(GAME_CANVAS.y),
+				"「组队完成」整个还在画布里（右下 %s）" % confirm_rect.end)
 
 	var slots := ui.slots_control()
 	var rect := slots.get_global_rect()
@@ -417,6 +525,67 @@ func _check_layout(ui: TeamBuilderUI, entries: Array[CandidateEntry]) -> void:
 	_check(rect.position.y + rect.size.y <= float(GAME_CANVAS.y),
 			"空位不超出画布下沿（底 %.1f <= %d）" % [
 				rect.position.y + rect.size.y, GAME_CANVAS.y])
+
+
+## 人多过一屏时左边那列要能滚：内容高度 > 视口 → 滚动条露出来，往下滚条目跟着走，
+## 而且滚到底也不会把条目滚到视口的左 / 右外面去（按钮滑出来照样在视口里）。
+func _check_roster_scroll(vp: SubViewport) -> void:
+	var ui := TEAM_BUILDER_UI_SCENE.instantiate() as TeamBuilderUI
+	vp.add_child(ui)
+	await _settle()
+
+	var crowd: Array[CandidateResource] = []
+	for id in DataDB.get_ids(&"candidates"):
+		var candidate: CandidateResource = DataDB.get_candidate(id)
+		if candidate != null:
+			crowd.append(candidate)
+		if crowd.size() >= 8:
+			break
+	_check(crowd.size() >= 5, "凑得够一屏以上的候选人（%d 位）" % crowd.size())
+	if crowd.size() < 5:
+		ui.queue_free()
+		return
+	ui.set_candidates(crowd)
+	await _settle()
+
+	var scroll := ui.roster_scroll()
+	var roster := ui.roster_control()
+	_check(scroll != null and roster != null, "单独摆一份 UI 也有滚动视口")
+	if scroll == null or roster == null:
+		ui.queue_free()
+		return
+
+	var bar := scroll.get_v_scroll_bar()
+	_check(bar.visible, "人比一屏多 → 竖直滚动条露出来")
+	_check(roster.size.y > scroll.size.y,
+			"内容比视口高（内容 %.1f > 视口 %.1f）" % [roster.size.y, scroll.size.y])
+
+	var first := ui.entries()[0]
+	var before := first.get_global_rect().position
+	var max_scroll := bar.max_value - bar.page
+	_check(max_scroll > 0.0, "滚动范围 > 0（%.1f）" % max_scroll)
+	scroll.scroll_vertical = int(minf(200.0, max_scroll))
+	await _settle()
+	_check(first.get_global_rect().position.y < before.y - 50.0,
+			"往下滚 → 条目跟着往上走（%.1f → %.1f）" % [
+				before.y, first.get_global_rect().position.y])
+
+	# 滚到最底下：最后一位要露得出来，最右那一块按钮也不许戳出视口
+	scroll.scroll_vertical = int(round(max_scroll))
+	await _settle()
+	var last := ui.entries()[ui.entries().size() - 1]
+	var view := scroll.get_global_rect()
+	var last_rect := last.get_global_rect()
+	_check(view.grow(-1.0).encloses(last_rect),
+			"滚到底能看见最后一位（最后一位 %s ⊆ 视口 %s）" % [last_rect, view])
+	var approve_right := last_rect.position.x + float(CandidateEntry.AVATAR_SIZE) \
+			- CandidateEntry.BUTTON_OVERLAP + CandidateEntry.BUTTON_WIDTH
+	_check(approve_right <= view.end.x,
+			"approve 滑出来也在视口里（最右 %.1f <= 视口右缘 %.1f）" % [
+				approve_right, view.end.x])
+
+	ui.queue_free()
+	await _settle()
 
 
 ## 控件的矩形是否完全落在头像矩形里（= 藏起来时被头像盖住）

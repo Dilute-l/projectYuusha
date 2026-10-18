@@ -1233,7 +1233,8 @@ data/days/day_XX.tres
 | 文件 | 职责 |
 | --- | --- |
 | `scenes/day/team_builder/team_builder.gd` / `.tscn` | **组队容器**。只做接线：通过者 → UI、点头像 → 简历、进队 / 不进队 → `GameState` |
-| `scenes/day/team_builder/team_builder_ui.gd` / `.tscn` | UI 容器：`Roster`（左边头像列）+ `Slots`（右下角名额空位） |
+| `scenes/day/team_builder/team_builder_ui.gd` / `.tscn` | UI 容器：`Backdrop`（灰色半透明底板）+ `RosterScroll → Roster`（可滚动的头像列）+ `Slots`（右下角名额空位） |
+| `ui/styles/roster_panel.tres` | 左边那列的底板样式：灰色半透明 `StyleBoxFlat`（8px 圆角 + 一道极淡的描边） |
 | `scenes/day/team_builder/candidate.gd` / `.tscn` | 单条候选人：`class_name CandidateEntry`，方头像框 + 两个藏在它身后的按钮；对外 `selected` / `approved` / `rejected` |
 | `scenes/day/team_builder/framed_avatar.gd` / `.tscn` | `class_name FramedAvatar`：**方头像框**（底板 + 裁切过的整身立绘 + 方框）；右下角的空位也用它 |
 | `scripts/util/avatar_frame.gd` | `class_name AvatarFrame`：头像框三张美术的出处 + 取景窗 / 按钮美术的几何常量 |
@@ -1245,9 +1246,10 @@ data/days/day_XX.tres
 ```
 TeamBuilder (Control) [team_builder.gd]
 ├─ ItvBkgPhd / TablePhd       背景、桌子
-├─ TeamBuilderUI (1)          左半边：头像列（Roster）；右下角：名额空位（Slots）
+├─ TeamBuilderUI (1)          左半边：底板（Backdrop）+ 滚动视口（RosterScroll→Roster）；
+│                             右下角：名额空位（Slots）
 ├─ Resume (2)                 右半边：resume.tscn 实例（默认 visible=false）
-├─ Confirm                     「组队完成」
+├─ Confirm                     「组队完成」（挪到选人列右边的画布下方，x 700〜900 / y 586〜646）
 ├─ Haohan (3)                 主角的手 = 光标，压在 UI 之上
 ├─ ColorNight                 夜晚色调（CanvasModulate，整块画布一起变色）
 └─ Dialoguer
@@ -1289,7 +1291,8 @@ data/days/day_XX.tres
 | 再点一次同一条 | 两个按钮收回去（简历不动）；点别人则把上一条收掉、这条打开 —— 同时只展开一条 |
 | 点 approve | 这一位进 `GameState.current_team`：底色转绿 + 占掉右下角一个空格 |
 | 点 reject | 这一位进 `GameState.rejected_ids`：底色转红 + 不占格；**已经在队里的先拿出来** |
-| 右键 / 滚轮 / 中键 | 一概不响应（`_gui_input` 只认 `MOUSE_BUTTON_LEFT`） |
+| 右键 / 滚轮 / 中键（在**头像**上） | 一概不响应（`_gui_input` 只认 `MOUSE_BUTTON_LEFT`） |
+| 滚轮 / 拖右边的滚动条（在**左边那列**上） | 那列上下滚（人比一屏多才出滚动条；滚轮是在 `ScrollContainer` 上处理的，头像不吞它） |
 | 点简历词条 | 菜单里那一项是「**回忆**」：重播面试时问过的那一段（§10.7）。没问过的置灰 |
 | 「组队完成」 | 超员 → **拦住**；刚好满 → 出发；没满 → 提醒一次、再点一次出发 |
 
@@ -1326,6 +1329,13 @@ data/days/day_XX.tres
   （唯一的例外是**水平方向**：取景窗自己的中心在 x=153，而立绘画布的中心在 x=300，
   两个原点直接对齐会让人偏在窗口右侧 —— 所以横向按「画布中心 == 窗口中心」摆，
   见 `FramedAvatar._portrait_center_offset_x()`；纵向不动，脸在画布上的高低是各画各的。）
+- ⚠️ **这个偏移是「取景窗（`Clip`）自己的坐标」，不能再加一次窗口原点**：立绘是 `Clip` 的子节点，
+  `Clip.position` 已经是窗口左上角 —— 纵向那一句 `-window.position.y` 就是把画布原点垫回框原点，
+  是同一套换算。曾经这里写成 `window.position.x + (窗口宽 − 立绘宽) / 2`，等于把「对齐两个原点」
+  和「对齐两个中心」两个偏移叠在一起：画布中心落在窗口中心右边一个 `WINDOW.x`（160px 的头像上
+  **偏右 13.9px**，人是贴着窗口右沿的）。现在自检两边都取 `get_global_rect()` 来比 ——
+  以前拿 `portrait.position`（Clip 局部）减 `window.position`（头像框坐标）会算出「恰好相等」的假象。
+  另外还量了**取景窗里真正看得见的那块像素**：它相对窗口中心不得偏出窗口半宽的 10%（实测 ≤ 3.5px）。
 - **超出边框的部分自动截掉**是 `Clip.clip_contents` 干的：窗口摆在 `AvatarFrame.WINDOW`
   （方框内沿围出来的透明区，实测量出来的），立绘横向按上面的居中规则摆、
   纵向按 `-窗口原点` 垫进去；窗口外的像素一律不画。
@@ -1342,10 +1352,27 @@ data/days/day_XX.tres
 
 ### 12.5 版面
 
-- **左边头像列**：`ENTRY_LEFT = 116`、`ENTRY_TOP = 28`、行距 `176`，一条 160×160。
-  三条正好排到 540，避开下面那颗「组队完成」（y 572 起）。
-- **两个按钮展开后的横向跨度**：reject 左缘 34 ～ approve 右缘 358，全部落在左半边
-  （简历纸从 x 579 起）—— 展开时不会压到右边的简历。
+- **左边那列是一块灰色的半透明底板**（`Backdrop`：`Panel` + `ui/styles/roster_panel.tres`，
+  `bg_color = (0.165, 0.165, 0.19, 0.55)` + 8px 圆角），占 x 16〜408 / y 16〜616。
+  底板 `mouse_filter = IGNORE`：不吃左键，点击照样落到头像上。
+- **底板里装的是一个滚动视口**（`RosterScroll`：`ScrollContainer`，x 26〜398 / y 26〜606）：
+  今天通过面试的人比一屏多（视口高 580，一条 176 → 一屏 3 条出头）时，右缘自动露出竖直滚动条，
+  滚轮 / 拖动都能滚。**人少时不出滚动条**（`vertical_scroll_mode` 保持默认 AUTO）。
+  - 条目仍是**手摆坐标**（不用 VBox 之类的容器：两个按钮要滑到条目框外面去，容器会把它们
+    算进最小尺寸里）。所以 `_layout_entries()` 摆完还要把内容高度
+    （`ENTRY_TOP × 2 + (n−1) × 行距 + 160`）报给 `Roster.custom_minimum_size.y` ——
+    不报的话 ScrollContainer 量不出手摆的条目有多高，人就多到画布外面去了也滚不动。
+  - 视口开 `clip_contents`（ScrollContainer 默认），所以**滑出来的按钮必须落在视口里**：
+    approve 滑到内容坐标系 x 338，视口内容宽 372（滚动条 8px 后仍 ≥ 360），够。
+  - 被点的那一条要是正滚在视口边上，`_expand()` 会 `ensure_control_visible()` 把它滚回来。
+- **左边头像列**：`ENTRY_LEFT = 96`、`ENTRY_TOP = 12`、行距 `176`，一条 160×160。
+  这三个数是**视口内容坐标系**里的，换算到画布上是 x 122 起、y 38 起 —— 和原来那版基本对齐；
+  左边留 96 是给 reject 往左滑的（滑到 14，还在视口里）。
+- **两个按钮展开后的横向跨度**：画布上 reject 左缘 40 ～ approve 右缘 364，全部落在底板里、
+  也落在左半边（简历纸从 x 579 起）—— 展开时不会戳穿灰底，也不会压到右边的简历。
+- **「组队完成」挪到了选人列的右边**：x 700〜900 / y 586〜646（原来是 154〜354 / 572〜634，
+  正好压在选人列下面）。现在它在简历纸下缘之下（纸占 y 29〜585）、右下角名额空位的左边
+  （两个名额时空位从 x 998 起），三块谁也不压谁。
 - **右下角的名额空位**：贴屏幕右下角（右缘 1152−24、下缘 648−2），一个 60px、间隔 10px。
   这个尺寸是被逼出来的：简历纸占 y 29〜585，纸下只剩 63px —— 空位必须整块躲在纸下缘之下
   （这一条由 `smoke_team_builder` 的版面自检守着）。
@@ -1359,18 +1386,22 @@ data/days/day_XX.tres
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_team_builder.tscn
 ```
 
-125 项：左半边只列通过者（被否掉的不出现）、头像框三张美术的来源与取景窗几何、
-**立绘按 `PORTRAIT_SCALE` 折算后铺进取景窗、且画布中心与窗口中心对齐（横向居中）**、
+147 项：左半边只列通过者（被否掉的不出现）、头像框三张美术的来源与取景窗几何、
+**立绘按 `PORTRAIT_SCALE` 折算后铺进取景窗、画布中心与窗口中心对齐（横向居中）、
+取景窗里看得见的那个人也居中且没被窗口边缘切掉**、
 **头像框与空位确实按 `AVATAR_SIZE` / `SLOT_SIZE` 渲染**、
 一进来右半边是空的、点头像才铺简历、**按钮的树序在头像之前**（藏起来时真被压住）、
 **收起来时按钮矩形完全落在头像矩形内 / 展开后各留 14px 压着框边**、
 **收起来时按钮不吃鼠标（否则一点头像就点到那颗看不见的按钮上）**、
 approve 的绿底与 reject 的红底、进队的人占掉第几个空格、两种判定互斥（改主意的来回）、
-右键无反应、**版面自检**（头像列位置、最右不压简历纸、空位贴右下角且在纸下缘之下）、
+右键无反应、**版面自检**（底板是灰色半透明的、滚动视口在底板里、头像与滑出来的按钮都落在底板里、
+最右不压简历纸、**「组队完成」挪到选人列右边且不压简历纸**、空位贴右下角且在纸下缘之下）、
+**人多的时候能滚**（内容比视口高 → 滚动条露出来、往下滚条目跟着走、滚到底看得见最后一位、
+approve 滑出来也不戳出视口）、
 简历各栏与底纸和面试逐像素同位置、**「回忆」的整条链路**、
 **超员点多少次都出不去而减到名额以内一下就走**、
 **悬停样式只剩底色矩形、四边线宽合计为 0**，以及
-**`data/candidates/` 里 25 位候选人逐个拼得出「有内容」的整身立绘**。
+**`data/candidates/` 里的候选人逐个拼得出「有内容」的整身立绘**。
 另外还比对了 `Interviewee` 与 `PortraitComposer` 取的是同一套部件图（防两边走偏）。
 全绿退出码 0。
 
