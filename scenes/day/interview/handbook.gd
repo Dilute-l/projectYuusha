@@ -267,11 +267,13 @@ func _refresh_page_buttons() -> void:
 
 
 func _on_nextpage_pressed() -> void:
+	$SE.play()
 	if _index < _entries.size() - 1:
 		_show_page(_index + 1)
 
 
 func _on_lastpage_pressed() -> void:
+	$SE.play()
 	if _index > 0:
 		_show_page(_index - 1)
 

@@ -144,8 +144,8 @@ static func synergyOf(member_ids: Array[StringName], report: BattleReport = null
 static func _pair_synergy(a: CandidateResource, b: CandidateResource, report: BattleReport = null) -> int:
 	var delta: int = 0
 
-    # 示例代码：
-    
+	# 示例代码：
+	
 	# # ── 特质 × 特质：正义感 × 骑士精神 → 配合默契 ──
 	# if _both_have_traits(a, b, &"trait.justice", &"trait.chivalry"):
 	# 	delta += 30
