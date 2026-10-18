@@ -802,5 +802,5 @@ func _on_water_button_pressed() -> void:
 	if not _dialoguer.typer.load_dialogue("Watercooler"):
 		return
 	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
-	AudioService.play_sfx(WATER_PATH)
+	$WaterCooler.play()
 	_dialoguer.play()

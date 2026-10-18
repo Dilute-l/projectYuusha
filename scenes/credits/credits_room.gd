@@ -112,7 +112,7 @@ func _on_dilute_pressed() -> void:
 
 
 func _on_m_3_pressed() -> void:
-	AudioService.play_sfx(M_PATH)
+	$M3sound.play()
 	# 点 M3 → bighead 闪一下 + red 缓慢显现。
 	# red 初始在场景里是可见的，_ready() 把它的 alpha 归 0（见那里）。
 	var red := get_node_or_null("red") as Sprite2D

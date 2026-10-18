@@ -21,6 +21,7 @@
 [ext_resource type="Texture2D" uid="uid://bywxyuu1omr5i" path="res://assets/art/interview/water_hover.png" id="15_4uqih"]
 [ext_resource type="BitMap" uid="uid://dl0m0lj0amihi" path="res://assets/art/interview/no.tres" id="16_k2e4n"]
 [ext_resource type="BitMap" uid="uid://2ugj346p8bwc" path="res://assets/art/interview/water.tres" id="16_wtybp"]
+[ext_resource type="AudioStream" uid="uid://71r8q5483umc" path="res://assets/sound/SE/Liquid.ogg" id="22_xdl4b"]
 
 [sub_resource type="BitMap" id="BitMap_wtybp"]
 
@@ -143,6 +144,10 @@ layout_mode = 0
 stream = SubResource("AudioStreamOggVorbis_4uqih")
 volume_db = -25.0
 autoplay = true
+
+[node name="WaterCooler" type="AudioStreamPlayer" parent="." unique_id=163482795]
+stream = ExtResource("22_xdl4b")
+volume_db = -25.0
 
 [connection signal="pressed" from="WaterButton" to="." method="_on_water_button_pressed"]
 [connection signal="pressed" from="HandbookButton" to="." method="_on_handbook_button_pressed"]
