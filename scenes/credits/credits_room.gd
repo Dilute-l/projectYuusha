@@ -1,7 +1,12 @@
 extends Control
 
-const TITLE_SFX_PATH: String = "res://assets/sound/suspicious.wav"
-const M_PATH: String = "res://assets/sound/romance.wav"
+## 音效路径。扩展名按**磁盘上的真实大小写**写（.WAV 是大写）。
+##
+## 写成小写 .wav 在 Windows 上照样能播（文件系统不区分大小写），但 Godot 会警告
+## 「Case mismatch … This file will not open when exported to other case-sensitive
+##  platforms」，导出到 Linux / macOS 后这两处音效会真的没有声音。
+const TITLE_SFX_PATH: String = "res://assets/sound/suspicious.WAV"
+const M_PATH: String = "res://assets/sound/romance.WAV"
 
 ## 大脸（bighead）淡入 / 停留 / 淡出的时长（秒）
 const BIGHEAD_FADE_IN: float = 0.25
