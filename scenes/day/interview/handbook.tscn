@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://cfxargkx8jd6p" path="res://assets/art/interview/Handbook/handbook_lastpg_phd.png" id="7_wx0wo"]
 [ext_resource type="BitMap" uid="uid://cvxqxpkg43oog" path="res://assets/art/interview/Handbook/handbook_lastpg_phd.tres" id="8_foxst"]
 [ext_resource type="StyleBox" path="res://ui/styles/hover_gray.tres" id="9_hover"]
+[ext_resource type="AudioStream" uid="uid://me580l2t2rub" path="res://assets/sound/SE/Book1.ogg" id="9_s4pqe"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_quit"]
 
@@ -78,6 +79,10 @@ offset_right = 1152.0
 offset_bottom = 648.0
 texture_normal = ExtResource("7_wx0wo")
 texture_click_mask = ExtResource("8_foxst")
+
+[node name="SE" type="AudioStreamPlayer" parent="." unique_id=409379601]
+stream = ExtResource("9_s4pqe")
+volume_db = -25.0
 
 [connection signal="pressed" from="quit" to="." method="_on_quit_pressed"]
 [connection signal="pressed" from="nextpage" to="." method="_on_nextpage_pressed"]
