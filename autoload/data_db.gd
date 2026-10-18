@@ -147,8 +147,15 @@ func get_handbook_entry(id: StringName) -> HandbookEntry:
 	return get_resource(&"handbook", id) as HandbookEntry
 
 
+## 每日特殊事件（data/event/*.tres）。
+##
+## ⚠️ 表键是单数 **&"event"**，不是 &"events"：DataDB 按 `data/` 的**一级子目录名**
+## 归类，而那个目录就叫 `data/event/`（`_SINGULAR` 里 `&"events": "event"` 只是给
+## 「没填 id」时的回退前缀用的，不决定表键）。
+## 早先这里写的是 &"events"，于是查什么都返回 null —— 表现是「事件池里写了 id，
+## 但永远查不到」，而且只在日志里刷一句警告。别改回复数。
 func get_event(id: StringName) -> DailyEventDef:
-	return get_resource(&"events", id) as DailyEventDef
+	return get_resource(&"event", id) as DailyEventDef
 
 
 ## 第 n 天的配置（data/days/day_XX.tres），不存在返回 null

@@ -1359,11 +1359,11 @@ data/days/day_XX.tres
   今天通过面试的人比一屏多（视口高 580，一条 176 → 一屏 3 条出头）时，右缘自动露出竖直滚动条，
   滚轮 / 拖动都能滚。**人少时不出滚动条**（`vertical_scroll_mode` 保持默认 AUTO）。
   - 条目仍是**手摆坐标**（不用 VBox 之类的容器：两个按钮要滑到条目框外面去，容器会把它们
-    算进最小尺寸里）。所以 `_layout_entries()` 摆完还要把内容高度
-    （`ENTRY_TOP × 2 + (n−1) × 行距 + 160`）报给 `Roster.custom_minimum_size.y` ——
-    不报的话 ScrollContainer 量不出手摆的条目有多高，人就多到画布外面去了也滚不动。
+	算进最小尺寸里）。所以 `_layout_entries()` 摆完还要把内容高度
+	（`ENTRY_TOP × 2 + (n−1) × 行距 + 160`）报给 `Roster.custom_minimum_size.y` ——
+	不报的话 ScrollContainer 量不出手摆的条目有多高，人就多到画布外面去了也滚不动。
   - 视口开 `clip_contents`（ScrollContainer 默认），所以**滑出来的按钮必须落在视口里**：
-    approve 滑到内容坐标系 x 338，视口内容宽 372（滚动条 8px 后仍 ≥ 360），够。
+	approve 滑到内容坐标系 x 338，视口内容宽 372（滚动条 8px 后仍 ≥ 360），够。
   - 被点的那一条要是正滚在视口边上，`_expand()` 会 `ensure_control_visible()` 把它滚回来。
 - **左边头像列**：`ENTRY_LEFT = 96`、`ENTRY_TOP = 12`、行距 `176`，一条 160×160。
   这三个数是**视口内容坐标系**里的，换算到画布上是 x 122 起、y 38 起 —— 和原来那版基本对齐；

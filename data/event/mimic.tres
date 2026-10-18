@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DailyEventDef" format=3 uid="uid://rkwmb4s402lg"]
+
+[ext_resource type="Script" uid="uid://cp17dqtjon3w2" path="res://scripts/resources/daily_event_def.gd" id="1_0o3ee"]
+
+[resource]
+script = ExtResource("1_0o3ee")
+id = &"mimic"
+event_name = &"拟身怪出没"
+metadata/_custom_type_script = "uid://cp17dqtjon3w2"

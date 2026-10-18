@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DailyEventDef" format=3 uid="uid://2dju4ufsfr20"]
+
+[ext_resource type="Script" uid="uid://cp17dqtjon3w2" path="res://scripts/resources/daily_event_def.gd" id="1_4sqo1"]
+
+[resource]
+script = ExtResource("1_4sqo1")
+id = &"orc"
+event_name = &"啊好像，好像有兽人来袭"
+metadata/_custom_type_script = "uid://cp17dqtjon3w2"

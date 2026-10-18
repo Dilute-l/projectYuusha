@@ -22,9 +22,16 @@ extends Resource
 ## 每条形如 { "text": String, "rule_id": StringName, "priority": int }
 @export var events: Array[Dictionary] = []
 
-## 当日分数
-@export var day_score: int = 0
+## 当日分数 = `true_power × multiplier`（见 combat_resolver.gd::resolve）。
+##
+## ⚠️ 是 **float** 不是 int：羁绊是**乘数**（`synergyMultiplier` 返回 1.05 / 0.7 这种），
+## true_power 乘上去必然带小数。用 int 会在赋值时静默截断，倍率的效果就丢了。
+@export var day_score: float = 0.0
 
 ## 分数明细，对应 day_scored 信号的 breakdown。
-## { "true_power": int, "synergy": int, "lie_penalty": int, "event_bonus": int, "luck": int }
+## { "true_power": float, "synergy": float, "multiplier": float,
+##   "lie_penalty": int, "event_bonus": int, "luck": int }
+##
+## synergy = day_score − true_power（倍率带来的差值），所以
+## 「true_power + synergy == day_score」这条恒等式仍然成立，下游不必改。
 @export var breakdown: Dictionary = {}

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DailyEventDef" format=3 uid="uid://bjjlr4jarpwiq"]
+
+[ext_resource type="Script" uid="uid://cp17dqtjon3w2" path="res://scripts/resources/daily_event_def.gd" id="1_gyrih"]
+
+[resource]
+script = ExtResource("1_gyrih")
+id = &"dragon"
+event_name = &"龙出没"
+metadata/_custom_type_script = "uid://cp17dqtjon3w2"
