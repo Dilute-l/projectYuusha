@@ -141,6 +141,11 @@ static func finalPowerCaculation(member_ids: Array[StringName]) -> float:
 # 加一条规则 = 加一段「一行判断 + 一行记分 + 一行播报」，不碰任何资源，也不建新列表。
 # 特意**不读** TraitInteractionTable / data/traits/interactions.tres：这套相性就是这些 if 行本身。
 #
+# 播报里点名的是**队员的名字**，不是特质名：data/traits/*.tres 的 display_name 现在全是
+# 占位（"PLACEHOLDER TRAIT (...)"），播这种名字没人看得懂。队员名是真名。
+# 等特质定稿、想把播报换回特质名时，把 _rule_names() / _trait_owner_name() 换成 _trait_name()
+# 即可 —— 下面那些 if 行一行都不用动。
+#
 # ⚠️ 这里的 delta 是**倍率增量**，不是分数：+0.1 表示这一对让 total ×1.1。
 #    total 是四位数（属性 × 等级 × 10），加 0.1 分毫无意义 —— 所以要乘不要加。
 #    队外事件（当日怪物 × slayer）**不在 _pair_synergy 里**：它按「每种怪物一次」结算，
@@ -211,8 +216,20 @@ static func synergyMultiplier(day_index: int, member_ids: Array[StringName],
 		report: BattleReport = null) -> float:
 	var multiplier: float = 1.0
 	for i in member_ids.size():
+		# 吟游诗人
+		var a := DataDB.get_candidate(member_ids[i])
+		if _has_trait(a, &"trait.bard"):
+			multiplier *= 1.3
+			_add_synergy_event(report, "不管怎么说，作为吟游诗人的%s确实用音乐鼓舞了士气。" %
+				_member_name(a))
+
+		# 第四面墙
+		if _has_trait(a, &"trait.fourth_wall"):
+			multiplier *= 0.8
+			_add_synergy_event(report, "%s一直在念叨些奇奇怪怪的东西，搞得大家精神状态都很糟糕。" %
+					_member_name(a))
+
 		for j in range(i + 1, member_ids.size()):
-			var a := DataDB.get_candidate(member_ids[i])
 			var b := DataDB.get_candidate(member_ids[j])
 			if a == null or b == null:
 				push_warning("[CombatResolver] 相性配对跳过：%s / %s 查不到" % [
@@ -267,58 +284,58 @@ static func _pair_synergy(a: CandidateResource, b: CandidateResource,
 #傲慢+胆小
 	if _both_have_traits(a, b, &"trait.prideful", &"trait.timid"):
 		delta -= 0.1
-		_add_synergy_event(report, "%s一路上都在压力%s，搞得大家都有点不愉快。" % [
-		_trait_label(a, b, &"trait.prideful"), _trait_label(a, b, &"trait.timid")])
+		_add_synergy_event(report, "%s一路上都在压力%s，搞得大家都有点不愉快。" %
+				_rule_names(a, b, &"trait.prideful", &"trait.timid"))
 #积极+积极		
 	if _both_have_traits(a, b, &"trait.active", &"trait.active"):
 		delta += 0.2
-		_add_synergy_event(report, "%s和%s把队伍的气氛调动了起来，所有人都很有干劲。" % [
-		_trait_label(a, b,&"trait.active"), _trait_label(a, b,&"trait.active")])
+		_add_synergy_event(report, "%s和%s把队伍的气氛调动了起来，所有人都很有干劲。" %
+				_rule_names(a, b, &"trait.active", &"trait.active"))
 #体贴+胆小		
 	if _both_have_traits(a, b, &"trait.caring", &"trait.timid"):
 		delta += 0.1
-		_add_synergy_event(report, "虽然%s有点软脚了，但%s就像妈妈一样把他照顾的很好。" % [
-		_trait_label(a, b,&"trait.timid"), _trait_label(a, b,&"trait.caring")])
+		_add_synergy_event(report, "虽然%s有点软脚了，但%s就像妈妈一样把他照顾的很好。" %
+				_rule_names(a, b, &"trait.timid", &"trait.caring"))
 #傲慢+粗鲁		
 	if _both_have_traits(a, b, &"trait.rude", &"trait.prideful"):
 		delta -= 0.2
-		_add_synergy_event(report, "在%s吹嘘自己的时候，%s诋毁了他一句，俩人差点打了起来。" % [
-		_trait_label(a, b,&"trait.prideful"), _trait_label(a, b,&"trait.rude")])
+		_add_synergy_event(report, "在%s吹嘘自己的时候，%s诋毁了他一句，俩人差点打了起来。" %
+				_rule_names(a, b, &"trait.prideful", &"trait.rude"))
 #傲慢+傲慢
 	if _both_have_traits(a, b, &"trait.prideful", &"trait.prideful"):
 		delta -= 0.1
-		_add_synergy_event(report, "%s和%s都认为自己才是最强的，导致路上他们一直在吵。" % [
-		_trait_label(a, b,&"trait.prideful"), _trait_label(a, b,&"trait.prideful")])
+		_add_synergy_event(report, "%s和%s都认为自己才是最强的，导致路上他们一直在吵。" %
+				_rule_names(a, b, &"trait.prideful", &"trait.prideful"))
 #粗鲁+胆小
 	if _both_have_traits(a, b, &"trait.timid", &"trait.rude"):
 		delta -= 0.1
-		_add_synergy_event(report, "%s的战斗技巧和为人处世都有些暴躁，搞得%s有些害怕。" % [
-		_trait_label(a, b,&"trait.rude"), _trait_label(a, b,&"trait.timid")])	
+		_add_synergy_event(report, "%s的战斗技巧和为人处世都有些暴躁，搞得%s有些害怕。" %
+				_rule_names(a, b, &"trait.rude", &"trait.timid"))	
 #傲慢+活跃
 	if _both_have_traits(a, b, &"trait.active", &"trait.prideful"):
 		delta += 0.1
-		_add_synergy_event(report, "%s总觉得%s的积极表现是在和自己竞争，然后……他似乎出了更多的力。" % [
-		_trait_label(a, b,&"trait.prideful"), _trait_label(a, b,&"trait.active")])	
+		_add_synergy_event(report, "%s总觉得%s的积极表现是在和自己竞争，然后……他似乎出了更多的力。" %
+				_rule_names(a, b, &"trait.prideful", &"trait.active"))	
 #积极+体贴
 	if _both_have_traits(a, b, &"trait.active", &"trait.caring"):
 		delta += 0.1
-		_add_synergy_event(report, "%s把有些莽撞的%s照顾得很好。" % [
-		_trait_label(a, b,&"trait.caring"), _trait_label(a, b,&"trait.active")])	
+		_add_synergy_event(report, "%s把有些莽撞的%s照顾得很好。" %
+				_rule_names(a, b, &"trait.caring", &"trait.active"))	
 #吟游诗人
-	if _has_trait(a, &"trait.bard") or _has_trait(b, &"trait.bard"):
-		delta += 0.3
-		_add_synergy_event(report, "不管怎么说，作为吟游诗人的%s确实用音乐鼓舞了士气。" % [
-		(a if _has_trait(a, &"trait.bard") else b).display_name])
+	# if _has_trait(a, &"trait.bard") or _has_trait(b, &"trait.bard"):
+	# 	delta += 0.3
+	# 	_add_synergy_event(report, "不管怎么说，作为吟游诗人的%s确实用音乐鼓舞了士气。" %
+	# 			_member_name(a if _has_trait(a, &"trait.bard") else b))
 #第四面墙
-	if _has_trait(a, &"trait.fourth_wall") or _has_trait(b, &"trait.fourth_wall"):
-		delta -= 0.2
-		_add_synergy_event(report, "%s一直在念叨些奇奇怪怪的东西，搞得大家精神状态都很糟糕。" % [
-		(a if _has_trait(a, &"trait.fourth_wall") else b).display_name])
+	# if _has_trait(a, &"trait.fourth_wall") or _has_trait(b, &"trait.fourth_wall"):
+	# 	delta -= 0.2
+	# 	_add_synergy_event(report, "%s一直在念叨些奇奇怪怪的东西，搞得大家精神状态都很糟糕。" %
+	# 			_member_name(a if _has_trait(a, &"trait.fourth_wall") else b))
 #矮人笑话+矮人
 	if _trait_meets_race(a, b, &"trait.dwarf_joke", &"race.st"):
-		delta += 20
+		delta -= 0.2
 		_add_synergy_event(report, "%s讲了致死量的矮人笑话，然后被%s记到了仇恨之书里。" % [
-		_trait_label(a, b, &"trait.dwarf_joke"), _race_label(a, b, &"race.st")])
+				_trait_owner_name(a, b, &"trait.dwarf_joke"), _race_label(a, b, &"race.st")])
 	
 	return delta
 
@@ -362,13 +379,41 @@ static func _trait_meets_race(a: CandidateResource, b: CandidateResource, trait_
 			or (_has_trait(b, trait_id) and _is_race(a, race_id))
 
 
-## 这条规则要显示的特质名：先在 a 身上找，再在 b 身上找；都没有就退回 id。
-static func _trait_label(a: CandidateResource, b: CandidateResource, trait_id: StringName) -> String:
+## 这条规则里「带这个特质的那位」的名字（先在 a 上找，再在 b 上找）。
+## ⚠️ 两人都带的规则（积极+积极 / 傲慢+傲慢）不能用它取两次 —— 那会把同一个人念两遍，
+##    那种规则请用 _rule_names()。
+static func _trait_owner_name(a: CandidateResource, b: CandidateResource, trait_id: StringName) -> String:
 	if _has_trait(a, trait_id):
-		return _trait_name(a, trait_id)
+		return _member_name(a)
 	if _has_trait(b, trait_id):
-		return _trait_name(b, trait_id)
+		return _member_name(b)
 	return String(trait_id)
+
+
+## 播报里点名的两位当事人：[带 x 的那位, 带 y 的那位]（x / y 允许是同一个特质）。
+##
+## 取人的顺序和 _both_have_traits() 同源：「a 带 x 且 b 带 y」优先，其次「b 带 x 且 a 带 y」。
+## 所以「两人都带 active」那条会播成两个**不同的人**，而不会把同一个名字念两遍。
+## 只有规则已命中才会走到这里；万一两条都不成立就退回 a / b —— 播报里不留空白。
+static func _rule_names(a: CandidateResource, b: CandidateResource,
+		x: StringName, y: StringName) -> Array[String]:
+	var first := a
+	var second := b
+	if not (_has_trait(a, x) and _has_trait(b, y)) and _has_trait(b, x) and _has_trait(a, y):
+		first = b
+		second = a
+	var names: Array[String] = []
+	names.append(_member_name(first))
+	names.append(_member_name(second))
+	return names
+
+
+## 队员的显示名（播报用）。空名退回 id —— 播报里绝不出现空白。
+static func _member_name(member: CandidateResource) -> String:
+	if member == null:
+		return "某人"
+	var label := String(member.display_name).strip_edges()
+	return label if not label.is_empty() else String(member.id)
 
 
 ## 「这一对里那位 slayer」的名字（播报用）。两人都带就报先找到的那个 ——
