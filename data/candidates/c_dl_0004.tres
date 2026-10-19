@@ -44,5 +44,5 @@ portrait_race = &"hu"
 portrait_eye = 106
 portrait_hair = 101
 portrait_mouth = 102
-portrait_hat = 201
+portrait_hat = 0
 resume_stamp = ExtResource("7_stamp")

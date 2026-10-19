@@ -5,9 +5,8 @@
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/dwarf.tres" id="4_race"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
-[ext_resource type="Resource" path="res://data/traits/fake0.tres" id="6_tr0"]
-[ext_resource type="Resource" path="res://data/traits/slime_slayer.tres" id="7_tr1"]
-[ext_resource type="Resource" path="res://data/traits/active.tres" id="8_tr2"]
+[ext_resource type="Resource" path="res://data/traits/slime_slayer.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/active.tres" id="7_tr1"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -36,7 +35,7 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"男"
 age = 21
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "哈哈哈，我肯定没问题的，尽管相信我吧！"

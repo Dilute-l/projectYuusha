@@ -4,6 +4,8 @@
 [ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
 [ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/prideful.tres" id="6_tr0"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -29,7 +31,7 @@ ask_path = "res://data/asks/c_md_0880_4.json"
 script = ExtResource("1_script")
 id = &"c_md_0880"
 display_name = "肯恩·杰德"
-level = 5
+level = 3
 strength = 8
 intelligence = 16
 wisdom = 6
@@ -37,6 +39,7 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"男"
 age = 20
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "大家好啊，我是肯恩·杰德，一个职业法师，大家都喊我雷霆之杖。"

@@ -1,11 +1,11 @@
 [
 	{
 		"speaker_name": "面试官",
-		"text": "可以出示一下你的成绩单吗"
+		"text": "可以出示一下你的成绩单吗？"
 	},
 	{
 		"speaker_name": "拜伦·斯沃特",
-		"text": "这是我的成绩单",
+		"text": "这是我的成绩单。",
 		"popup": "AwardPhd",
 		"popup_stamp": "resume_stamp_real"
 	}

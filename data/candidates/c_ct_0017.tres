@@ -5,10 +5,9 @@
 [ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
-[ext_resource type="Resource" path="res://data/traits/fake2.tres" id="6_tr0"]
-[ext_resource type="Resource" path="res://data/traits/rude.tres" id="7_tr1"]
-[ext_resource type="Resource" path="res://data/traits/ghost_slayer.tres" id="8_tr2"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_fake2.png" id="9_stamp"]
+[ext_resource type="Resource" path="res://data/traits/rude.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/ghost_slayer.tres" id="7_tr1"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_fake2.png" id="8_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -38,7 +37,7 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"女"
 age = 140
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "别让其他废物拖我后腿。"
@@ -49,4 +48,4 @@ portrait_eye = 204
 portrait_hair = 202
 portrait_mouth = 103
 portrait_hat = 0
-resume_stamp = ExtResource("9_stamp")
+resume_stamp = ExtResource("8_stamp")

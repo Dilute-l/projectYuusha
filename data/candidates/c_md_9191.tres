@@ -43,6 +43,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "雪崩的时候，没有一片雪花是无辜的，所以现在就应该勇闯天涯！"
 judgment = "金·杰是个彻头彻尾的水货，他的咒语根本念不清楚，一点用都没有。"
+fake_level = 3
 portrait_race = &"hu"
 portrait_eye = 105
 portrait_hair = 103

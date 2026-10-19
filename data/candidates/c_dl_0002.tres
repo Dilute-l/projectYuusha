@@ -7,7 +7,8 @@
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/caring.tres" id="6_tr0"]
 [ext_resource type="Resource" path="res://data/traits/harpy_slayer.tres" id="7_tr1"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
+[ext_resource type="Resource" path="res://data/traits/dragon_slayer.tres" id="8_tr2"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="9_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -41,7 +42,7 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"女"
 age = 327
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1"), SubResource("Resource_e2")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e3")])
 team_declaration = "来自精灵之岛的前骑士奈奈莉，希望在王国踏上新的冒险。"
@@ -50,5 +51,5 @@ portrait_race = &"el"
 portrait_eye = 204
 portrait_hair = 204
 portrait_mouth = 106
-portrait_hat = 201
-resume_stamp = ExtResource("8_stamp")
+portrait_hat = 0
+resume_stamp = ExtResource("9_stamp")

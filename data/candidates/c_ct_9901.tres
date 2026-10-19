@@ -6,8 +6,7 @@
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/active.tres" id="6_tr0"]
-[ext_resource type="Resource" path="res://data/traits/fake0.tres" id="7_tr1"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -41,7 +40,7 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"女"
 age = 18
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "我会好好表现的哦，相信我吧！"
@@ -51,4 +50,4 @@ portrait_eye = 9901
 portrait_hair = 9901
 portrait_mouth = 9901
 portrait_hat = 0
-resume_stamp = ExtResource("8_stamp")
+resume_stamp = ExtResource("7_stamp")

@@ -5,13 +5,12 @@
 [ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
-[ext_resource type="Resource" path="res://data/traits/fake2.tres" id="6_tr0"]
-[ext_resource type="Resource" path="res://data/traits/prideful.tres" id="7_tr1"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
+[ext_resource type="Resource" path="res://data/traits/prideful.tres" id="6_tr0"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
-description = "21.曾经作为唐石诃德的侍从，有丰富的战斗经验。"
+description = "曾经作为唐石可德的侍从，有丰富的战斗经验。"
 ask_path = "res://data/asks/c_ct_0003_1.json"
 
 [sub_resource type="Resource" id="Resource_e1"]
@@ -31,15 +30,15 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"男"
 age = 20
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([])
 team_declaration = "如此优秀的我加入你们的队伍，你们理应感到荣幸！"
 judgment = "……好吧，奥克斯是个活脱脱的水货。"
-fake_level = 3
+fake_level = 2
 portrait_race = &"hu"
 portrait_eye = 104
 portrait_hair = 105
 portrait_mouth = 103
 portrait_hat = 0
-resume_stamp = ExtResource("8_stamp")
+resume_stamp = ExtResource("7_stamp")

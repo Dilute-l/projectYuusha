@@ -42,6 +42,7 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "海獭是世界上最伟大的生物！你们不知道？我真不信！"
 judgment = "马斯特蒂不仅热爱这份工作，还相当努力。没人知道他的上限在哪里。"
+fake_level = 1
 portrait_race = &"hu"
 portrait_eye = 9933
 portrait_hair = 9933

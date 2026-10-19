@@ -5,10 +5,9 @@
 [ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
-[ext_resource type="Resource" path="res://data/traits/fake1.tres" id="6_tr0"]
-[ext_resource type="Resource" path="res://data/traits/active.tres" id="7_tr1"]
-[ext_resource type="Resource" path="res://data/traits/orc_slayer.tres" id="8_tr2"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_fake4.png" id="9_stamp"]
+[ext_resource type="Resource" path="res://data/traits/active.tres" id="6_tr0"]
+[ext_resource type="Resource" path="res://data/traits/orc_slayer.tres" id="7_tr1"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_fake4.png" id="8_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -38,7 +37,7 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"男"
 age = 21
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "我很期待能在这次冒险中收获些新的经验。"
@@ -49,4 +48,4 @@ portrait_eye = 104
 portrait_hair = 104
 portrait_mouth = 104
 portrait_hat = 201
-resume_stamp = ExtResource("9_stamp")
+resume_stamp = ExtResource("8_stamp")
