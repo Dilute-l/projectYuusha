@@ -1,13 +1,13 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://ulupfvcfqb57"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://gl0451odudo4" path="res://data/jobs/cleric.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/active.tres" id="6_tr0"]
 [ext_resource type="Resource" path="res://data/traits/ghost_slayer.tres" id="7_tr1"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -39,16 +39,13 @@ intelligence = 11
 wisdom = 15
 race = ExtResource("4_race")
 job = ExtResource("3_job")
-gender = &"男"
 age = 25
 traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "我会把洛必达的荣光播撒到每一处角落。"
 judgment = "伊利克斯表现出了相当不错的素养。"
-portrait_race = &"hu"
+resume_stamp = ExtResource("8_stamp")
 portrait_eye = 104
 portrait_hair = 103
 portrait_mouth = 104
-portrait_hat = 0
-resume_stamp = ExtResource("8_stamp")

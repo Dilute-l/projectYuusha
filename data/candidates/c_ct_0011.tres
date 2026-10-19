@@ -1,13 +1,13 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://bilh7k7nsmid2"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://dfs1p8h23prax" path="res://data/jobs/mage.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/caring.tres" id="6_tr0"]
 [ext_resource type="Resource" path="res://data/traits/harpy_slayer.tres" id="7_tr1"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -41,9 +41,8 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "这次旅程下来，我会让大家都有所成长的。"
 judgment = "黛·博德的素养很不错，甚至还指导了队伍里的其他人。"
+resume_stamp = ExtResource("8_stamp")
 portrait_race = &"el"
 portrait_eye = 106
 portrait_hair = 204
 portrait_mouth = 102
-portrait_hat = 0
-resume_stamp = ExtResource("8_stamp")

@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://c5xuigyvdopq5"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://gl0451odudo4" path="res://data/jobs/cleric.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/caring.tres" id="6_tr0"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -22,7 +22,6 @@ ask_path = "res://data/asks/c_ct_0028_2.json"
 script = ExtResource("1_script")
 id = &"c_ct_0028"
 display_name = "缪比"
-level = 1
 strength = 7
 intelligence = 10
 wisdom = 16
@@ -36,9 +35,7 @@ skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
 team_declaration = "缪比会加油的哦，会和大家一起走向胜利的哦。"
 judgment = "缪比没有把必须的祷文记得那么清楚。"
 fake_level = 1
+resume_stamp = ExtResource("7_stamp")
 portrait_race = &"el"
 portrait_eye = 203
 portrait_hair = 201
-portrait_mouth = 101
-portrait_hat = 0
-resume_stamp = ExtResource("7_stamp")

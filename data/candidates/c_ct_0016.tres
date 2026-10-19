@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://cks1d4rv6hx38"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://dfs1p8h23prax" path="res://data/jobs/mage.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/dwarf.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/fake0.tres" id="6_tr0"]
 [ext_resource type="Resource" path="res://data/traits/active.tres" id="7_tr1"]
 [ext_resource type="Resource" path="res://data/traits/slime_slayer.tres" id="8_tr2"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="9_stamp"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="9_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -35,16 +35,14 @@ intelligence = 16
 wisdom = 8
 race = ExtResource("4_race")
 job = ExtResource("3_job")
-gender = &"男"
 age = 52
 traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1"), ExtResource("8_tr2")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("Resource_e2")])
 team_declaration = "我很期待这次旅行会遇到什么新的食材。"
 judgment = "林东把整场冒险变成了一场致敬某个经典冒险美食漫画的旅行。"
+resume_stamp = ExtResource("9_stamp")
 portrait_race = &"st"
 portrait_eye = 0
 portrait_hair = 0
-portrait_mouth = 101
 portrait_hat = 104
-resume_stamp = ExtResource("9_stamp")

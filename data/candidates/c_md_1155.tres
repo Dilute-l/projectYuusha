@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://bvfrok8j8vwi6"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/prideful.tres" id="6_tr0"]
 
 [sub_resource type="Resource" id="Resource_e0"]
@@ -35,10 +35,13 @@ level = 3
 strength = 8
 intelligence = 18
 wisdom = 8
-true_attributes = { "strength": 4, "intelligence": 6, "wisdom": 20 }
+true_attributes = {
+"intelligence": 6,
+"strength": 4,
+"wisdom": 20
+}
 race = ExtResource("4_race")
 job = ExtResource("3_job")
-gender = &"男"
 age = 60
 traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
@@ -46,8 +49,5 @@ skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("
 team_declaration = "我是一只莽撞的牤牛，在科学的领土上横冲直撞。所有攻击我的人，都是对伟大天体理论的攻击！你们越攻击，地球爆炸的越快！"
 judgment = "文·亚历山大简直是一坨狗屎！他没有任何作用，而是一直在推销他的理论。"
 fake_level = 3
-portrait_race = &"hu"
-portrait_eye = 101
 portrait_hair = 106
 portrait_mouth = 103
-portrait_hat = 0

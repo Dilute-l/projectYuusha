@@ -1,13 +1,13 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://7ceqvgscdn6l"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://gl0451odudo4" path="res://data/jobs/cleric.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/rude.tres" id="6_tr0"]
 [ext_resource type="Resource" path="res://data/traits/ghost_slayer.tres" id="7_tr1"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_fake2.png" id="8_stamp"]
+[ext_resource type="Texture2D" uid="uid://dtehni5ogpbut" path="res://assets/art/interview/resume/stamp/resume_stamp_fake2.png" id="8_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -32,7 +32,9 @@ level = 3
 strength = 11
 intelligence = 12
 wisdom = 20
-true_attributes = { "wisdom": 15 }
+true_attributes = {
+"wisdom": 15
+}
 race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"女"
@@ -43,9 +45,8 @@ skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "别让其他废物拖我后腿。"
 judgment = "玛纳斯在简历上造了两处假。"
 fake_level = 2
+resume_stamp = ExtResource("8_stamp")
 portrait_race = &"el"
 portrait_eye = 204
 portrait_hair = 202
 portrait_mouth = 103
-portrait_hat = 0
-resume_stamp = ExtResource("8_stamp")

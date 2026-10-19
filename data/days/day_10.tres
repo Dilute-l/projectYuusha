@@ -1,19 +1,19 @@
-[gd_resource type="Resource" script_class="DayConfig" format=3]
+[gd_resource type="Resource" script_class="DayConfig" format=3 uid="uid://ccof7xh45v0kq"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_cand"]
-[ext_resource type="Resource" path="res://data/candidates/c_md_9901.tres" id="2_c0"]
-[ext_resource type="Resource" path="res://data/candidates/c_ct_0025.tres" id="3_c1"]
-[ext_resource type="Resource" path="res://data/candidates/c_md_0880.tres" id="4_c2"]
-[ext_resource type="Resource" path="res://data/candidates/c_ct_0037.tres" id="5_c3"]
-[ext_resource type="Resource" path="res://data/candidates/c_ct_0038.tres" id="6_c4"]
-[ext_resource type="Resource" path="res://data/candidates/c_ct_0039.tres" id="7_c5"]
-[ext_resource type="Resource" path="res://data/candidates/c_ct_9999.tres" id="8_c6"]
-[ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="9_script"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_cand"]
+[ext_resource type="Resource" uid="uid://byfytlk8o2iss" path="res://data/candidates/c_md_9901.tres" id="2_c0"]
+[ext_resource type="Resource" uid="uid://bx8i65ek8gyt7" path="res://data/candidates/c_ct_0025.tres" id="3_c1"]
+[ext_resource type="Resource" uid="uid://d0yl3ki7svwu0" path="res://data/candidates/c_md_0880.tres" id="4_c2"]
+[ext_resource type="Resource" uid="uid://g6e0boxg1uqy" path="res://data/candidates/c_ct_0037.tres" id="5_c3"]
+[ext_resource type="Resource" uid="uid://cu1dg5fuxs65o" path="res://data/candidates/c_ct_0038.tres" id="6_c4"]
+[ext_resource type="Resource" uid="uid://d7d35uqcqjop" path="res://data/candidates/c_ct_0039.tres" id="7_c5"]
+[ext_resource type="Resource" uid="uid://dhjoxuapiilpt" path="res://data/candidates/c_ct_9999.tres" id="8_c6"]
+[ext_resource type="Script" uid="uid://cdc3hqvgn7pk2" path="res://scripts/resources/day_config.gd" id="9_script"]
 
 [resource]
 script = ExtResource("9_script")
 day_index = 10
 candidates = Array[ExtResource("1_cand")]([ExtResource("2_c0"), ExtResource("3_c1"), ExtResource("4_c2"), ExtResource("5_c3"), ExtResource("6_c4"), ExtResource("7_c5"), ExtResource("8_c6")])
 slots = 4
+event_pool = Array[StringName]([&"slime", &"dragon"])
 score_request = 1979
-tutorial_step = 0

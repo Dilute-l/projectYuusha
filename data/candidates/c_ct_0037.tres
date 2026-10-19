@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://g6e0boxg1uqy"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/prideful.tres" id="6_tr0"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_fake3.png" id="7_stamp"]
+[ext_resource type="Texture2D" uid="uid://s8ivshmpr2kh" path="res://assets/art/interview/resume/stamp/resume_stamp_fake3.png" id="7_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -31,10 +31,11 @@ level = 3
 strength = 19
 intelligence = 7
 wisdom = 9
-true_attributes = { "strength": 15 }
+true_attributes = {
+"strength": 15
+}
 race = ExtResource("4_race")
 job = ExtResource("3_job")
-gender = &"男"
 age = 41
 traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
@@ -42,9 +43,6 @@ skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "我跟你讲，魔物死了是他的命，魔王死了也是他的命。"
 judgment = "赞盎的嘴唇有点发紫，可能是简历造假。"
 fake_level = 2
-portrait_race = &"hu"
-portrait_eye = 104
-portrait_hair = 101
-portrait_mouth = 106
-portrait_hat = 0
 resume_stamp = ExtResource("7_stamp")
+portrait_eye = 104
+portrait_mouth = 106

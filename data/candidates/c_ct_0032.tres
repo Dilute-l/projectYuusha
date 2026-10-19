@@ -1,12 +1,12 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://8405er3p3m5v"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://gl0451odudo4" path="res://data/jobs/cleric.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/dwarf.tres" id="4_race"]
-[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/caring.tres" id="6_tr0"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -40,9 +40,9 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "别担心，有咱在，其他人不会受伤！"
 judgment = "艾欧密丝在神术上表现出了相当的素养。"
+resume_stamp = ExtResource("7_stamp")
 portrait_race = &"st"
 portrait_eye = 0
 portrait_hair = 0
 portrait_mouth = 0
 portrait_hat = 103
-resume_stamp = ExtResource("7_stamp")

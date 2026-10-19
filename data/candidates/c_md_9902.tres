@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://6ehpciquxeap"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_1l62b"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -33,17 +34,19 @@ level = 3
 strength = 33
 intelligence = 33
 wisdom = 33
-true_attributes = { "strength": 18, "intelligence": 10, "wisdom": 10 }
+true_attributes = {
+"intelligence": 10,
+"strength": 18,
+"wisdom": 10
+}
 race = ExtResource("4_race")
 job = ExtResource("3_job")
-gender = &"男"
 age = 33
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "海獭是世界上最伟大的生物！你们不知道？我真不信！"
 judgment = "马斯特蒂不仅热爱这份工作，还相当努力。没人知道他的上限在哪里。"
 fake_level = 1
-portrait_race = &"hu"
 portrait_eye = 9933
 portrait_hair = 9933
 portrait_mouth = 9933

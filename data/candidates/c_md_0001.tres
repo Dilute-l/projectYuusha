@@ -1,10 +1,11 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3]
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://dl80ft4bnwgvp"]
 
-[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="5_stamp"]
+[ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="5_stamp"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="6_7ybkt"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -20,21 +21,14 @@ ask_path = "res://data/asks/c_md_0001_2.json"
 script = ExtResource("1_script")
 id = &"c_md_0001"
 display_name = "法斯特"
-level = 1
 strength = 15
 intelligence = 10
 wisdom = 12
 race = ExtResource("4_race")
 job = ExtResource("3_job")
-gender = &"男"
 age = 20
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
 team_declaration = "我是我们村里最好的战士，还有村里最好的剑！"
 judgment = "法斯特的战斗水平还不错，而且出人意料的勇敢。"
-portrait_race = &"hu"
-portrait_eye = 101
-portrait_hair = 101
-portrait_mouth = 101
-portrait_hat = 0
 resume_stamp = ExtResource("5_stamp")
