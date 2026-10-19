@@ -45,9 +45,9 @@ centered = false
 
 [node name="WaterButton" type="TextureButton" parent="." unique_id=929950488]
 layout_mode = 0
-offset_left = -509.0
+offset_left = -414.00003
 offset_top = 1.0
-offset_right = 1757.0
+offset_right = 1852.0
 offset_bottom = 1275.0
 scale = Vector2(0.51, 0.51)
 texture_normal = ExtResource("3_snefw")

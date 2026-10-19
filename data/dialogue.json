@@ -59,11 +59,11 @@
 	{ "speaker_name": "lulu", "text": "制作组的其他几个人没有人知道知道这个人的头像究竟是谁" },
 	{ "speaker_name": "真·lulu", "text": "其实是我的 oc 来着，虽然经常被错认成其他角色就是了" }
   ],
-  "Midu": [
+"Midu": [
 	{ "config": { "sound": "normal", "extra_silent": "獭" } },
 	{ "speaker_name": "大米", "text": "我们现在用的这个字体里面有獭这个字" }
   ],
-  "MenuSeal": [
+"MenuSeal": [
 	{ "speaker_name": "腻子", "text": "这里本来是一个印章的 ^1但是看起来太像清凉油，于是只好改成了火漆" }
   ],
 "day1_briefing": [

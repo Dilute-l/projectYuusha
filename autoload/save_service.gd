@@ -206,6 +206,75 @@ func slot_path(slot: int) -> String:
 	return GameConfig.slot_path(slot)
 
 # ---------------------------------------------------------------------------
+# 跨局解锁账本（progress）
+# ---------------------------------------------------------------------------
+#
+# 和 RunState **分开落盘**：它不属于任何一局（记的是「玩家解锁了什么」，
+# 不是「这一局发生了什么」）。形状：
+#
+#     { "version": 1, "flags": { "true_ending_member_teamed": true, ... } }
+#
+# 它**不**参与「继续游戏」、不进槽位摘要、也不跟着开新局清空。
+# 删掉这个文件 = 把所有跨局解锁退回原点（调试 / 自检会临时备份再还原）。
+
+
+## 读解锁账本。文件不存在 / 读不出来 / 坏掉，一律返回空字典（= 什么都没解锁）。
+## 这里刻意不 push_error：账本是「锦上添花」的东西，坏了也不该拦着玩家进主菜单。
+func load_progress() -> Dictionary:
+	if not FileAccess.file_exists(GameConfig.PROGRESS_PATH):
+		return {}
+	var file := FileAccess.open(GameConfig.PROGRESS_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("[SaveService] 无法读取解锁账本 %s（错误码 %d）" % [
+			GameConfig.PROGRESS_PATH, FileAccess.get_open_error()])
+		return {}
+	var text := file.get_as_text()
+	file.close()
+
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		push_warning("[SaveService] 解锁账本损坏，按「什么都没解锁」处理：%s" % GameConfig.PROGRESS_PATH)
+		return {}
+
+	var data: Dictionary = parsed
+	var flags: Dictionary = {}
+	var raw: Variant = data.get("flags", {})
+	if raw is Dictionary:
+		var table: Dictionary = raw
+		for key in table.keys():
+			flags[StringName(str(key))] = table[key]
+	return flags
+
+
+## 写解锁账本。调用方（GameState）已经把 flag 记在内存里了，
+## 所以这里失败只警告 —— 丢一次落盘不该让「这一次的解锁没点上」（退出游戏才会丢）。
+func save_progress(flags: Dictionary) -> bool:
+	DirAccess.make_dir_recursive_absolute(GameConfig.SAVE_DIR)
+	var file := FileAccess.open(GameConfig.PROGRESS_PATH, FileAccess.WRITE)
+	if file == null:
+		push_warning("[SaveService] 无法写入解锁账本 %s（错误码 %d）" % [
+			GameConfig.PROGRESS_PATH, FileAccess.get_open_error()])
+		return false
+	# JSON 存不下 StringName：key 一律转 String（读回来再由 load_progress 转回去）
+	var table: Dictionary = {}
+	for key in flags.keys():
+		table[String(key)] = flags[key]
+	file.store_string(JSON.stringify({ "version": 1, "flags": table }, "\t"))
+	file.close()
+	return true
+
+
+func has_progress() -> bool:
+	return FileAccess.file_exists(GameConfig.PROGRESS_PATH)
+
+
+## 删掉解锁账本（调试 / 自检收尾；正式流程里没有入口）
+func clear_progress() -> bool:
+	if not FileAccess.file_exists(GameConfig.PROGRESS_PATH):
+		return true
+	return DirAccess.remove_absolute(GameConfig.PROGRESS_PATH) == OK
+
+# ---------------------------------------------------------------------------
 # RunState <-> Dictionary（§7 的 JSON 形状）
 # ---------------------------------------------------------------------------
 

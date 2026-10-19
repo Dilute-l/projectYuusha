@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TraitDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"trait.true_ending"
+display_name = "PLACEHOLDER TRAIT (true_ending)"
+category = 1
+synergy_tags = Array[StringName]([&"true_ending"])
+description = "PLACEHOLDER DESC (true_ending) -- 带这个特质的候选人被编进队伍，是真结局的解锁条件之一"

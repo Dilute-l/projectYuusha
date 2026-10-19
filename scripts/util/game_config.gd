@@ -19,6 +19,11 @@ const AUTO_SAVE_PATH: String = "user://saves/auto.json"
 ## 手动存档槽位数量（自动存档另算，占 auto.json）
 const MAX_SAVE_SLOTS: int = 3
 
+## 跨局解锁账本（progress）：跟「这一局」无关、通关后还要留着的东西。
+## 现在装的是真结局的解锁条件（见 scripts/core/flow/ending_unlock.gd）。
+## 它不参与「继续游戏」、不进槽位摘要、不跟着新局清空。
+const PROGRESS_PATH: String = "user://saves/progress.json"
+
 ## 静态数据根目录，由 DataDB 扫描
 const DATA_ROOT: String = "res://data"
 

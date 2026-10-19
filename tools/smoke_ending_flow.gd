@@ -114,13 +114,26 @@ func _run() -> void:
 	await _settle()
 	var dlg: Dialoguer = ending.get_node_or_null("Dialoguer")
 	_check(dlg != null, "好结局场景有 Dialoguer")
-	if dlg != null:
-		_check(dlg.typer.lines.size() == 3, "播的是 Ending_Good（3 行，实际 %d）" % dlg.typer.lines.size())
-		dlg.typer.start_line(dlg.typer.lines.size() - 1)
-		await _settle()
-		var text := dlg.typer.get_full_text()
-		_check(text.contains(total_text), "末句念出真实总分（含 %s）：%s" % [total_text, text])
-		_check(not text.contains("{total_score}"), "占位符已被替换")
+	# 行数**不写死**：Ending_Good 的文案会继续加长（写手一直在补），
+	# 自检只钉「播的就是 json 里那一段」和「{total_score} 那一行真的被替换」。
+	var expect_good := _dialogue_rows("Ending_Good")
+	_check(not expect_good.is_empty(), "data/dialogue.json 里有 Ending_Good 段")
+	if dlg != null and not expect_good.is_empty():
+		_check(dlg.typer.lines.size() == expect_good.size(),
+				"播的是 Ending_Good（%d 行，实际 %d）" % [expect_good.size(), dlg.typer.lines.size()])
+		var score_index := -1
+		for i in expect_good.size():
+			var row: Dictionary = expect_good[i]
+			if String(row.get("text", "")).contains("{total_score}"):
+				score_index = i
+				break
+		_check(score_index >= 0, "Ending_Good 里有一行写着 {total_score} 占位符")
+		if score_index >= 0:
+			dlg.typer.start_line(score_index)
+			await _settle()
+			var text := dlg.typer.get_full_text()
+			_check(text.contains(total_text), "那一行念出真实总分（含 %s）：%s" % [total_text, text])
+			_check(not text.contains("{total_score}"), "占位符已被替换")
 
 	# 自动返回：好结局在**对话播完**之后停顿 RETURN_DELAY 秒，自己发 restart_requested 并切主菜单。
 	# ⚠️ 别用 is_transitioning 判断 —— headless 下它本来就是 false，那样等于没验。
@@ -239,6 +252,19 @@ func _arm_battle_report(day: int, today_score: float) -> void:
 	GameState.set_battle_report(report)
 	GameState.set_phase(DayPhase.Phase.BATTLE_REPORT)
 	SceneRouter.is_transitioning = false
+
+
+## 读 data/dialogue.json 里某一段的行数组（读不出来返回空数组）。
+## 自检拿它当期望值：文案改字 / 加行都不用动这个文件。
+func _dialogue_rows(id: String) -> Array:
+	var file := FileAccess.open("res://data/dialogue.json", FileAccess.READ)
+	if file == null:
+		return []
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary and (parsed as Dictionary).get(id) is Array:
+		return (parsed as Dictionary)[id]
+	return []
 
 
 ## 把第 1 天换成指定 score_request + 当天分数（分数写进 scores[0]）

@@ -112,6 +112,10 @@ func _schedule_return() -> void:
 func _go_back() -> void:
 	if not is_inside_tree():
 		return
+	# 走完十天 = 真结局的第二个解锁条件（见 scripts/core/flow/ending_unlock.gd）。
+	# 记在「这一局收尾」这一刻，而不是进场景的 _ready：
+	# 结局演出看完、玩家真的要回主菜单了，才算「正常达到结局」。
+	EndingUnlock.note_normal_ending()
 	restart_requested.emit()
 	# 结局是这一局的终点，回主菜单时不再保留返回栈
 	SceneRouter.goto_main_menu()
