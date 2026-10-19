@@ -62,11 +62,13 @@ static func resolve(day_index: int, member_ids: Array[StringName]) -> BattleRepo
 	#   multiplier = 队伍羁绊倍率（1.0 = 无影响，见 synergyMultiplier）
 	#             = 队内两两相性（_pair_synergy 的 delta 当「倍率增量」逐对相乘）
 	#             × 当日事件（每种怪物一次：有 slayer ×(1+加成)，没有 ×(1−惩罚)）
+	#             × 整队同职业（全员同一个 job → ×SAME_JOB_PENALTY，一队只罚一次）
 	#
 	#   day_score  = true_power × multiplier
 	#   breakdown.synergy = 倍率带来的差值（= day_score − true_power），
 	#                       所以「true_power + synergy == day_score」这条仍然成立，
-	#                       下游（战报明细 / 自检）不用改。
+	#                       下游（战报明细 / 自检）不用改 —— 同职业罚的那一半也含在这里面，
+	#                       不需要为它另开一个 breakdown 键。
 	var true_power := finalPowerCaculation(member_ids)
 	var multiplier := synergyMultiplier(day_index, member_ids, report)
 	# 分数收敛到两位小数：`420 × 1.1` 的浮点尾巴（462.0000000000001）会一路传进
@@ -159,6 +161,39 @@ const EVENT_SLAYER_BONUS := 0.05
 ## 每种怪物只扣一次 —— 不随队伍人数 / 对数叠加。
 const EVENT_MISSING_SLAYER_PENALTY := 0.3
 
+## 整队**清一色同一个职业**时，总分乘多少（0.5 = 砍一半）。
+##
+## 设计意图：职业就是「这一队里谁干什么活」—— 战士扛线、法师输出、牧师治伤。
+## 三个人全是战士，等于既没人施法也没人治疗，路上只能各自抡剑 —— 结构单一是**整队**
+## 的问题，所以它和当日事件一样按「一队一次」结算，不随人数 / 对数叠加。
+##
+## ⚠️ 判的是「最后选出的那一队」（resolve() 收到的 member_ids），不是面试时录用过谁；
+## ⚠️ **两个人以上才判**：一个人没有「结构」可谈单一，而第 1 天 data/days/day_01.tres
+##    就只有一个候选人（slots = 2），独苗队天天被砍一半不是这条规则想表达的事。
+const SAME_JOB_PENALTY := 0.5
+
+## 整队同职业时，战报上那句话 —— **一个职业一句，不许共用通用文案**。
+##
+## 为什么按职业分开写：三支「一群人干同一件事」的队，缺的东西根本不是一回事 ——
+## 全战士缺的是法术和治疗，全法师缺的是前排，全牧师缺的是把敌人打死的那只手。
+## 一句「没人会干别的活儿」把三件事说成了一件，玩家看不出自己错在哪。
+##
+## 为什么文案写在代码里、而不是 JobDef 上加个字段：和 _pair_synergy() 那几十行同一条规矩 ——
+## 「加一条规则 = 一行判断 + 一行记分 + 一行播报，不碰任何资源」。这句是**玩法口吻**，
+## 不属于简历纸面（那边印的是 JobDef.display_name），两者不该住在一起。
+##
+## 键是 `job.id`（data/jobs/*.tres 里的 id：job.fighter / job.mage / job.cleric）。
+## ★ 加新职业就往这里加一行；漏了也不会崩 —— 会退回 SAME_JOB_FALLBACK_LINE ★
+const SAME_JOB_LINES: Dictionary = {
+	&"job.fighter": "一整队战士拖着重甲，被远程的敌人溜了一天。",
+	&"job.mage": "几个法师根本没有安全的施法环境，最后只能谁跑得慢谁来冒充前排。",
+	&"job.cleric": "一队牧师面面相觑，我打输出，真的假的？",
+}
+
+## 表里没有的职业（以后新加的第 4 个）用这一句兜底。
+## 它是**兜底，不是通用文案**：三种既有职业各说各话，走不到这里。
+## `%s` 填职业名 —— 宁可留一句平淡的，也别在战报上留空 / 留个 `job.xxx`。
+const SAME_JOB_FALLBACK_LINE := "一整队全是%s，没人会干别的活儿，一路上只能见招拆招。"
 
 
 ## 当日事件池里的魔物 id（`DayConfig.event_pool` → `DailyEventDef.id`）。
@@ -202,7 +237,7 @@ static func _pair_slays(a: CandidateResource, b: CandidateResource, monster_id: 
 ## 羁绊是**乘数**不是加数：它作用在 total 战力上（total 是四位数，加 0.1 毫无意义），
 ## 所以这里返回的是一个倍率，由 resolve() 乘上去。
 ##
-## 组成 = 队内两两相性 × 队外当日事件：
+## 组成 = 队内两两相性 × 队外当日事件 × 整队职业结构：
 ##   · 队内：每种相性规则给 _pair_synergy 一个 delta，逐对相乘 —— (1 + delta)
 ##           正 delta = 放大，负 delta = 缩小。没命中任何规则的一对返回 0.0 → ×1.0。
 ##   · 队外：**每种当日怪物只判一次**（不看队里有几个人、也不看几对）：
@@ -210,6 +245,8 @@ static func _pair_slays(a: CandidateResource, b: CandidateResource, monster_id: 
 ##           没人带                            → ×(1 − EVENT_MISSING_SLAYER_PENALTY)
 ##           为什么按「怪物」而不是按「对」：按对扣分会让「队里人多」变成一种惩罚
 ##           （3 人队扣 3 次），而设计意图是「今天要打的东西你熟不熟」——这是一件事。
+##   · 整队：**全员同一个职业**（`same_job_id` 非空）→ ×SAME_JOB_PENALTY（0.5）。
+##           同样「一队一次」：三个人都是战士只砍一刀，不是砍两刀。
 ##
 ## report 不为 null 时，每条命中的规则往战报里追加一条播报。
 static func synergyMultiplier(day_index: int, member_ids: Array[StringName],
@@ -237,6 +274,16 @@ static func synergyMultiplier(day_index: int, member_ids: Array[StringName],
 				continue
 			multiplier *= 1.0 + _pair_synergy(a, b, report)
 
+	# ── 整队：清一色同一个职业 ──
+	# 这是**队伍结构**上的判定，所以放在两两配对之外、也放在当日事件之前：
+	# 它算的是「这一队是怎么搭起来的」，而不是「谁和谁撞了哪种特质」。
+	# 只在全员同职业时命中一次；队员查不到 / 没填职业 → same_job_id 返回 &""，不加不减。
+	# 播报按职业各说各话（SAME_JOB_LINES），同一个 id 只会走同一条文案。
+	var same_job := same_job_id(member_ids)
+	if same_job != &"":
+		multiplier *= SAME_JOB_PENALTY
+		_add_synergy_event(report, _same_job_line(same_job), &"same_job")
+
 	# 队外：每种怪物一次
 	for monster_id in event_monsters(day_index):
 		var slayer := _any_slayer(member_ids, monster_id)
@@ -250,6 +297,61 @@ static func synergyMultiplier(day_index: int, member_ids: Array[StringName],
 				_monster_name(monster_id)])
 
 	return multiplier
+
+
+## 这一队全员共有的那个职业 id；**`&""` = 不算「同一个职业」**。
+##
+## 判定只做「是不是同一个」这一件事，返回 id 是为了让播报能念出职业名（`_job_name`）。
+##
+## 返回空串的三种情况（都不扣分）：
+##   · 队里不到两个人 —— 一个人没有「结构」可谈单一（独苗队不该天天被砍一半）；
+##   · 有人查不到 / 没填 job —— 数据残缺时宁可放过，也不要拿半个队去砍分数；
+##   · 职业确实不止一种 —— 这就是正常的混编队伍。
+##
+## ⚠️ 判的是**最后选出的那一队**（resolve() 收到的 member_ids），面试阶段录用过谁不算数。
+static func same_job_id(member_ids: Array[StringName]) -> StringName:
+	if member_ids.size() < 2:
+		return &""
+	var job_id: StringName = &""
+	for member_id in member_ids:
+		var member := DataDB.get_candidate(member_id)
+		if member == null or member.job == null or member.job.id == &"":
+			return &""
+		if job_id == &"":
+			job_id = member.job.id
+		elif member.job.id != job_id:
+			return &""
+	return job_id
+
+
+## 这一队是不是**清一色同一个职业**（读的东西见 same_job_id）。
+## 单独留一个 bool 版本，是为了让「要不要罚」在调用处读起来是一句话，而不是 `!= &""`。
+static func all_same_job(member_ids: Array[StringName]) -> bool:
+	return same_job_id(member_ids) != &""
+
+
+## 战报上那句话 —— 按职业取（SAME_JOB_LINES），表里没有的才走 SAME_JOB_FALLBACK_LINE。
+##
+## 返回值一定是**能直接播的成品文案**：调用方不再拼职业名，也不该再往里填占位符。
+## 专属文案里写死的职业名（「全是战士」）比 `%s` 好读 —— 但兜底那句仍需 %s，
+## 所以这里用 `contains("%s")` 判一下，别把占位符原样播出去。
+static func _same_job_line(job_id: StringName) -> String:
+	var raw: Variant = SAME_JOB_LINES.get(job_id, SAME_JOB_FALLBACK_LINE)
+	var line := String(raw)
+	if line.contains("%s"):
+		return line % _job_name(job_id)
+	return line
+
+
+## 职业的显示名（data/jobs/*.tres 的 `display_name`，例：「战士」「法师」「牧师」）。
+## 空名退回 id 本体，并把 `job.` 命名空间前缀去掉 —— 播报里至少别出现 `job.fighter`。
+static func _job_name(job_id: StringName) -> String:
+	var job := DataDB.get_job(job_id)
+	if job != null:
+		var label := String(job.display_name).strip_edges()
+		if not label.is_empty():
+			return label
+	return String(job_id).trim_prefix("job.")
 
 
 ## 队里所有克这只怪物的人（空数组 = 没人克）。只用来判有无 + 播报点名，不参与计分次数。
@@ -342,13 +444,18 @@ static func _pair_synergy(a: CandidateResource, b: CandidateResource,
 
 ## 命中的相性往战报里追加一条播报。文本里不放 {actor}：
 ## 它说的是两位队员之间的特质 / 种族，而不是某一个人的台词。
-static func _add_synergy_event(report: BattleReport, text: String) -> void:
+##
+## rule_id 默认是 `synergy`（两两相性 / 当日事件的通用标签）。
+## 「整队同职业」那条传自己的 `same_job`，这样以后要按规则分类统计 / 换文案时，
+## 不用回头翻文本去猜这条是谁播的。
+static func _add_synergy_event(report: BattleReport, text: String,
+		rule_id: StringName = &"synergy") -> void:
 	if report == null:
 		return
 	report.events.append({
 		"text": text,
 		"actor": &"",
-		"rule_id": &"synergy",
+		"rule_id": rule_id,
 		"priority": 1,
 	})
 
