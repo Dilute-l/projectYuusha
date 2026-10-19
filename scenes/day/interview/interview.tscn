@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="7_8dvi3"]
 [ext_resource type="Texture2D" uid="uid://dkbfbtehuiepi" path="res://assets/art/interview/handbook.png" id="8_4uqih"]
 [ext_resource type="PackedScene" uid="uid://dea2r2q3154fk" path="res://scenes/common/haohan.tscn" id="9_asawf"]
+[ext_resource type="Texture2D" uid="uid://evn8s4mna8fi" path="res://assets/art/interview/handbook_hover.png" id="9_c1k6u"]
 [ext_resource type="BitMap" uid="uid://bh0onrn7es88y" path="res://assets/art/interview/handbook.tres" id="9_xdl4b"]
 [ext_resource type="Texture2D" uid="uid://dxwh63d2bke8b" path="res://assets/art/interview/yes.png" id="10_wtybp"]
 [ext_resource type="Texture2D" uid="uid://c34p2mqnxvexr" path="res://assets/art/interview/yes_hover.png" id="11_4uqih"]
@@ -15,6 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://bgsnfl0ud3cd4" path="res://assets/art/interview/Boardery.png" id="11_xdl4b"]
 [ext_resource type="BitMap" uid="uid://86w8td2pynd7" path="res://assets/art/interview/Boardery.tres" id="12_sx5f3"]
 [ext_resource type="Texture2D" uid="uid://deffmax7f528e" path="res://assets/art/interview/no.png" id="12_wtybp"]
+[ext_resource type="Texture2D" uid="uid://dppy7l02t6iwv" path="res://assets/art/interview/Boardery_hover.png" id="13_qjyxi"]
 [ext_resource type="Texture2D" uid="uid://y8i38h1dk0jt" path="res://assets/art/interview/water.png" id="14_k2e4n"]
 [ext_resource type="Texture2D" uid="uid://bel4htp3jetqo" path="res://assets/art/interview/no_hover.png" id="14_xdl4b"]
 [ext_resource type="PackedScene" uid="uid://dyj06ie8ocu0" path="res://scenes/day/interview/handbook.tscn" id="14_xqjd5"]
@@ -84,6 +86,7 @@ offset_right = 2246.0
 offset_bottom = 1334.0
 scale = Vector2(0.5, 0.5)
 texture_normal = ExtResource("8_4uqih")
+texture_hover = ExtResource("9_c1k6u")
 texture_click_mask = ExtResource("9_xdl4b")
 
 [node name="Resume" parent="." unique_id=429165533 instance=ExtResource("5_asawf")]
@@ -97,6 +100,7 @@ offset_right = 2066.0
 offset_bottom = 1214.0
 scale = Vector2(0.6, 0.6)
 texture_normal = ExtResource("11_xdl4b")
+texture_hover = ExtResource("13_qjyxi")
 texture_click_mask = ExtResource("12_sx5f3")
 
 [node name="Approved" type="TextureButton" parent="." unique_id=1053593264]
