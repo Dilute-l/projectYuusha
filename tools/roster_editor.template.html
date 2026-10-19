@@ -190,7 +190,7 @@ h2{font-size:12px; color:var(--dim); font-weight:600; letter-spacing:1px; margin
 
 <main>
   <section id="pool">
-    <h2>候选人池</h2>
+    <h2>候选人池 <span class="muted" style="font-weight:400" id="pool-snap"></span></h2>
     <div class="tools">
       <input type="text" id="q" placeholder="按名字 / 特质 / 编号搜索">
       <div class="row">
@@ -290,6 +290,7 @@ const TRAIT_CN = {
   fake0:'无造假', fake1:'造假·一', fake2:'造假·二', fake3:'造假·三',
   caring:'体贴', rude:'粗鲁', timid:'胆小', prideful:'傲慢', active:'活泼',
   bard:'吟游诗人', fourth_wall:'看破第四面墙', dwarf_joke:'爱讲矮人笑话',
+  true_ending:'真结局',
   slime_slayer:'史莱姆杀手', ghost_slayer:'幽灵杀手', goblin_slayer:'哥布林杀手',
   harpy_slayer:'鸟妖杀手', mimic_slayer:'拟身怪杀手', orc_slayer:'兽人杀手'
 };
@@ -307,6 +308,18 @@ const DATA = JSON.parse(RAW_TEXT);
 const CAND = DATA.candidates || [];
 const BY_ID = new Map(CAND.map(c => [c.id, c]));
 const TARGET_TOTAL = DAY_META.reduce((s, m) => s + m.target, 0);
+
+/* 数据快照的"新鲜度"：候选人是**构建时**从 data/candidates 读进来的，
+   改了数据就必须重跑 tools/build_roster_editor.ps1。
+   以前这一步不显眼 —— 新加的卡在工具里"看不见"，十有八九是忘了重跑。 */
+(function renderPoolSnapshot() {
+  const el = document.getElementById('pool-snap');
+  if (!el) return;
+  const when = String(DATA.generatedAt || '').replace('T', ' ');
+  el.textContent = '共 ' + CAND.length + ' 张' + (when ? ' · 快照 ' + when : '');
+  el.title = '候选人是构建时从 data/candidates/*.tres 读进来的快照；' +
+    '改了数据就重跑 pwsh -File tools/build_roster_editor.ps1';
+})();
 
 /* ============================================================
    纯函数：判断一份简历的“真假”（全部依据数据，不做推理）
