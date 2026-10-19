@@ -28,6 +28,7 @@ ask_path = "res://data/asks/c_ct_0004_3.json"
 script = ExtResource("1_script")
 id = &"c_ct_0004"
 display_name = "贝特瑞"
+level = 1
 strength = 10
 intelligence = 9
 wisdom = 13

@@ -6,5 +6,11 @@
 	{
 		"speaker_name": "伊戈",
 		"text": "是的，我们当时负责城镇的治安，和许多种类的怪物，或者和土匪之类的人的都交战过。"
+	},
+	{
+		"speaker_name": "伊戈",
+		"text": "这是我离职的时候开的证明。",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
 	}
 ]

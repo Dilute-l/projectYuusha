@@ -1,0 +1,16 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "方便出示一下你的毕业证吗？"
+	},
+	{
+		"speaker_name": "缪斯",
+		"text": "我马上就毕业了，现在毕业证还没有发下来。"
+	},
+	{
+		"speaker_name": "缪斯",
+		"text": "这是我的在读证明。",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
+	}
+]

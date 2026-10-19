@@ -28,6 +28,7 @@ ask_path = "res://data/asks/c_ct_0005_3.json"
 script = ExtResource("1_script")
 id = &"c_ct_0005"
 display_name = "塔米·新叶"
+level = 1
 strength = 7
 intelligence = 15
 wisdom = 12

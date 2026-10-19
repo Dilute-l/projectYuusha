@@ -6,7 +6,8 @@
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
 [ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/active.tres" id="6_tr0"]
-[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+[ext_resource type="Resource" path="res://data/traits/goblin_slayer.tres" id="7_tr1"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="8_stamp"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -40,14 +41,15 @@ race = ExtResource("4_race")
 job = ExtResource("3_job")
 gender = &"男"
 age = 23
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("7_tr1")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "飞翼一族的战士伊戈，愿为讨伐魔王事业尽微薄之力。"
 judgment = "伊戈的战斗方式稳健得就像一堵城墙，队友在他的保护下十分安全。"
+display_race = "飞翼族"
 portrait_race = &"hu"
-portrait_eye = 101
-portrait_hair = 101
-portrait_mouth = 101
-portrait_hat = 201
-resume_stamp = ExtResource("7_stamp")
+portrait_eye = 0
+portrait_hair = 9905
+portrait_mouth = 0
+portrait_hat = 0
+resume_stamp = ExtResource("8_stamp")

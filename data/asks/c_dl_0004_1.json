@@ -6,5 +6,11 @@
 	{
 		"speaker_name": "莫恩",
 		"text": "是的，我的父母都是虔诚的信徒。"
+	},
+	{
+		"speaker_name": "莫恩",
+		"text": "这是我的实习证明。",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
 	}
 ]

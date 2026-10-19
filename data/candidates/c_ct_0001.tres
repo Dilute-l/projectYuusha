@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://d0nmt5mi80trp"]
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
 
-[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
-[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" uid="uid://dfs1p8h23prax" path="res://data/jobs/mage.tres" id="3_job"]
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
-[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/fake1.tres" id="6_tr0"]
 [ext_resource type="Resource" path="res://data/traits/caring.tres" id="7_tr1"]
 
@@ -22,6 +22,7 @@ ask_path = "res://data/asks/c_ct_0001_2.json"
 script = ExtResource("1_script")
 id = &"c_ct_0001"
 display_name = "梅索西斯"
+level = 1
 strength = 8
 intelligence = 14
 wisdom = 10
@@ -38,3 +39,5 @@ fake_level = 1
 portrait_race = &"el"
 portrait_eye = 201
 portrait_hair = 201
+portrait_mouth = 101
+portrait_hat = 0
