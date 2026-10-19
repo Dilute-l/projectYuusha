@@ -33,7 +33,7 @@
 	{ "speaker_name": "棍木", "text": "他要是这么说，你就该知道他在撒谎了。" }
   ],
   "Boardery": [
-	{ "speaker_name": "阿板", "text": "Mysteries wind~" }
+	{ "speaker_name": "阿板", "text": "今日事务：\n下班" }
   ],
   "Watercooler": [
 	{ "speaker_name": "饮水机", "sound": "silent", "text": "散发出一股强大的气场。" },
@@ -66,20 +66,117 @@
   "MenuSeal": [
 	{ "speaker_name": "腻子", "text": "这里本来是一个印章的 ^1但是看起来太像清凉油，于是只好改成了火漆" }
   ],
-  "day1_briefing": [
-	{ "speaker_name": "柳絮", "text": "这是酷炫占位符" },
-	{ "speaker_name": "柳絮", "text": "来，先在这块牌子上签个字。", "popup": "Contract", "popup_signature": "signature" }
+"day1_briefing": [
+	{ "speaker_name": "面试官", "text": "第一天上班还真有点紧张……" },
+	{ "speaker_name": "面试官前辈", "text": "哟，你就是新来的吧。" },
+	{ "speaker_name": "面试官", "text": "是的，我是……" },
+	{ "speaker_name": "面试官前辈", "text": "不用说了，看见那把椅子了吗，你过去，坐下。" },
+	{ "speaker_name": "面试官前辈", "text": "来，先在这块牌子上签个字。", "popup": "Contract", "popup_signature": "signature" },
+	{ "speaker_name": "面试官前辈", "text": "今天是你第一天上班，你的任务是从前来应聘的人当中选出合适的勇者。现在我来给你介绍一下工作流程。" },
+	{ "speaker_name": "面试官前辈", "text": "应聘人会分为三个职业：战士，法师和牧师。一般来讲，这三种职业分别对应物理攻击，法术攻击和支援队友三种技能。" },
+	{ "speaker_name": "面试官前辈", "text": "注意，你的队伍里必须要包含这三种技能，如果没有的话，战斗力是要大扣分的，至于具体哪些技能怎么划分，都是你自己要判断的问题了。" },
+	{ "speaker_name": "面试官前辈", "text": "以及，这三种职业依赖的能力值也不相同，战士依赖力量，法师依赖智力，牧师依赖感知，属性越高，代表他的战力越高。" },
+	{ "speaker_name": "面试官前辈", "text": "每个应聘者还有不同的特点，从他们的履历和专长中就能看出来，动动你的手指点一下想提问的条目，再动动你的嘴皮子跟他们说两句验证一下他们的真假，然后自行判断，如果有水货，那就一键给他赶走，如果实力够格，那就留下来。如果遇到觉得奇怪的属性，你也可以质问他们。" },
+	{ "speaker_name": "面试官前辈", "text": "有时候他们会出示证书，好好检查上面的印章！看看是真的还是假的。印章的样子都记录在你的手册里了。" },
+	{ "speaker_name": "面试官前辈", "text": "因为我们经费有限，等到所有应聘人都筛选完后，你要从通过初试的勇者们再选出几位，组成今天的队伍，还记得住我之前说的吗？三种技能都要有。" },
+	{ "speaker_name": "面试官前辈", "text": "听明白了吗，听明白的话，就开始你今天的工作吧！" }
   ],
-  "day-1_briefing": [
-	{ "speaker_name": "柳絮", "text": "这是酷炫占位符\nif you see this means something goes wrong" }
+"day2_briefing": [
+	{ "speaker_name": "面试官前辈", "text": "昨天的工作情况我都看了，做的不错嘛。" },
+	{ "speaker_name": "面试官前辈", "text": "不过今天你可要小心点了，昨天不知道哪个新上任的倒霉面试官，不小心放进去了好几个简历造假的王八羔子进去，上了路没多久就崩撤卖溜了，国王生气的很，毕竟浪费了国库不少钱，当天晚上那家伙就被辞退了。" },
+	{ "speaker_name": "面试官前辈", "text": "一定要好好问清楚简历的每个细节啊，千万别把假货放进来！" }
   ],
-  "day1_spevent": [
-	{ "speaker_name": "柳絮", "text": "no special event yet" }
+"day3_briefing": [
+	{ "speaker_name": "面试官前辈", "text": "早啊年轻人，这两天干得不错嘛。" },
+	{ "speaker_name": "面试官", "text": "多谢前辈夸奖。" },
+	{ "speaker_name": "面试官前辈", "text": "这几天讨伐小有成效，王国甚至在路上建了几个哨所专门留意魔王军的动向，今天魔王派出了成建制的军队，要比以前棘手的多，不过都是由同一种魔物组成的，如果你的队伍里有对付这些魔物有经验的勇者，说不定会好很多。" },
+	{ "speaker_name": "面试官前辈", "text": "让我看看……啊今天魔王派出的是史莱姆大军，哦，就是那种黏黏糊糊的东西，具体的情报应该都在你的手册里了，好好看看吧。" },
+	{ "speaker_name": "面试官前辈", "text": "还有，国王说了，这件事解决之后所有面试官都会论功行赏，只要你不出问题，无论是钱还是官职，之后都会有的。祝你好运，年轻人。" }
   ],
-  "day-1_spevent": [
+"day4_briefing": [
+	{ "speaker_name": "面试官前辈", "text": "我们的王国，究竟会变成什么样子……" },
+	{ "speaker_name": "面试官", "text": "？" },
+	{ "speaker_name": "面试官前辈", "text": "看这个，我们一直认可的检测机构，他们老板昨天刚刚被抓走，再过半个小时脑袋就能在地上咕噜噜滚了。" },
+	{ "speaker_name": "面试官前辈", "text": "记得多看看证件上的印章，万一是错的呢，我可不希望你也跟着掉脑袋。" }
+  ],
+"day5_briefing": [
+	{ "speaker_name": "面试官", "text": "让我看看今天要面试的人都有哪些……" },
+	{ "speaker_name": "面试官", "text": "怎么这么多其他职业的人也来了？" },
+	{ "speaker_name": "面试官前辈", "text": "可别小瞧特异人士啊，大隐隐于市，说不定你真能从其中找到些天才和宝藏呢。" },
+	{ "speaker_name": "面试官前辈", "text": "像我，你看得出来我在当面试官之前是干什么的吗？" },
+	{ "speaker_name": "面试官", "text": "抱歉，我确实有些不敏感。" },
+	{ "speaker_name": "面试官前辈", "text": "哼哼，看不出来是正常的，毕竟我确实不上班嘛。我家里有个大庄园，用不着自己赚钱。" },
+	{ "speaker_name": "面试官", "text": "真羡慕你们这些有钱人……" },
+	{ "speaker_name": "面试官前辈", "text": "别想那么多啦，现在还是要一块工作的嘛。还有今天的工作通知，你最好看好了这帮家伙们，看看他们的技能和职业到底属于哪一范畴。" }
+  ],
+"day6_briefing": [
+	{ "speaker_name": "面试官前辈", "text": "话说……你是怎么获得这份工作的？" },
+	{ "speaker_name": "面试官", "text": "我吗？我看见了王城发的招募告示，然后报名海选，考试考进来的。" },
+	{ "speaker_name": "面试官前辈", "text": "嗯——那还蛮有含金量的呢。" },
+	{ "speaker_name": "面试官", "text": "前辈不也是一样的吗？" },
+	{ "speaker_name": "面试官前辈", "text": "……一，一样，差不多的吧。" },
+	{ "speaker_name": "面试官", "text": "（原来是不一样的吗！果然是公子哥啊！）" }
+  ],
+"day7_briefing": [
+	{ "speaker_name": "面试官前辈", "text": "好消息，好消息！我们打进魔王城了！" },
+	{ "speaker_name": "面试官", "text": "进展比想象中快很多呢。" },
+	{ "speaker_name": "面试官前辈", "text": "看来用不了多久，就要决战了啊。这段时间的人才需求也比以前提升了很多，各种魔物都必须要有一个能对付的好手才行。" },
+	{ "speaker_name": "面试官前辈", "text": "开始工作吧，年轻人，距离胜利异种族不算远了。" }
+  ],
+"day8_briefing": [
+	{ "speaker_name": "面试官前辈", "text": "可恶！！！！" },
+	{ "speaker_name": "面试官", "text": "怎么了前辈？" },
+	{ "speaker_name": "面试官前辈", "text": "我斥巨资买的储赢未来的基金，还送了王城最火的女歌唱家的联动签名款画像。结果今天告诉我这都是假的，不仅钱没了，签名也是假的！！" },
+	{ "speaker_name": "面试官前辈", "text": "我恨这些骗子！今天要是有胆敢在简历上造假的，全都毫不留情面的赶出去！" }
+  ],
+"day9_briefing": [
+	{ "speaker_name": "柳絮", "text": "老米还没写" }
+  ],
+"day10_briefing": [
+	{ "speaker_name": "面试官前辈", "text": "你知道今天是什么日子吗？" },
+	{ "speaker_name": "面试官", "text": "什么？今天是帝国333年十月……" },
+	{ "speaker_name": "面试官前辈", "text": "不是问你这个。你的实习期就要结束了，还有，今天是和魔王决战的日子。" },
+	{ "speaker_name": "面试官", "text": "！" },
+	{ "speaker_name": "面试官前辈", "text": "不过啊，以前每次面对魔王的时候都会有一个英雄一样的强者，可是这次的到现在都没出现，难道我们真的要靠这些水平不太行的家伙打败魔王了吗。" },
+	{ "speaker_name": "面试官前辈", "text": "总之，今天可能就是你工作的最后一天了，务必要小心谨慎，说不定成败的关键就在你身上呢！"}
+  ],
+"day-1_briefing": [
+	{ "speaker_name": "柳絮", "text": "if you see this means something goes wrong" }
+  ],
+"day1_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n今日的天气是：晴朗！" }
+  ],
+"day2_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位面试官注意，今日严查人员资历\n若有职责疏忽，格杀勿论~" }
+  ],
+"day3_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n本日出没魔物为：史莱姆！" }
+  ],
+"day4_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n本日出没魔物为：鸟妖！" }
+  ],
+"day5_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n本日出没魔物为：哥布林！" }
+  ],
+"day6_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n本日出没魔物为：兽人！" }
+  ],
+"day7_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n今日迎战魔王城精锐大队！" }
+  ],
+"day8_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n本日出没魔物为：拟身怪，幽灵！" }
+  ],
+"day9_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n本日出没魔物为：兽人，哥布林！" }
+  ],
+"day10_spevent": [
+	{ "speaker_name": "魔法广播", "text": "叮咚当咚——\n各位注意，根据前线战报\n本日出没魔物为：史莱姆，龙！" }
+  ],
+"day-1_spevent": [
 	{ "speaker_name": "柳絮", "text": "no special event yet\nif you see this means something goes wrong" }
   ],
-  "day1_driver": [
+"day1_driver": [
 	{ "speaker_name": "面试官", "text": "回威利奇村。" },
 	{ "speaker_name": "马车夫", "text": "先生您一看就是达官贵人，是在王城上班吧" },
 	{ "speaker_name": "面试官", "text": "的确。" },
@@ -87,14 +184,14 @@
 	{ "speaker_name": "面试官", "text": "也不是不行……" },
 	{ "speaker_name": "马车夫", "text": "好嘞，以后我每天这个点都在这准时接您回家，您坐好咯！" }
   ],
-  "day2_driver": [
+"day2_driver": [
 	{ "speaker_name": "马车夫", "text": "先生您今天工作还顺利吗？" },
 	{ "speaker_name": "面试官", "text": "谢谢，还算顺利吧。" },
 	{ "speaker_name": "马车夫", "text": "在王城上班可是件美差啊，先生真是有福气。" },
 	{ "speaker_name": "面试官", "text": "如果你见过那帮家伙有多烦人，你就不会这么说了。" },
 	{ "speaker_name": "马车夫", "text": "总比我们这些每天出力气，在马车上颠簸一整天的家伙好。" }
   ],
-  "day3_driver": [
+"day3_driver": [
 	{ "speaker_name": "马车夫", "text": "先生不觉得这两天王城很多奇怪的人吗。" },
 	{ "speaker_name": "面试官", "text": "可能是国王最近在选勇者吧。" },
 	{ "speaker_name": "马车夫", "text": "勇者？魔王又来了吗。" },
@@ -104,7 +201,7 @@
 	{ "speaker_name": "马车夫", "text": "先生，我不是说您，您一看就是好人，但是有些大贵族们一出生就养尊处优，自己什么也不干，我们的钱就往他们兜里流。" },
 	{ "speaker_name": "马车夫", "text": "这王宫富丽堂皇的，哪里不是用我们的钱盖的，把自己孩子送到这种地方，能指望有什么好待遇，不是被欺负，就是同流合污。" }
   ],
-  "day4_driver": [
+"day4_driver": [
 	{ "speaker_name": "马车夫", "text": "哎，先生，您最近没去王城哪家老男人理发店吧？" },
 	{ "speaker_name": "面试官", "text": "没有，怎么了。" },
 	{ "speaker_name": "马车夫", "text": "那就好啊，听说那家理发师是个巫师，还沾上不干净的东西了，他家的狗也是魔物变的。" },
@@ -114,21 +211,21 @@
 	{ "speaker_name": "马车夫", "text": "嗐，那不是，心里毕竟还是过意不去嘛，谁知道会不会出事，等出事那可就晚了！" },
 	{ "speaker_name": "面试官", "text": "我知道了。" }
   ],
-  "day5_driver": [
+"day5_driver": [
 	{ "speaker_name": "马车夫", "text": "王城东南那边怎么这么热闹，今天看见好多人都聚在那边，还搭了个大尖篷子。" },
 	{ "speaker_name": "面试官", "text": "听说是来自中原的一个马戏团，今天刚到王城。" },
 	{ "speaker_name": "马车夫", "text": "原来是马戏团啊，听起来还不错的样子，怪不得那么多人去围观，可惜我没时间去看。" },
 	{ "speaker_name": "面试官", "text": "你可以带你的妻子和孩子去看看，小孩子应该会喜欢这种东西。" },
 	{ "speaker_name": "马车夫", "text": "您说的一点都对，先生，我该想个办法多挣点钱，再抽点时间带她们去看看了。" }
   ],
-  "day6_driver": [
+"day6_driver": [
 	{ "speaker_name": "马车夫", "text": "王后大道西到，王后大道东~王后大道东，人民如潮涌~" },
 	{ "speaker_name": "面试官", "text": "看来你今天心情不错？" },
 	{ "speaker_name": "马车夫", "text": "是啊，今天接了不少大单子，整条王后大道都跑遍了，又赚了不少呢。" },
 	{ "speaker_name": "面试官", "text": "这是好事啊。" },
 	{ "speaker_name": "马车夫", "text": "今天早点回去，让马也歇歇，先生知不知道王城哪里有卖好东西的地方，比如点心之类的，我想买点带回家。" }
   ],
-  "day7_driver": [
+"day7_driver": [
 	{ "speaker_name": "马车夫", "text": "……" },
 	{ "speaker_name": "面试官", "text": "……" },
 	{ "speaker_name": "马车夫", "text": "……" },
@@ -143,7 +240,7 @@
 	{ "speaker_name": "马车夫", "text": "明天见，先生。" },
 	{ "speaker_name": "面试官", "text": "……明天见。" }
   ],
-  "day8_driver": [
+"day8_driver": [
 	{ "speaker_name": "面试官", "text": "……" },
 	{ "speaker_name": "马车夫", "text": "先生。" },
 	{ "speaker_name": "面试官", "text": "你说吧。" },
@@ -165,7 +262,7 @@
 	{ "speaker_name": "面试官", "text": "这是我从家里带的特产，不嫌弃的话，收下吧。" },
 	{ "speaker_name": "马车夫", "text": "谢谢您，先生。" }
   ],
-  "day9_driver": [
+"day9_driver": [
 	{ "speaker_name": "马车夫", "text": "先生，原谅我，这可能是我最后一次接送您了。" },
 	{ "speaker_name": "面试官", "text": "你考虑好了？" },
 	{ "speaker_name": "马车夫", "text": "是的，先生，我考虑好了，明天起，我想去旅游，只有我和我的马车，去我之前走过却没停下来仔细看过的那些地方。" },
@@ -176,23 +273,23 @@
 	{ "speaker_name": "马车夫", "text": "您是我的恩人，先生。" },
 	{ "speaker_name": "面试官", "text": "谢谢，你也是。" }
   ],
-  "day10_driver": [
+"day10_driver": [
 	{ "speaker_name": "面试官", "text": "回威利奇村。" },
 	{ "speaker_name": "马车夫（全新）", "text": "好嘞，您坐好咯。" }
   ],
-  "day-1_driver": [
+"day-1_driver": [
 	{ "speaker_name": "车夫", "text": "if you see this means something goes wrong" }
   ],
-  "team_not_full": [
+"team_not_full": [
 	{ "speaker_name": "面试官", "text": "队伍还没有组满……\n如果一定要就这样出发的话，就再点一次按钮吧。" }
   ],
-  "team_over": [
+"team_over": [
 	{ "speaker_name": "面试官", "text": "带的人比名额多，这样是出不了门的。\n先从名单上划掉几位吧。" }
   ],
-  "ask_missing": [
+"ask_missing": [
 	{ "speaker_name": "面试官", "text": "这个地方好像没有什么好问的……" }
   ],
-  "opening": [
+"opening": [
 	{ "speaker_name": "旁白", "text": "凯多姆王国立法333年，3年一度的魔王肆虐限时活动再次返场了。" },
 	{ "speaker_name": "旁白", "text": "为了对付被王国定义为邪恶的魔王，王国遵循祖宗之法，让历代相传的英雄之剑选出对抗魔王的传说中的勇者。" },
 	{ "speaker_name": "旁白", "text": "按照往年的经验来看，只要选出那位传说的勇者之后，只要再配备几位最好的魔法师和牧师之类，魔王的危机就会迎刃而解。" },
@@ -203,7 +300,7 @@
 	{ "speaker_name": "旁白", "text": "挑选勇者只有两个两个条件：第一，要足够强大，至少要能够打过讨伐魔王路上的任何一只魔物。" },
 	{ "speaker_name": "旁白", "text": "第二，勇者的总数量要比王城的野狗少！！！\n数量比野狗还多的！怎么可能是勇者呢！！！！！" }
   ],
-  "Ending_Good": [
+"Ending_Good": [
 	{ "speaker_name": "旁白", "text": "魔王，被击败了。", "sound": "击败！" },
 	{ "speaker_name": "旁白", "text": "这是好事啊。" },
 	{ "speaker_name": "国王", "text": "这场宴会呢，主要是为了庆祝我们在取得的胜利，天佑盆塔·希瓦王国，我们又一次战胜了魔王！" },
@@ -242,11 +339,11 @@
 	{ "speaker_name": " ", "text": "通过某种精妙的魔法算法，我们得以把你对讨伐魔王的奉献量化为分数。" },
 	{ "speaker_name": " ", "text": "你在这十天里的得分总计是……{total_score}。" }
   ],
-  "Ending_Bad": [
+"Ending_Bad": [
 	{ "speaker_name": "国王", "text": "没用的东西！你看看你招进来的都是什么废物！连一只魔物都打不过，白白浪费纳税人的钱！！" },
 	{ "speaker_name": "国王", "text": "来人！！给我把这个玩忽职守的家伙拖出去斩了！！" }
   ],
-  "Ending_True": [
+"Ending_True": [
 	{ "speaker_name": "旁白", "text": "三年之期已到，魔王又一次按照规定的日期卷土重来了。凯多姆王国又一次笼罩在魔王的阴影下。" },
 	{ "speaker_name": "官员", "text": "你是三年前的面试官，对吧？" },
 	{ "speaker_name": "面试官", "text": "你……你们，还要来纠缠吗？" },
@@ -268,5 +365,46 @@
 	{ "speaker_name": "面试官", "text": "！！！" },
 	{ "speaker_name": "面试官", "text": "这不明明是！！！！" },
 	{ "speaker_name": "面试官", "text": "是他啊！！！！！！！" }
+  ] ,
+"day1_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n熟悉一下面试流程" }
+  ],
+"day2_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n当心候选人里的水货" }
+  ],
+"day3_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n当心候选人里的水货\n挑选能够对抗魔物的勇者" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n!?史?!莱姆" }
+  ],
+"day4_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n当心水货与假公章\n挑选能够对抗魔物的勇者" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n咔咔！鸟妖的力量无人能及！" }
+  ],
+"day5_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n当心水货与假公章\n挑选勇者……即便他们看着不像勇者！" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n哥布林，哥布林，还有很多哥布林" }
+  ],
+"day6_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n水货……好多好多水货……" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n俺寻思今儿出现的是兽人" }
+  ],
+"day7_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n敌人数量超级加倍" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n你看到的所有敌人都会出现，字面意思" }
+  ],
+"day8_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n公章造假变本加厉" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n    和拟身怪一起出现了" }
+  ],
+"day9_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n闲散人员大量出没" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n哥布林和兽人的绿皮派对" }
+  ],
+"day10_Boardery": [
+	{ "speaker_name": "阿板", "text": "今日事务：\n完成工作" },
+	{ "speaker_name": "阿板", "text": "今日出没魔物：\n龙，史莱姆" }
+  ],
+	"day-1_Boardery": [
+	{ "speaker_name": "阿板", "text": "Mysteries wind~" }
   ]
 }

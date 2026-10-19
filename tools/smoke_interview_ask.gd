@@ -19,6 +19,10 @@ extends Node
 ## 不能弹一个空白框，而要播 data/dialogue.json 的 `ask_missing` 段，并且**不算「问过」**
 ## （组队阶段的「回忆」播不出东西的那几条不该亮起来）。
 ##
+## 最后还盯一条**按天取文案**的路：公告板（NoticeBoard）播 `day<N>_Boardery`，
+## 没有就落到 `day-1_Boardery` 兜底 —— 和 `dayN_briefing` / `dayN_driver` 同一套命名约定
+## （第 1 天单独有正文，其余天用兜底；挑中的那份按天缓存）。
+##
 ## 为什么要真的实例化 interview.tscn：追问的落点在 interview.gd 身上，
 ## 单独拿 resume.tscn 测只能测到「信号发出去了」，测不到「对话框真的播了那份 json」。
 
@@ -344,6 +348,46 @@ func _run() -> void:
 	_check(GameState.get_asked_entries(candidate.id) == asked_before,
 			"没有内容的追问不记「问过」（记录仍是 %s）" % str(asked_before))
 	entries[0].ask_path = saved
+
+	# ---- 公告板：今天那份优先，没有就用 day-1 兜底（与 dayN_briefing 同一套约定）----
+	# 第 1 天有 day1_Boardery，第 2 天还没写 day2_Boardery —— 正好把两条路都走一遍。
+	var board: TextureButton = interview.get_node_or_null("NoticeBoard")
+	_check(board != null, "面试场景里有 NoticeBoard 按钮")
+	if board != null:
+		var expect_day1 := _read_segment("day1_Boardery")
+		var expect_fallback := _read_segment("day-1_Boardery")
+		_check(not expect_day1.is_empty(), "data/dialogue.json 里有 day1_Boardery 段")
+		_check(not expect_fallback.is_empty(), "data/dialogue.json 里有 day-1_Boardery 兜底段")
+
+		# 第 1 天：命中自己那份
+		GameState.run_state.day = 1
+		dialoguer.visible = false
+		board.emit_signal("pressed")
+		await _settle()
+		_check(dialoguer.visible, "点公告板 → 对话框播出")
+		_check(_lines_match(typer, expect_day1), "第 1 天播的是 day1_Boardery")
+
+		# 第 2 天：没有 day2_Boardery → 落到 day-1
+		GameState.run_state.day = 2
+		dialoguer.visible = false
+		board.emit_signal("pressed")
+		await _settle()
+		_check(dialoguer.visible, "第 2 天点公告板 → 同样播出（没被「今天还没写」卡住）")
+		_check(_lines_match(typer, expect_fallback),
+				"第 2 天没有 day2_Boardery → 播 day-1_Boardery 兜底")
+
+		# 同一天再点：走缓存，还是同一份
+		dialoguer.visible = false
+		board.emit_signal("pressed")
+		await _settle()
+		_check(_lines_match(typer, expect_fallback), "同一天再点 → 仍然是兜底那份（缓存生效）")
+
+		# 换到第 1 天：缓存按天失效，重新挑回 day1_Boardery
+		GameState.run_state.day = 1
+		dialoguer.visible = false
+		board.emit_signal("pressed")
+		await _settle()
+		_check(_lines_match(typer, expect_day1), "换回第 1 天 → 又挑回 day1_Boardery（缓存按天失效）")
 
 
 func _report() -> void:

@@ -364,3 +364,12 @@ func _on_water_button_pressed() -> void:
 		return
 	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
 	_dialoguer.play()
+
+
+func _on_notice_board_pressed() -> void:
+	if _dialoguer == null:
+		push_error("[Interview] 找不到 Dialoguer")
+		return
+	if not _dialoguer.typer.load_dialogue("Boardery"):
+		return
+	_dialoguer.play()

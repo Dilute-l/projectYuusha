@@ -56,6 +56,15 @@ var _has_interviewee: bool = false
 ## 必须挂在「阶段真的变了」上，否则对话会重播、计数会翻倍，而且一声不响。
 var _last_entered_phase: int = -1
 
+## 公告板（NoticeBoard）上次挑中的对话 id，以及它对应的天数。
+##
+## 为什么需要缓存：公告板是**玩家随时能点**的临时对话，一天里可能点很多次。
+## 每点一次都重新按「今天那份 → day-1 兜底」挑一遍，既重复读盘，
+## 也会让「今天还没有正文」这种正常情况反复走一遍失败路径。
+## 换天后 day 变了会自动重新挑（见 _load_notice_board_dialogue）。
+var _board_dialogue_id: String = ""
+var _board_dialogue_day: int = 0
+
 
 func _ready() -> void:
 	# 当日名单是「本日过程量」，开局 / 换天时由 GameState 从 data/days/ 载入。
@@ -779,10 +788,55 @@ func _on_notice_board_pressed() -> void:
 	# 「看完自动推进」这条路径（现在还有占位 HUD 的按钮兜底，等 HUD 删掉就是死路）。
 	if _advance_when_dialogue_ends:
 		return
-	if not _dialoguer.typer.load_dialogue("Boardery"):
+	if not _load_notice_board_dialogue():
 		return
 	# 提示板是临时对话：此时 _advance_when_dialogue_ends 为 false，播完不会推进阶段。
 	_dialoguer.play()
+
+
+## 公告板对话的 id 候选，按优先级排：**今天那份 → day-1 兜底**。
+##
+## 命名沿用 `dayN_briefing` / `dayN_driver` 的约定：`day%d_xxx`，**不补零**
+## （第 1 天是 `day1_xxx`，不是 `day01_xxx`），兜底那份永远是 `day-1_xxx`。
+func _notice_board_dialogue_ids() -> Array[String]:
+	return [
+		"day%d_Boardery" % GameState.get_day(),
+		"day-1_Boardery",
+	]
+
+
+## 装入公告板的对话：先今天那份，没有就用 day-1 兜底。
+##
+## 为什么先 `has_dialogue()` 探一下、再 `load_dialogue()`：
+## `load_dialogue()` 找不到会 push_error。候选里大多数天都没写正文，
+## 而公告板一天能被点好几次 —— 直接拿 `load_dialogue()` 去试，
+## 等于每点一次就在日志里刷一条红。`has_dialogue()` 只回答有没有，不响、也不清空当前内容。
+##
+## 缓存：挑中的 id 按天记住（`_board_dialogue_id` / `_board_dialogue_day`），
+## 同一天反复点只走一次「探测 + 装入」；换天自动重新挑。
+## 兜底也挑不到（数据整个缺失）时只警告一次，不要把点板子变成刷屏。
+func _load_notice_board_dialogue() -> bool:
+	if _dialoguer == null:
+		return false
+	var day := GameState.get_day()
+	if _board_dialogue_day == day:
+		# 今天已经挑过：挑中了就再把那个 id 装回来（玩家可能刚看完别的对话），
+		# 没挑中就直接返回 —— 警告已经发过一次了。
+		if _board_dialogue_id.is_empty():
+			return false
+		return _dialoguer.typer.load_dialogue(_board_dialogue_id)
+
+	var ids := _notice_board_dialogue_ids()
+	for id in ids:
+		if _dialoguer.typer.has_dialogue(id) and _dialoguer.typer.load_dialogue(id):
+			_board_dialogue_id = id
+			_board_dialogue_day = day
+			return true
+
+	_board_dialogue_id = ""
+	_board_dialogue_day = day
+	push_warning("[Interview] 公告板没有可播的对话（今天的和兜底都没有）：%s" % str(ids))
+	return false
 
 
 # ---------------------------------------------------------------------------

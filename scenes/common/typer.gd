@@ -525,6 +525,27 @@ func list_dialogue_ids() -> Array[String]:
 	return ids
 
 
+## 有没有这一段对话：**不报错、也不动当前装入的内容**。
+##
+## 和 `load_dialogue()` 的分工：
+##   · `load_dialogue(id)` = 「我要播它」—— 找不到要响（push_error），并且会清空 lines；
+##   · `has_dialogue(id)` = 「先探一下有没有」—— 给**按优先级挑一段**的调用方用。
+##
+## 典型场景：公告板 `day<N>_Boardery` → `day-1_Boardery` 兜底。
+## 十天的正文通常只有一两天写了，用 `load_dialogue()` 去挑，每缺一天就在日志里刷一条红；
+## 而玩家一天可能点好几次公告板，那种红会刷满控制台。
+##
+## ⚠️ 判定前先确认「当前已装入的是不是默认对话文件」：Typer 可能刚被
+##    `load_dialogue_from()` 装过**别的**文件（追问 json 就是一条一个文件），
+##    那时 `_conversations` 里装的是那个文件的段，直接查会把今天的正文误判成「没有」。
+func has_dialogue(id: String) -> bool:
+	if id.is_empty():
+		return false
+	if _loaded_path != dialogue_path and not _load_all():
+		return false
+	return _conversations.has(id)
+
+
 ## 读取并解析整个对话文件，填进 _conversations；成功返回 true。
 ## path 留空 = 读 dialogue_path（默认文件）。
 func _load_all(path: String = "") -> bool:
