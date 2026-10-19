@@ -104,6 +104,14 @@ func _run() -> void:
 	resume.set_candidate(candidate)
 	await _settle()
 
+	# ⚠️ 面试阶段点词条已经改成「一下直接追问」，不再弹二级菜单。
+	#    菜单现在只在**组队阶段（回忆）**里用 —— 这一支自检验的正是菜单本身
+	#    （摆位 / 夹取 / 收起），所以把简历切到 RECALL 模式；菜单行为和阶段名无关。
+	resume.entry_menu = Resume.EntryMenu.RECALL
+	# 回忆模式里「没问过」的条目按钮是灰的、点不动；下面要用它的按钮，先记成问过。
+	for i in entries.size():
+		GameState.record_entry_asked(candidate.id, i)
+
 	_canvas = resume.get_viewport_rect().size
 	print("[smoke_resume_menu] 画布 = %s，候选人 = %s（%d 条履历/专长）" % [
 		_canvas, candidate.display_name, entries.size()])
@@ -121,7 +129,7 @@ func _run() -> void:
 	_check(panel.texture != null, "面板纹理已加载")
 	_check(panel.texture.get_size() == ResumeTokenMenu.PANEL_SIZE,
 			"纹理实际尺寸 %s == PANEL_SIZE %s" % [panel.texture.get_size(), ResumeTokenMenu.PANEL_SIZE])
-	_check(ask.text == "追问", "按钮文案是「追问」")
+	_check(ask.text == "追问", "菜单按钮的默认文案是「追问」（组队里打开时会被改成「回忆」）")
 
 	# ---- 纸面内容来自数据（不是代码里的占位常量）----
 	_check(resume.token_count() == entries.size(),
@@ -136,14 +144,18 @@ func _run() -> void:
 			"第三条词条正文 = 数据里的 description")
 
 	# ---- 印章：显不显示、用哪张图，全部来自候选人数据（CandidateResource.resume_stamp）----
-	# 数据样本是 data/candidates/c_0001.tres（故意填了章的那一位）。这里**显式按 id 取**，
-	# 不跟着上面那位走 —— 上面那位是「条目最多」挑出来的，跟有没有章没有关系。
-	var stamped: CandidateResource = DataDB.get_candidate(&"c_0001")
-	_check(stamped != null and stamped.resume_stamp != null,
-			"data/candidates/c_0001.tres 在数据里填了 resume_stamp")
-	_check(stamped != null and stamped.resume_stamp != null
-			and stamped.resume_stamp.resource_path == STAMP_TEXTURE_PATH,
-			"填的就是 %s" % STAMP_TEXTURE_PATH)
+	# 样本**不再写死某一张卡**（以前写的是 c_0001，那批旧占位卡已经从 data/ 里删掉了）：
+	# 现找一位填了章的候选人，验「数据里有图 → 纸上就盖那张」。
+	var stamped: CandidateResource = null
+	for id in DataDB.get_ids(&"candidates"):
+		var maybe := DataDB.get_candidate(id)
+		if maybe != null and maybe.resume_stamp != null:
+			stamped = maybe
+			break
+	_check(stamped != null, "data/candidates 里至少有一位填了 resume_stamp")
+	if stamped != null:
+		_check(stamped.resume_stamp.resource_path.get_file().begins_with("resume_stamp"),
+				"填的是 resume_stamp_*.png 那张（实际 %s）" % stamped.resume_stamp.resource_path)
 
 	# 纸上的章严格跟着**当前这位**走：有图就盖，没图就不盖
 	_check(stamp.visible == (candidate.resume_stamp != null),
@@ -277,22 +289,22 @@ func _run() -> void:
 	resume._input(esc)
 	_check(not menu.visible, "Esc → 收起")
 
-	# ---- 「追问」按钮：广播 resume_entry_asked，并收起菜单 ----
-	# 台词不归简历这一层管 —— 档案上只有一个 json 路径，正文由 interview.gd 播。
-	# 所以这里只验「广播对了吗」；端到端那一半见 tools/smoke_interview_ask.gd。
+	# ---- 菜单里那个按钮（组队形态=「回忆」）：广播 resume_entry_recalled，并收起菜单 ----
+	# 台词不归简历这一层管 —— 档案上只有一个 json 路径，正文由 team_builder.gd 重播。
+	# 面试形态（点一下直接追问）在下面单独验；端到端那一半见 tools/smoke_interview_ask.gd。
 	third.emit_signal("pressed")
 	await _settle()
 	_check(menu.ask_requested.get_connections().size() > 0,
 			"ask_requested 已接到 resume.gd")
 	var seen: Array = []
 	var spy := func(cid: StringName, i: int) -> void: seen.append([cid, i])
-	EventBus.resume_entry_asked.connect(spy)
+	EventBus.resume_entry_recalled.connect(spy)
 	ask.emit_signal("pressed")
 	await _settle()
-	EventBus.resume_entry_asked.disconnect(spy)
+	EventBus.resume_entry_recalled.disconnect(spy)
 	_check(seen == [[candidate.id, 2]],
-			"「追问」广播了 resume_entry_asked(%s, 2)（实际 %s）" % [candidate.id, seen])
-	_check(not menu.visible, "「追问」后菜单收起")
+			"「回忆」广播了 resume_entry_recalled(%s, 2)（实际 %s）" % [candidate.id, seen])
+	_check(not menu.visible, "「回忆」后菜单收起")
 	_check(third.visible, "词条没有被动过")
 
 	# ---- 简历整块被显隐时（interview.gd 按阶段控制 Resume.visible）菜单不能诈尸 ----
@@ -305,6 +317,27 @@ func _run() -> void:
 	resume.visible = true
 	await _settle()
 	_check(not menu.is_open(), "Resume 重新显示 → 菜单不会诈尸")
+
+	# ---- 面试形态（ASK）：点词条 = **一下直接追问**，不再弹二级菜单 ----
+	# 这就是这一版改的手感（见 resume.gd::_on_token_selected）。
+	resume.entry_menu = Resume.EntryMenu.ASK
+	menu.close()
+	var asked: Array = []
+	var spy_ask := func(cid: StringName, i: int) -> void: asked.append([cid, i])
+	EventBus.resume_entry_asked.connect(spy_ask)
+	third.emit_signal("pressed")
+	await _settle()
+	_check(asked == [[candidate.id, 2]],
+			"面试里点词条 → 直接广播 resume_entry_asked(%s, 2)（实际 %s）" % [candidate.id, asked])
+	_check(not menu.is_open(), "面试里点词条 → 不再弹二级菜单")
+	# 属性区同理：点一下就直接问（序号 -1）
+	asked.clear()
+	status_btn.pressed.emit()
+	await _settle()
+	_check(asked == [[candidate.id, Resume.STATUS_ENTRY_INDEX]],
+			"面试里点属性区 → 直接广播 resume_entry_asked(%s, -1)（实际 %s）" % [candidate.id, asked])
+	_check(not menu.is_open(), "面试里点属性区 → 不弹菜单")
+	EventBus.resume_entry_asked.disconnect(spy_ask)
 
 	# ---- 换一位候选人：纸面内容整块跟着换 ----
 	resume.set_candidate(null)

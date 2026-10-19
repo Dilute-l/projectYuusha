@@ -351,8 +351,8 @@ class_name DayConfig extends Resource
 | `interview_ui.tscn` | 在 interview 下，用于展示面试中的 UI，包括暂停、设置按钮等系统向 UI 和候选人列表、今日事件等 | — |
 | `interviewee.tscn` | 在 interview 下，管理面试者立绘、管理表情差分、对话框 | — |
 | `resume.tscn` | 在 interview 下，候选者的完整简历：姓名 / 种族 / 职业 / 性别 / 年龄、三围属性（Status 区）、个人履历与奖项、专长、组队宣言 | — |
-| `resume_token.tscn` | 在 resume 下，单条简历词条（复用控件）；点它弹出词条菜单 | `selected` |
-| `resume_token_menu.tscn` | 在 resume 下，词条旁的小菜单（面试=「追问」/ 组队=「回忆」） | `ask_requested` |
+| `resume_token.tscn` | 在 resume 下，单条简历词条（复用控件）；**面试里点一下就直接追问**（不弹菜单），组队里点它弹出「回忆」菜单 | `selected` |
+| `resume_token_menu.tscn` | 在 resume 下，词条旁的小菜单（**现在只在组队阶段**用，选项=「回忆」；没问过的条目置灰） | `ask_requested` |
 | `handbook.tscn` | 在 interview 下，**模态**手册浮层：翻页浏览已解锁条目，开着时挡住本场景其它操作 | `closed` |
 | `team_builder.tscn` | 在 day_loop 下，用于收容从通过者中挑满名额组队这一过程的相关场景 | `team_submitted` |
 | `team_builder_ui.tscn` | 在 team_builder 下，用于展示组队过程中的 UI：**左半边今日通过者的头像列** + **右下角的名额空位**（§12） | `candidate_selected` / `candidate_approved` / `candidate_rejected` |
@@ -422,9 +422,10 @@ signal run_finished(ending_id: StringName)
 3. 玩家对照候选人的 `strength / intelligence / wisdom / race / job / traits` 与手册常识，
    自行判断这条描述与回答是否可信。（**等级是隐藏属性**，不在这串里 —— §3.1。）
 
-> **② 已实现**（`Interview` 阶段内）：点词条 → 菜单「追问」→ `resume.gd` 广播
-> `EventBus.resume_entry_asked(candidate_id, entry_index)` → `interview.gd` 拿到
-> `ask_path`，用 `typer.load_dialogue_from(path)` 装入那份 json，再 `dialoguer.play()`。
+> **② 已实现**（`Interview` 阶段内）：**点词条一下就直接追问**（不再先弹二级菜单、再点「追问」）——
+> `resume.gd` 当场广播 `EventBus.resume_entry_asked(candidate_id, entry_index)` →
+> `interview.gd` 拿到 `ask_path`，用 `typer.load_dialogue_from(path)` 装入那份 json，再 `dialoguer.play()`。
+> 属性区（力量 / 智力 / 感知）点一下同样直接追问（序号 `Resume.STATUS_ENTRY_INDEX`）。
 > 追问是临时对话，播完只收起对话框、**不推进阶段**。详见 §10.6。
 > 这条追问**没有内容**时（没配 `ask_path` / 文件不在 / json 里一句台词都没有）不播空白框，
 > 改播 `data/dialogue.json` 的 `ask_missing` 段（「面试官：这个地方好像没有什么好问的……」）。
@@ -772,7 +773,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 
 | 界面 | 会亮的栏 |
 | --- | --- |
-| 简历（本节） | 力量 / 智力 / 感知（`Status`）、个人履历与奖项的词条、专长的词条、词条菜单里的「追问」 |
+| 简历（本节） | 力量 / 智力 / 感知（`Status`）、个人履历与奖项的词条、专长的词条、**组队阶段**词条菜单里那个按钮（面试已改成一键追问，不再经过菜单） |
 | 战报（§4 `battle_report.tscn`） | 「确认」 |
 | 设置（§14） | 「继续游戏」「退出游戏」 |
 | 手册（§6.3 `handbook.tscn`） | 右上角的退出键（`quit`） |
@@ -1117,10 +1118,11 @@ DayLoop (Node)
 `data/asks/<候选人 id>_<条目序号>.json`（序号从 1 开始），一条追问一个文件。
 
 ```
-点词条 ─ selected ─→ resume.gd._on_token_selected() ─ open_for() ─→ 菜单
-菜单「追问」─ ask_requested ─→ resume.gd._on_ask_requested()
-									│  收菜单；越界 / 空纸就地拦下
-									↓
+点词条 ─ selected ─→ resume.gd._on_token_selected()
+						│  面试（entry_menu = ASK）：**直接**进下一步，不弹菜单
+						└  组队（entry_menu = RECALL）：open_for() 弹「回忆」菜单
+													   └ ask_requested ─→ 下一步
+									↓  收菜单；越界 / 空纸就地拦下
 					 EventBus.resume_entry_asked(candidate_id, entry_index)
 									↓
 			  interview.gd._on_resume_entry_asked()
@@ -1132,11 +1134,16 @@ DayLoop (Node)
 									└─→ _play_ask_missing() ─→ dialoguer.play()
 ```
 
+> **面试里点一下就是追问**（§6.2 第 ② 步）：不再先弹二级菜单、再点一次「追问」。
+> 属性区（力量 / 智力 / 感知，`Status`）点一下走的是同一条路，序号是 `Resume.STATUS_ENTRY_INDEX`（-1）。
+> 菜单（`resume_token_menu.tscn`）现在只剩**组队阶段的「回忆」**在用 ——
+> 那边需要「这条没问过 → 置灰、点不动」这个落点。
+
 | 落点 | 职责 |
 | --- | --- |
 | `resume.gd._on_ask_requested()` | 收菜单 + 广播 `resume_entry_asked`。**不播对话** |
 | `interview.gd._on_resume_entry_asked()` | 守卫 + 取 `ask_path` + 交给自己的 `Dialoguer` |
-| `resume_token_menu.gd.ask_requested` | 菜单里那个按钮的信号（`entry_index` 跟着抛出来） |
+| `resume_token_menu.gd.ask_requested` | **组队阶段**菜单里那个按钮的信号（`entry_index` 跟着抛出来） |
 | `typer.gd.load_dialogue_from()` | 从指定 json 装入一段；`load_dialogue()` 的姐妹方法，见下 |
 
 **为什么要有 `typer.load_dialogue_from()`**：`load_dialogue(id)` 只读 `dialogue_path` 这一个文件，
