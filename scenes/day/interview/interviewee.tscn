@@ -9,9 +9,9 @@ script = ExtResource("1_r3i4g")
 
 [node name="Body" type="Sprite2D" parent="." unique_id=1129747090]
 
-[node name="Eye" type="Sprite2D" parent="." unique_id=1665804804]
-
 [node name="Hair" type="Sprite2D" parent="." unique_id=2081189547]
+
+[node name="Eye" type="Sprite2D" parent="." unique_id=1665804804]
 
 [node name="Mouth" type="Sprite2D" parent="." unique_id=889270090]
 
