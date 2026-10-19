@@ -296,15 +296,15 @@
 	{ "speaker_name": "面试官", "text": "这个地方好像没有什么好问的……" }
   ],
 "opening": [
-	{ "speaker_name": "旁白", "text": "凯多姆王国立法333年，3年一度的魔王肆虐限时活动再次返场了。" },
-	{ "speaker_name": "旁白", "text": "为了对付被王国定义为邪恶的魔王，王国遵循祖宗之法，让历代相传的英雄之剑选出对抗魔王的传说中的勇者。" },
-	{ "speaker_name": "旁白", "text": "按照往年的经验来看，只要选出那位传说的勇者之后，只要再配备几位最好的魔法师和牧师之类，魔王的危机就会迎刃而解。" },
-	{ "speaker_name": "旁白", "text": "可是今年不知道为什么，英雄之剑阴差阳错的选出了超超！超！！超！！！多名勇者！！！" },
-	{ "speaker_name": "旁白", "text": "来自全国各地的勇者挤满了王国的宫殿，甚至不得不闯入国王的寝宫，这让国王，王后，和王后帅气的左侍卫头痛不已。" },
-	{ "speaker_name": "旁白", "text": "王国的财力物力都不足以支持如此多的勇者前往讨伐魔王，于是国王亲自点选了一位自称为被命运选中的勇者前往讨伐魔王。" },
-	{ "speaker_name": "旁白", "text": "在听见这位勇者甚至连王城都没出去就因为左脚踏出大门而摔死之后，国王勃然大怒，从国库里拨出一笔巨款，命令大臣们挑选出合格的勇者们前去讨伐魔王。" },
-	{ "speaker_name": "旁白", "text": "挑选勇者只有两个两个条件：第一，要足够强大，至少要能够打过讨伐魔王路上的任何一只魔物。" },
-	{ "speaker_name": "旁白", "text": "第二，勇者的总数量要比王城的野狗少！！！\n数量比野狗还多的！怎么可能是勇者呢！！！！！" }
+	{ "speaker_name": "旁白", "text": "凯多姆王国立法333年，3年一度的魔王肆虐限时活动再次返场了。","popup": "OpeningCg1" },
+	{ "speaker_name": "旁白", "text": "为了对付被王国定义为邪恶的魔王，王国遵循祖宗之法，让历代相传的英雄之剑选出对抗魔王的传说中的勇者。" ,"popup": "OpeningCg2"},
+	{ "speaker_name": "旁白", "text": "按照往年的经验来看，只要选出那位传说的勇者之后，只要再配备几位最好的魔法师和牧师之类，魔王的危机就会迎刃而解。","popup": "OpeningCg3" },
+	{ "speaker_name": "旁白", "text": "可是今年不知道为什么，英雄之剑阴差阳错的选出了超超！超！！超！！！多名勇者！！！","popup": "OpeningCg4" },
+	{ "speaker_name": "旁白", "text": "来自全国各地的勇者挤满了王国的宫殿，甚至不得不闯入国王的寝宫，这让国王，王后，和王后帅气的左侍卫头痛不已。","popup": "OpeningCg5" },
+	{ "speaker_name": "旁白", "text": "王国的财力物力都不足以支持如此多的勇者前往讨伐魔王，于是国王亲自点选了一位自称为被命运选中的勇者前往讨伐魔王。","popup": "OpeningCg6" },
+	{ "speaker_name": "旁白", "text": "在听见这位勇者甚至连王城都没出去就因为左脚踏出大门而摔死之后，国王勃然大怒，从国库里拨出一笔巨款，命令大臣们挑选出合格的勇者们前去讨伐魔王。","popup": "OpeningCg7" },
+	{ "speaker_name": "旁白", "text": "挑选勇者只有两个两个条件：第一，要足够强大，至少要能够打过讨伐魔王路上的任何一只魔物。","popup": "OpeningCg8" },
+	{ "speaker_name": "旁白", "text": "第二，勇者的总数量要比王城的野狗少！！！\n数量比野狗还多的！怎么可能是勇者呢！！！！！","popup": "OpeningCg9" }
   ],
 "Ending_Good": [
 	{ "speaker_name": "旁白", "text": "魔王，被击败了。", "sound": "击败！" },
@@ -346,31 +346,31 @@
 	{ "speaker_name": " ", "text": "你在这十天里的得分总计是……{total_score}。" }
   ],
 "Ending_Bad": [
-	{ "speaker_name": "国王", "text": "没用的东西！你看看你招进来的都是什么废物！连一只魔物都打不过，白白浪费纳税人的钱！！" },
-	{ "speaker_name": "国王", "text": "来人！！给我把这个玩忽职守的家伙拖出去斩了！！" }
+	{ "speaker_name": "国王", "text": "没用的东西！你看看你招进来的都是什么废物！连一只魔物都打不过，白白浪费纳税人的钱！！","popup": "BeCg" },
+	{ "speaker_name": "国王", "text": "来人！！给我把这个玩忽职守的家伙拖出去斩了！！","popup": "BeCg" }
   ],
 "Ending_True": [
-	{ "speaker_name": "旁白", "text": "三年之期已到，魔王又一次按照规定的日期卷土重来了。凯多姆王国又一次笼罩在魔王的阴影下。" },
-	{ "speaker_name": "官员", "text": "你是三年前的面试官，对吧？" },
-	{ "speaker_name": "面试官", "text": "你……你们，还要来纠缠吗？" },
-	{ "speaker_name": "面试官", "text": "三年前把我一脚踢开的也是你们，现在又要我回去继续干？想得美！" },
-	{ "speaker_name": "官员", "text": "哎呀，年轻人，我劝你不要让我们太难办，你知道违背王国的旨意是什么下场吧。" },
-	{ "speaker_name": "卫兵", "text": "（用手中沉重的武器敲击了一下地面，激起了一大堆灰尘）" },
-	{ "speaker_name": "面试官", "text": "…………" },
-	{ "speaker_name": "官员", "text": "放心，待遇依旧，不过你要好好干，就像之前一样，这样我们都方便。" },
-	{ "speaker_name": "面试官", "text": "好吧……早点结报酬。" },
-	{ "speaker_name": "官员", "text": "这才是我们王国的好公民嘛！" },
-	{ "speaker_name": "", "text": "（工作日）" },
-	{ "speaker_name": "面试官", "text": "为什么……今天的要选的勇者最好能针对神导术？最好还有与人格斗的专长？" },
-	{ "speaker_name": "面试官", "text": "之后还要考虑选择能够破解黑魔法的，和对付持械战斗有经验的？" },
-	{ "speaker_name": "面试官", "text": "这都什么跟什么啊！我们要对付的难道不是魔物吗！" },
-	{ "speaker_name": "面试官另一位前辈", "text": "管那么多干什么，你照做就是了，前线有情报是好事，到时候还得分析怎么对付魔王呢." },
-	{ "speaker_name": "面试官", "text": "我照做就是了，真想见见魔王什么模样啊。" },
-	{ "speaker_name": "面试官另一位前辈", "text": "哎，这不就有了，前线刚送来的最新战报，这上面还有魔王的画像。" },
-	{ "speaker_name": "面试官", "text": "我看看！" },
-	{ "speaker_name": "面试官", "text": "！！！" },
-	{ "speaker_name": "面试官", "text": "这不明明是！！！！" },
-	{ "speaker_name": "面试官", "text": "是他啊！！！！！！！" }
+	{ "speaker_name": "旁白", "text": "三年之期已到，魔王又一次按照规定的日期卷土重来了。凯多姆王国又一次笼罩在魔王的阴影下。","popup": "Black" },
+	{ "speaker_name": "官员", "text": "你是三年前的面试官，对吧？","popup": "Black" },
+	{ "speaker_name": "面试官", "text": "你……你们，还要来纠缠吗？","popup": "EndingCg1" },
+	{ "speaker_name": "面试官", "text": "三年前把我一脚踢开的也是你们，现在又要我回去继续干？想得美！","popup": "EndingCg1" },
+	{ "speaker_name": "官员", "text": "哎呀，年轻人，我劝你不要让我们太难办，你知道违背王国的旨意是什么下场吧。","popup": "EndingCg1" },
+	{ "speaker_name": "卫兵", "text": "（用手中沉重的武器敲击了一下地面，激起了一大堆灰尘）","popup": "EndingCg1" },
+	{ "speaker_name": "面试官", "text": "…………","popup": "EndingCg1" },
+	{ "speaker_name": "官员", "text": "放心，待遇依旧，不过你要好好干，就像之前一样，这样我们都方便。","popup": "EndingCg1" },
+	{ "speaker_name": "面试官", "text": "好吧……早点结报酬。","popup": "EndingCg1" },
+	{ "speaker_name": "官员", "text": "这才是我们王国的好公民嘛！","popup": "EndingCg1" },
+	{ "speaker_name": "", "text": "（工作日）","popup": "Black" },
+	{ "speaker_name": "面试官", "text": "为什么……今天的要选的勇者最好能针对神导术？最好还有与人格斗的专长？","popup": "EndingCg2" },
+	{ "speaker_name": "面试官", "text": "之后还要考虑选择能够破解黑魔法的，和对付持械战斗有经验的？","popup": "EndingCg2" },
+	{ "speaker_name": "面试官", "text": "这都什么跟什么啊！我们要对付的难道不是魔物吗！","popup": "EndingCg2" },
+	{ "speaker_name": "面试官另一位前辈", "text": "管那么多干什么，你照做就是了，前线有情报是好事，到时候还得分析怎么对付魔王呢.","popup": "EndingCg2" },
+	{ "speaker_name": "面试官", "text": "我照做就是了，真想见见魔王什么模样啊。","popup": "EndingCg2" },
+	{ "speaker_name": "面试官另一位前辈", "text": "哎，这不就有了，前线刚送来的最新战报，这上面还有魔王的画像。","popup": "EndingCg2"},
+	{ "speaker_name": "面试官", "text": "我看看！","popup": "EndingCg2" },
+	{ "speaker_name": "面试官", "text": "！！！","popup": "EndingCg3" },
+	{ "speaker_name": "面试官", "text": "这不明明是！！！！","popup": "EndingCg3" },
+	{ "speaker_name": "面试官", "text": "是他啊！！！！！！！","popup": "EndingCg3" }
   ] ,
 "day1_Boardery": [
 	{ "speaker_name": "阿板", "text": "今日事务：\n熟悉一下面试流程" }
