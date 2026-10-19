@@ -5,6 +5,8 @@
 	},
 	{
 		"speaker_name": "盖斯",
-		"text": "是的……这是我的毕业证。"
+		"text": "是的……这是我的毕业证。",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
 	}
 ]
