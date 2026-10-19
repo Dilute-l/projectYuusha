@@ -43,7 +43,5 @@ experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResou
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
 team_declaration = "大家好啊，我是肯恩·杰德，一个职业法师，大家都喊我雷霆之杖。"
 judgment = "肯恩·杰德实在是太稳健了，他的电系法术能给很多魔物都愉悦的送走。"
-portrait_eye = 101
 portrait_hair = 102
 portrait_mouth = 106
-portrait_hat = 0

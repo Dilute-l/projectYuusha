@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
-[ext_resource type="Resource" path="res://data/jobs/fighter.tres" id="3_job"]
+[ext_resource type="Resource" uid="uid://4god4uyebf7b" path="res://data/jobs/fighter.tres" id="3_job"]
 [ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
 [ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="5_stamp"]
 [ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="6_7ybkt"]
