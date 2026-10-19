@@ -350,44 +350,84 @@ func _run() -> void:
 	entries[0].ask_path = saved
 
 	# ---- 公告板：今天那份优先，没有就用 day-1 兜底（与 dayN_briefing 同一套约定）----
-	# 第 1 天有 day1_Boardery，第 2 天还没写 day2_Boardery —— 正好把两条路都走一遍。
+	# ⚠️ 期望值**一律从 data/dialogue.json 现读**，不写死"哪几天有"：
+	#    写手会一天天往里补正文（现在十天都补齐了），自检不该因此飘红。
 	var board: TextureButton = interview.get_node_or_null("NoticeBoard")
 	_check(board != null, "面试场景里有 NoticeBoard 按钮")
 	if board != null:
-		var expect_day1 := _read_segment("day1_Boardery")
 		var expect_fallback := _read_segment("day-1_Boardery")
-		_check(not expect_day1.is_empty(), "data/dialogue.json 里有 day1_Boardery 段")
 		_check(not expect_fallback.is_empty(), "data/dialogue.json 里有 day-1_Boardery 兜底段")
 
-		# 第 1 天：命中自己那份
+		# 第 1 天：有 day1_Boardery 就播它；没有则该落到兜底
+		var expect_day1 := _read_segment("day1_Boardery")
+		if expect_day1.is_empty():
+			expect_day1 = expect_fallback
 		GameState.run_state.day = 1
 		dialoguer.visible = false
 		board.emit_signal("pressed")
 		await _settle()
 		_check(dialoguer.visible, "点公告板 → 对话框播出")
-		_check(_lines_match(typer, expect_day1), "第 1 天播的是 day1_Boardery")
+		_check(_lines_match(typer, expect_day1), "第 1 天播的是 day1_Boardery（没有则兜底）")
 
-		# 第 2 天：没有 day2_Boardery → 落到 day-1
-		GameState.run_state.day = 2
-		dialoguer.visible = false
-		board.emit_signal("pressed")
-		await _settle()
-		_check(dialoguer.visible, "第 2 天点公告板 → 同样播出（没被「今天还没写」卡住）")
-		_check(_lines_match(typer, expect_fallback),
-				"第 2 天没有 day2_Boardery → 播 day-1_Boardery 兜底")
+		# 找一天**有自己那份**的：必须播自己的，而不是兜底（这是「按天不同」的核心）
+		var own_day := 0
+		for day in range(2, GameConfig.TOTAL_DAYS + 1):
+			if not _read_segment("day%d_Boardery" % day).is_empty():
+				own_day = day
+				break
+		if own_day > 0:
+			GameState.run_state.day = own_day
+			dialoguer.visible = false
+			board.emit_signal("pressed")
+			await _settle()
+			_check(_lines_match(typer, _read_segment("day%d_Boardery" % own_day)),
+					"第 %d 天播的是它自己那份 day%d_Boardery" % [own_day, own_day])
+		else:
+			print("  [SKIP] 第 2〜%d 天都没有自己的正文，跳过「有自己那份」这条" % GameConfig.TOTAL_DAYS)
 
-		# 同一天再点：走缓存，还是同一份
-		dialoguer.visible = false
-		board.emit_signal("pressed")
-		await _settle()
-		_check(_lines_match(typer, expect_fallback), "同一天再点 → 仍然是兜底那份（缓存生效）")
+		# 找一天**没有自己那份**的：必须落到兜底
+		var gap_day := 0
+		for day in range(2, GameConfig.TOTAL_DAYS + 1):
+			if _read_segment("day%d_Boardery" % day).is_empty():
+				gap_day = day
+				break
+		if gap_day > 0:
+			GameState.run_state.day = gap_day
+			dialoguer.visible = false
+			board.emit_signal("pressed")
+			await _settle()
+			_check(dialoguer.visible, "第 %d 天点公告板 → 照样播出（没被「今天还没写」卡住）" % gap_day)
+			_check(_lines_match(typer, expect_fallback),
+					"第 %d 天没有自己的正文 → 播 day-1_Boardery 兜底" % gap_day)
+			# 同一天再点：走缓存，还是同一份
+			dialoguer.visible = false
+			board.emit_signal("pressed")
+			await _settle()
+			_check(_lines_match(typer, expect_fallback), "同一天再点 → 仍然是兜底那份（缓存生效）")
+		else:
+			# 十天都写了自己的正文：兜底那条路在真实天数上走不到了。
+			# 先钉住「候选 id 的顺序（今天 → 兜底）」这条契约，再借**不存在的一天**把兜底走出来 ——
+			# 判断逻辑与真实缺天完全一样（那天的 id 不存在 → 落到 day-1），只是不依赖数据恰好缺一天。
+			var ids: Array[String] = interview._notice_board_dialogue_ids()
+			_check(ids.size() == 2 and ids[0] == "day%d_Boardery" % GameState.get_day()
+					and ids[1] == "day-1_Boardery",
+					"公告板候选 id 的顺序是「今天那份 → day-1 兜底」（实际 %s）" % str(ids))
+			var no_content_day := GameConfig.TOTAL_DAYS + 1
+			print("  [SKIP] 十天都有 dayN_Boardery，改用不存在的第 %d 天验兜底" % no_content_day)
+			GameState.run_state.day = no_content_day
+			dialoguer.visible = false
+			board.emit_signal("pressed")
+			await _settle()
+			_check(dialoguer.visible, "没有自己那份的那天 → 照样播出（没被「今天还没写」卡住）")
+			_check(_lines_match(typer, expect_fallback),
+					"该天没有自己的正文 → 播 day-1_Boardery 兜底")
 
-		# 换到第 1 天：缓存按天失效，重新挑回 day1_Boardery
+		# 换回第 1 天：缓存按天失效，重新挑回第 1 天那份
 		GameState.run_state.day = 1
 		dialoguer.visible = false
 		board.emit_signal("pressed")
 		await _settle()
-		_check(_lines_match(typer, expect_day1), "换回第 1 天 → 又挑回 day1_Boardery（缓存按天失效）")
+		_check(_lines_match(typer, expect_day1), "换回第 1 天 → 又挑回第 1 天那份（缓存按天失效）")
 
 
 func _report() -> void:

@@ -306,6 +306,58 @@ func add_flag(flag_name: StringName, amount: int = 1) -> int:
 	return value
 
 # ---------------------------------------------------------------------------
+# 跨局解锁账本（progress）
+# ---------------------------------------------------------------------------
+#
+# 和上面的 run_state.flags **刻意分开**：
+#   · run_state.flags = 「这一局发生了什么」—— 跟着存档走，开新局就清空；
+#   · progress_flags  = 「玩家解锁了什么」—— 落在 user://saves/progress.json，
+#     **任何一局的开/关都不该把它抹掉**。真结局的两个解锁条件就记在这边
+#     （见 scripts/core/flow/ending_unlock.gd）。
+#
+# 第一次访问时才读盘：这样不必操心 autoload 的 _ready 顺序；读不出来就是「什么都没解锁」。
+
+## 跨局解锁账本（StringName -> bool）
+var progress_flags: Dictionary = {}
+var _progress_loaded: bool = false
+
+
+## 读一个解锁 flag
+func get_progress_flag(flag: StringName, default_value: bool = false) -> bool:
+	if flag == &"":
+		return default_value
+	_ensure_progress_loaded()
+	return bool(progress_flags.get(flag, default_value))
+
+
+## 点亮 / 熄灭一个解锁 flag，并立刻落盘。
+## 返回**这次是否真的变了** —— 已经点过的再点一次返回 false，
+## 调用方据此决定要不要播一次「解锁」提示（而不是每次进队、每局都播一遍）。
+func set_progress_flag(flag: StringName, value: bool = true) -> bool:
+	if flag == &"":
+		return false
+	_ensure_progress_loaded()
+	if progress_flags.has(flag) and bool(progress_flags[flag]) == value:
+		return false
+	progress_flags[flag] = value
+	SaveService.save_progress(progress_flags)
+	return true
+
+
+## 把解锁账本整个清掉（调试 / 自检；正式流程里没有入口）
+func clear_progress_flags() -> void:
+	progress_flags.clear()
+	_progress_loaded = true
+	SaveService.save_progress(progress_flags)
+
+
+func _ensure_progress_loaded() -> void:
+	if _progress_loaded:
+		return
+	_progress_loaded = true
+	progress_flags = SaveService.load_progress()
+
+# ---------------------------------------------------------------------------
 # 签名（§16，随存档走）
 # ---------------------------------------------------------------------------
 
@@ -458,6 +510,10 @@ func set_current_team(member_ids: Array[StringName]) -> void:
 	var copy: Array[StringName] = []
 	copy.assign(member_ids)
 	current_team = copy
+	# 真结局的第一个解锁条件：队里**出现过**带 trait.true_ending 的人。
+	# 判定本身在 core（EndingUnlock），这里只负责在队伍变化的那一个入口上报 ——
+	# 进队 / 换队 / 以后别的界面直接改队伍，都从这一处过。
+	EndingUnlock.note_team(copy)
 
 
 func get_current_team() -> Array[StringName]:

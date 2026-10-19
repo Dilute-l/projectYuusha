@@ -408,14 +408,20 @@ func _press_start_button() -> void:
 	button.pressed.emit()
 
 
-## 按结局场景的「返回主菜单」——确认十天流程是个闭环，不是死胡同
+## 结局场景的收尾 —— 确认十天流程是个闭环，不是死胡同。
+##
+## 结局场景现在（M4 之后）是「只播 Ending_Good，播完停顿 RETURN_DELAY 自动回主菜单」，
+## 原来那个「返回主菜单」按钮（Hud/Margin/Layout/BackButton）已经随占位 HUD 一起删掉了。
+##
+## ⚠️ 这里**不调 ending 自己的 _go_back()**：那一步会点亮「真结局」的解锁 flag（跨局账本），
+##    跑一次自检就等于替玩家解开了一半 —— 那件事由 smoke_true_ending 用备份/还原管着。
+##    「_go_back 真的会切回主菜单」由 smoke_ending_flow 定着；这里只核对接线，
+##    然后用 SceneRouter 把闭环走完。
 func _press_ending_back_button() -> void:
 	var ending_scene: Node = get_tree().current_scene
-	var button: BaseButton = ending_scene.get_node_or_null("Hud/Margin/Layout/BackButton") as BaseButton
-	_check(button != null, "结局场景上有返回按钮")
-	if button == null:
-		return
-	button.pressed.emit()
+	_check(ending_scene.get_node_or_null("Dialoguer") != null, "结局场景在播结局对话（Dialoguer）")
+	_check(ending_scene.has_method("_go_back"), "结局场景自带收尾（_go_back，播完自动回主菜单）")
+	SceneRouter.goto_main_menu()
 
 
 ## 在真实的 day_loop 场景上按阶段顺序点满十天 —— M0 的「能连续走完 10 天空流程」。
@@ -452,6 +458,19 @@ func _walk_day_loop() -> void:
 				phase_log.append("第 %d 天期望 %s，实际 %s（第 %d 天）" % [
 					day, DayPhase.to_name(phase), DayPhase.to_name(GameState.get_phase()), GameState.get_day(),
 				])
+			# 组队阶段点「继续」之前必须真的有人：战报分数 = 战力 × 倍率，
+			# 空队伍直接是 0 分，而第 1 天起 score_request = 1 —— 0 分会在
+			# BATTLE_REPORT 结束时**当场判负**、切到坏结局场景，后面的推进就全打在
+			# 已释放的节点上（自检会 SCRIPT ERROR 直接退出，而不是报红）。
+			# 这里把当天名单的第一位塞进队伍，等价于「玩家挑了一个人」。
+			if phase == DayPhase.Phase.TEAM_BUILD:
+				var walk_team: Array[StringName] = []
+				for candidate in GameState.get_current_candidates():
+					if candidate != null:
+						walk_team.append(candidate.id)
+						break
+				if not walk_team.is_empty():
+					GameState.set_current_team(walk_team)
 			if button != null:
 				button.pressed.emit()
 			else:

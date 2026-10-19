@@ -17,11 +17,15 @@
 [ext_resource type="Texture2D" uid="uid://uta2kam4gwa0" path="res://assets/art/Menu/MenuBookHover.png" id="13_gdhp0"]
 [ext_resource type="BitMap" uid="uid://daoqtwnd8x65d" path="res://assets/art/Menu/MenuBook.tres" id="14_gdhp0"]
 
+[sub_resource type="Theme" id="Theme_yxoxq"]
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fp42q"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_27h4x"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_isoef"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_vxdmp"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_contn"]
 
@@ -120,13 +124,18 @@ offset_left = 284.0
 offset_top = 209.0
 offset_right = 917.0
 offset_bottom = 350.0
+theme = SubResource("Theme_yxoxq")
 theme_override_colors/font_color = Color(0.7200729, 0.10525405, 2.8878452e-07, 1)
 theme_override_colors/font_pressed_color = Color(0.42352942, 0.16862746, 0, 1)
+theme_override_colors/font_hover_color = Color(0.9499975, 0.9499975, 0.9499975, 0)
+theme_override_colors/font_disabled_color = Color(0.72156864, 0.105882354, 0, 1)
+theme_override_colors/icon_normal_color = Color(0.72156864, 0.105882354, 0, 1)
 theme_override_fonts/font = ExtResource("7_isoef")
 theme_override_font_sizes/font_size = 96
 theme_override_styles/normal = SubResource("StyleBoxEmpty_fp42q")
 theme_override_styles/pressed = SubResource("StyleBoxEmpty_27h4x")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_isoef")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_vxdmp")
 text = "败犬勇者太多了！"
 
 [node name="Title2" type="Button" parent="." unique_id=788296782]
@@ -269,7 +278,7 @@ autoplay = true
 [connection signal="pressed" from="Startgame" to="." method="_on_startgame_pressed"]
 [connection signal="pressed" from="Typertest" to="." method="_on_typertest_pressed"]
 [connection signal="pressed" from="Title" to="." method="_on_title_pressed"]
-[connection signal="pressed" from="Title2" to="." method="_on_title_pressed"]
+[connection signal="pressed" from="Title2" to="." method="_on_title2_pressed"]
 [connection signal="pressed" from="ContinuegameText" to="." method="_on_continuegame_pressed"]
 [connection signal="pressed" from="StartgameText" to="." method="_on_startgame_pressed"]
 [connection signal="pressed" from="Credits" to="." method="_on_credits_pressed"]

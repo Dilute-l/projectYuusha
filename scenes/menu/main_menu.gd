@@ -11,6 +11,7 @@ var _exit_confirming := false
 
 func _ready() -> void:
 	_refresh_continue_button()
+	_refresh_title_button()
 
 
 ## 「继续游戏」有没有东西可读 —— 没有就置灰（ARCHITECTURE.md §15）。
@@ -115,16 +116,56 @@ func _on_place_holder_button_pressed() -> void:
 	dialoguer.play()
 
 
-## Title 按钮的音效
+## 标题按钮的音效（squeak）
 const TITLE_SFX_PATH: String = "res://assets/sound/squeak.mp3"
 
+## 标题按钮上的两句文案：
+##   · 默认那句（和 main_menu.tscn 里写的一致）；
+##   · 「正常走完十天」之后换成下面这句，暗示真结局入口已经不一样了。
+## 换文案的开关是 EndingUnlock.is_normal_cleared()，能不能按是 is_unlocked() ——
+## 两者**刻意分开**：只差「带过真结局角色」时，文案已经变了，但按钮还按不动。
+const TITLE_TEXT_DEFAULT: String = "败犬勇者太多了！"
+const TITLE_TEXT_HINT: String = "败犬面试官太多了！"
 
+## 真结局场景的 key（SceneRouter 里登记）
+const TRUE_ENDING_SCENE: StringName = &"true_ending"
+
+
+## 标题按钮（Title）的解锁状态与文案。
+##
+## 每次进主菜单都会重刷（本场景是被 SceneRouter 重新实例化的），
+## 所以「打完一局回到主菜单」看到的是**当下**账本里的状态（见 EndingUnlock）。
+func _refresh_title_button() -> void:
+	var title := get_node_or_null("Title") as Button
+	if title == null:
+		push_error("[MainMenu] 找不到标题按钮：Title")
+		return
+	# 文案跟「正常走完十天」这个 flag 走；能不能按要两个条件都达成
+	title.text = TITLE_TEXT_HINT if EndingUnlock.is_normal_cleared() else TITLE_TEXT_DEFAULT
+	title.disabled = not EndingUnlock.is_unlocked()
+
+
+## Title 按钮：平时是音效按钮，真结局解锁后变成「真结局入口」。
+##
+## 没解锁时它是 disabled（正常点不到），这里再挡一层逻辑守卫 ——
+## 别让「绕过 disabled 直接发信号」的路径（自检 / 焦点残留 / 键盘）把真结局提前放出来。
 func _on_title_pressed() -> void:
-	# 这是个音效按钮：按下就响一声 squeak，不做别的。
-	# 走 AudioService 的 SFX 池，找不到资源只会警告、不会崩。
+	if not EndingUnlock.is_unlocked():
+		return
 	AudioService.play_sfx(TITLE_SFX_PATH)
-	# 顺手释放按钮焦点，免得之后按空格/回车又把 squeak 触发一遍。
-	# 注意：Window 上叫 gui_release_focus()，没有 child_focus_exited() 这个方法。
+	_release_button_focus()
+	SceneRouter.goto_scene(TRUE_ENDING_SCENE)
+
+
+## Title2 按钮（标题下面那行小字）：纯音效按钮，按下响一声 squeak，不做别的。
+func _on_title2_pressed() -> void:
+	AudioService.play_sfx(TITLE_SFX_PATH)
+	_release_button_focus()
+
+
+## 释放按钮焦点，免得之后按空格 / 回车又把上一次按的按钮触发一遍。
+## 注意：Window 上叫 gui_release_focus()，没有 child_focus_exited() 这个方法。
+func _release_button_focus() -> void:
 	var win := get_window()
 	if win != null:
 		win.gui_release_focus()

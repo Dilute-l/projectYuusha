@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ending/true_ending.gd" id="1_true"]
+[ext_resource type="PackedScene" uid="uid://ctmyyt3n6ch2r" path="res://scenes/common/dialoguer.tscn" id="2_dlg"]
+
+[node name="TrueEnding" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_true")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.02, 0.03, 0.07, 0.95)
+
+[node name="Dialoguer" parent="." instance=ExtResource("2_dlg")]
+visible = false

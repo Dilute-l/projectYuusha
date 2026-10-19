@@ -111,8 +111,15 @@ func _check_daily_autosave() -> void:
 	_check(int(data.get("version", 0)) == GameConfig.SAVE_VERSION, "存档带 version，以后加字段靠它认")
 	_check(data.has("phase") and data.has("run_seed"), "存档里有 run_seed / phase（读档要接着往下走）")
 
-	# 第 1 天挣了点分，然后把它走完 —— 进第 2 天时会再自动存一次
-	GameState.record_day_score(1, 123)
+	# 队伍里**必须真有人**再走这一天：战报分数 = 战力 × 倍率，空队伍是 0 分，
+	# 而 score_request 现在是「每天最低分」（第 1 天起是 1）—— 0 分会在战报结束时
+	# 当场判负、直接切坏结局，这一天就走不完，后面「第 2 天开始时的存档」也就无从验起。
+	var walk_team: Array[StringName] = []
+	for candidate in GameState.get_current_candidates():
+		if candidate != null:
+			walk_team.append(candidate.id)
+			break
+	GameState.set_current_team(walk_team)
 	var button: BaseButton = loop.get_node_or_null("FlowHud/Hud/Margin/Layout/NextButton") as BaseButton
 	for _phase in DayDirector.phases_of_day():
 		if button != null:
@@ -122,10 +129,15 @@ func _check_daily_autosave() -> void:
 		# day_loop.advance() 有「同一帧只许推进一次」的重入锁，按帧点才等价于玩家点击
 		await get_tree().process_frame
 	_check(GameState.get_day() == 2, "第 1 天走完后进入第 2 天")
+	# 分数由战报算出来（不再在手上前置 record_day_score）：这里读**落地后**的值
+	# 当期望值，规则怎么改（战力公式 / 倍率）都不用动本文件。
+	var day1_score := GameState.get_day_score(1)
+	_check(day1_score > 0.0, "第 1 天的战报分数落了地（%.2f）" % day1_score)
 
 	data = _read_save()
 	_check(int(data.get("day", 0)) == 2, "第 2 天开始时的存档记的是第 2 天（不是第 1 天）")
-	_check(_scores_of(data) == [123], "存档里留着第 1 天的分数（%s）" % str(data.get("scores")))
+	_check(_scores_of(data) == [int(roundf(day1_score))],
+			"存档里留着第 1 天的分数（%s）" % str(data.get("scores")))
 	_check(int(data.get("day", 0)) == GameState.get_day(), "存档里的天数与内存里的天数一致")
 
 	loop.queue_free()
