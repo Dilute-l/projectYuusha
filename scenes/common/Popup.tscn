@@ -20,6 +20,9 @@
 [ext_resource type="Texture2D" uid="uid://b75bri45l2ktx" path="res://assets/art/cg/opening _cg9.png" id="18_oan2k"]
 [ext_resource type="Texture2D" uid="uid://c4kkj6qi44g23" path="res://assets/art/cg/BE_cg.png" id="19_qgih0"]
 [ext_resource type="Texture2D" uid="uid://b5ot35s7qlg2s" path="res://assets/art/cg/GE_cg.png" id="20_fyil7"]
+[ext_resource type="Texture2D" uid="uid://dh2q6lxyktefh" path="res://assets/art/cg/GE_cg2.png" id="21_mt7xp"]
+[ext_resource type="Texture2D" uid="uid://c2luexk2xu0il" path="res://assets/art/cg/GE_cg3.png" id="22_1mok7"]
+[ext_resource type="Texture2D" uid="uid://b6ya2d62ml47h" path="res://assets/art/cg/GE_cg4.png" id="23_f4pa6"]
 
 [node name="Popup" type="Control" unique_id=250912622]
 layout_mode = 3
@@ -201,7 +204,26 @@ scale = Vector2(0.5, 0.5)
 texture = ExtResource("19_qgih0")
 centered = false
 
-[node name="GeCg" type="Sprite2D" parent="." unique_id=1723811458]
+[node name="GeCg1" type="Sprite2D" parent="." unique_id=1723811458]
+visible = false
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("20_fyil7")
+centered = false
+
+[node name="GeCg2" type="Sprite2D" parent="." unique_id=1366504894]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("21_mt7xp")
+centered = false
+
+[node name="GeCg3" type="Sprite2D" parent="." unique_id=1424723178]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("22_1mok7")
+centered = false
+
+[node name="GeCg4" type="Sprite2D" parent="." unique_id=974378012]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("23_f4pa6")
 centered = false
