@@ -5,6 +5,21 @@
 [ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="2_sv1ow"]
 [ext_resource type="FontFile" uid="uid://b8u6a2faqsh1d" path="res://assets/fonts/youaimoshouheiti-bold.ttf" id="3_rudfj"]
 [ext_resource type="PackedScene" path="res://ui/components/signature_pad.tscn" id="5_3v8kj"]
+[ext_resource type="Texture2D" uid="uid://bc4ojs5yh3m7o" path="res://assets/art/cg/ black.png" id="6_4c6t2"]
+[ext_resource type="Texture2D" uid="uid://6elxp38rfina" path="res://assets/art/cg/ending_cg1.png" id="7_qgih0"]
+[ext_resource type="Texture2D" uid="uid://30nmb48r0qcb" path="res://assets/art/cg/ending_cg2.png" id="8_fyil7"]
+[ext_resource type="Texture2D" uid="uid://ffl3xfwr0dwx" path="res://assets/art/cg/ending_cg3.png" id="9_3ple5"]
+[ext_resource type="Texture2D" uid="uid://dtiftynh7ejb7" path="res://assets/art/cg/opening _cg1.png" id="10_7jrnq"]
+[ext_resource type="Texture2D" uid="uid://dn6vdx7lu1apc" path="res://assets/art/cg/opening _cg2.png" id="11_mt7xp"]
+[ext_resource type="Texture2D" uid="uid://cxudin6w0g12q" path="res://assets/art/cg/opening _cg3.png" id="12_1mok7"]
+[ext_resource type="Texture2D" uid="uid://bc4qvx5qccuqk" path="res://assets/art/cg/opening _cg4.png" id="13_f4pa6"]
+[ext_resource type="Texture2D" uid="uid://byxb6lnaaiocr" path="res://assets/art/cg/opening _cg5.png" id="14_q50y6"]
+[ext_resource type="Texture2D" uid="uid://bf4pcgpjejtd3" path="res://assets/art/cg/opening _cg6.png" id="15_p1kgm"]
+[ext_resource type="Texture2D" uid="uid://k4o7n2xayecv" path="res://assets/art/cg/opening _cg7.png" id="16_cet1l"]
+[ext_resource type="Texture2D" uid="uid://51xi3xaclmw5" path="res://assets/art/cg/opening _cg8.png" id="17_6of5e"]
+[ext_resource type="Texture2D" uid="uid://b75bri45l2ktx" path="res://assets/art/cg/opening _cg9.png" id="18_oan2k"]
+[ext_resource type="Texture2D" uid="uid://c4kkj6qi44g23" path="res://assets/art/cg/BE_cg.png" id="19_qgih0"]
+[ext_resource type="Texture2D" uid="uid://b5ot35s7qlg2s" path="res://assets/art/cg/GE_cg.png" id="20_fyil7"]
 
 [node name="Popup" type="Control" unique_id=250912622]
 layout_mode = 3
@@ -105,3 +120,88 @@ offset_top = 280.0
 offset_right = 1060.0
 offset_bottom = 628.0
 ink_width_ratio = 0.012
+
+[node name="Black" type="Sprite2D" parent="." unique_id=1547435255]
+visible = false
+texture = ExtResource("6_4c6t2")
+centered = false
+
+[node name="EndingCg1" type="Sprite2D" parent="." unique_id=1589203997]
+visible = false
+texture = ExtResource("7_qgih0")
+centered = false
+
+[node name="EndingCg2" type="Sprite2D" parent="." unique_id=171226656]
+visible = false
+texture = ExtResource("8_fyil7")
+centered = false
+
+[node name="EndingCg3" type="Sprite2D" parent="." unique_id=1349551117]
+visible = false
+texture = ExtResource("9_3ple5")
+centered = false
+
+[node name="OpeningCg1" type="Sprite2D" parent="." unique_id=1593050286]
+visible = false
+scale = Vector2(0.51, 0.51)
+texture = ExtResource("10_7jrnq")
+centered = false
+
+[node name="OpeningCg2" type="Sprite2D" parent="." unique_id=974710741]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("11_mt7xp")
+centered = false
+
+[node name="OpeningCg3" type="Sprite2D" parent="." unique_id=377843334]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("12_1mok7")
+centered = false
+
+[node name="OpeningCg4" type="Sprite2D" parent="." unique_id=766070274]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("13_f4pa6")
+centered = false
+
+[node name="OpeningCg5" type="Sprite2D" parent="." unique_id=1455899765]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("14_q50y6")
+centered = false
+
+[node name="OpeningCg6" type="Sprite2D" parent="." unique_id=357761466]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("15_p1kgm")
+centered = false
+
+[node name="OpeningCg7" type="Sprite2D" parent="." unique_id=379598304]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("16_cet1l")
+centered = false
+
+[node name="OpeningCg8" type="Sprite2D" parent="." unique_id=802824873]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("17_6of5e")
+centered = false
+
+[node name="OpeningCg9" type="Sprite2D" parent="." unique_id=1188292239]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("18_oan2k")
+centered = false
+
+[node name="BeCg" type="Sprite2D" parent="." unique_id=58511855]
+visible = false
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("19_qgih0")
+centered = false
+
+[node name="GeCg" type="Sprite2D" parent="." unique_id=1723811458]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("20_fyil7")
+centered = false
