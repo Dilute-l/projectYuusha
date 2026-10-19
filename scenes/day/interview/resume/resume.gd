@@ -80,20 +80,20 @@ var _candidate: CandidateResource = null
 ## 菜单要锚在「被点的那一条」上，所以得能由序号反查控件。
 var _tokens: Array[ResumeToken] = []
 
-## 点词条时弹出菜单的形态。
+## 点词条时的行为。
 ##
-## 同一张简历被两个阶段共用，而「点词条」这件事在两边的意思并不一样：
-##   · 面试里是去**问**（追问）—— 点一下就该直接问，中间不必再过一手菜单；
-##   · 组队里是去**回顾**（回忆当时的追问）—— 那边有的条目根本没问过，
-##     需要一个"置灰、点不动"的落点，菜单就是那个落点。
-## 所以形态由调用方声明，本控件照着做 —— interview 保持默认（ASK），team_builder 改成 RECALL。
+## ⚠️ 现在**两个阶段都是「点一下直接生效」**：面试 = 追问、组队 = 回忆。
+##    原来组队要先弹一个菜单（里面那个按钮置灰表示"这条没问过"），已经去掉了 ——
+##    没问过的条目现在点上去没有任何反应（见 _option_enabled）。
+##    词条菜单（resume_token_menu.tscn）的节点与脚本暂时**保留但不再弹出**，
+##    以后若要放"更多操作"可以再启用（_open_menu_for / _option_text 都还在）。
 enum EntryMenu {
-	HIDDEN,   ## 不弹菜单、也不响应点击（拿去做纯展示时）
-	ASK,      ## 「追问」：**点一下直接问**，不弹二级菜单（面试）
-	RECALL,   ## 「回忆」：点一下弹菜单，只有面试时**问过**的条目能点，没问过的置灰（组队）
+	HIDDEN,   ## 不响应点击（拿去做纯展示时）
+	ASK,      ## 「追问」：**点一下直接问**（面试）
+	RECALL,   ## 「回忆」：**点一下直接重播**；没问过的条目点了没反应（组队）
 }
 
-## 点词条时的行为。默认 ASK = 面试里的「点一下直接追问」。
+## 点词条时的行为。面试里用默认的 ASK；组队里 team_builder 会改成 RECALL。
 @export var entry_menu: EntryMenu = EntryMenu.ASK
 
 ## 站定的位置：_ready() 时记下来。整页的进出动画都是**相对它**算的纵向偏移，
@@ -447,9 +447,12 @@ func close_token_menu() -> void:
 
 ## 点了某一条词条。
 ##
-## **面试（ASK）：点一下就直接追问** —— 不再先弹二级菜单、再点一次"追问"（现行手感）。
-## **组队（RECALL）：仍然在旁边弹菜单** —— 那边"点一下"未必有东西可回忆，
-##   菜单是「这条没问过 → 置灰、点不动」这个反馈的落点（见 _option_enabled）。
+## **两个阶段都是「点一下就直接生效」**，不再先弹二级菜单：
+##   · 面试（ASK）→ 直接追问这一条；
+##   · 组队（RECALL）→ 直接重播这一条的回忆。
+##
+## 组队里**没问过的条目没有东西可回忆**：安静忽略（以前是菜单里那个按钮置灰）。
+## —— 现在不再弹菜单了，所以这个判断只能放在这里（`_option_enabled` 还是同一套判据）。
 func _on_token_selected(entry_index: int) -> void:
 	if entry_menu == EntryMenu.HIDDEN:
 		return
@@ -458,12 +461,9 @@ func _on_token_selected(entry_index: int) -> void:
 	var token := _tokens[entry_index]
 	if token == null or not token.visible:
 		return
-	if entry_menu == EntryMenu.ASK:
-		_on_ask_requested(entry_index)
+	if not _option_enabled(entry_index):
 		return
-	# 「专长」那一栏在纸的右下，菜单摆它右边会盖住纸面别的内容 —— 翻到左边去。
-	# 履历那栏位置更靠上，没这个问题，仍然按默认摆右边。
-	_open_menu_for(token, entry_index, token.get_parent() == _skill_list)
+	_on_ask_requested(entry_index)
 
 
 ## 点了状态区（力量 / 智力 / 感知 那一块）。
@@ -471,18 +471,20 @@ func _on_token_selected(entry_index: int) -> void:
 ## 状态区不是一个词条，但它同样值得被追问一句「你这身板是真的吗」，
 ## 所以把它当成一个**虚拟条目**接到同一套流程上 —— 对话、记录都不用改。
 ##
-## 面试（ASK）：和词条一样，点一下**直接追问**（序号 STATUS_ENTRY_INDEX）。
-## 组队（RECALL）：仍然先弹菜单 —— 没问过的那条要置灰，菜单负责这个反馈。
-## 菜单摆**左边**：状态区右边紧挨着「个人履历与奖项」那一列，摆右边会把它盖住。
+## 面试（ASK）→ 直接追问；组队（RECALL）→ 直接回忆；没问过的照样安静忽略。
 func _on_status_pressed() -> void:
 	if entry_menu == EntryMenu.HIDDEN or _status == null:
 		return
-	if entry_menu == EntryMenu.ASK:
-		_on_ask_requested(STATUS_ENTRY_INDEX)
+	if not _option_enabled(STATUS_ENTRY_INDEX):
 		return
-	_open_menu_for(_status, STATUS_ENTRY_INDEX, true)
+	_on_ask_requested(STATUS_ENTRY_INDEX)
 
 
+## 在词条旁边弹出菜单（含「可用性」判断）。
+##
+## ⚠️ 现在**两个阶段都不走这条路了**（都改成点一下直接生效，见 _on_token_selected）。
+##    方法连同词条菜单的节点 / 脚本一起保留：菜单本身还能用（摆位、置灰、点外面收起都验过），
+##    以后要在词条上加"更多操作"时直接接回来即可。
 func _open_menu_for(anchor: Control, entry_index: int, prefer_left: bool = false) -> void:
 	if _token_menu == null:
 		push_error("[Resume] 找不到 TokenMenu，弹不出菜单")
@@ -493,7 +495,8 @@ func _open_menu_for(anchor: Control, entry_index: int, prefer_left: bool = false
 
 
 ## 菜单里那个选项当前该显示什么字。
-## （菜单现在只在组队阶段弹，所以实际上只会走到「回忆」这一支；面试点一下就直接问了。）
+## （目前两个阶段都**不再弹菜单**了，所以这个方法暂时没人调用；
+##   留着是为了以后把菜单接回来时，组队仍显示「回忆」、其余显示「追问」。）
 func _option_text() -> String:
 	if entry_menu == EntryMenu.RECALL:
 		return "回忆"

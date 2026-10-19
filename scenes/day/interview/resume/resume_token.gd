@@ -13,12 +13,12 @@ extends Button
 ##     想改高亮的颜色就去改那个文件，别在这里烘一个自己的。
 ##
 ## ⚠️ 点击效果在**别处**：本控件只发 selected，由 resume.gd 决定接下来做什么 ——
-##    **面试阶段点一下就直接追问**（不弹菜单）；组队阶段则在旁边弹出「回忆」菜单，
-##    没问过的条目在菜单里置灰（见 resume.gd 的 entry_menu，§10.7）。
+##    **两个阶段都是点一下直接生效**：面试里 = 追问，组队里 = 重播那段回忆；
+##    组队里没问过的条目点了没有任何反应（见 resume.gd 的 entry_menu / _option_enabled）。
 ##    为了让「选中」不靠按钮自己画：pressed 与 normal 用的是同一个
 ##    StyleBox（见 resume_token.tscn），并且 focus_mode 关闭，不会残留焦点框。
 
-## 本条被点击，由 resume.gd 订阅（面试=直接追问 / 组队=弹回忆菜单）。
+## 本条被点击，由 resume.gd 订阅（面试=直接追问 / 组队=直接回忆）。
 ## 参数是条目在简历中的序号（从 0 开始），方便调用方回去查 ResumeEntry。
 signal selected(entry_index: int)
 
