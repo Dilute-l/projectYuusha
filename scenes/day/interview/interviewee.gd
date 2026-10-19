@@ -73,6 +73,8 @@ func apply() -> void:
 
 	# 部件名 → 贴图 的规则在 PortraitComposer：种族决定用眼 / 发 / 嘴还是帽子，
 	# 不适用的部件拿到空串，_set_texture() 会清掉它的贴图（不会残留上一个种族的脸）。
+	# 身体也一样：空种族（portrait_race = &"empty"）没有身体图，这里拿到的就是空串
+	# → Body 清空、只剩零件，而不是去加载一张不存在的 "empty_body.png"。
 	_set_texture(_body,  PortraitComposer.body_stem(race))
 	_set_texture(_eye,   PortraitComposer.eye_stem(race, eye))
 	_set_texture(_hair,  PortraitComposer.hair_stem(race, hair))

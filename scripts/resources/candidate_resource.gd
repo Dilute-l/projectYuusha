@@ -128,7 +128,11 @@ extends Resource
 #   portrait_race = &"hu" → hu_body_phd.png
 #   portrait_eye  = 2     → tall_eye_phd2.png
 
-## 种族，对应 assets/art/portrait/{race}_body.png 的前缀（hu / el / st）
+## 种族，对应 assets/art/portrait/{race}_body.png 的前缀（hu / el / st）。
+##
+## 另有一个**只用于绘制**的代号 `empty`（见 PortraitComposer.EMPTY_RACE）：
+## 填它就**不画身体**，只画眼睛 / 头发 / 嘴巴 / 帽子这几个零件。
+## 它不在 data/races/ 里 —— 玩法一侧的 `race` 字段与它无关，别拿它去判种族。
 @export var portrait_race: StringName = &"hu"
 
 ## 部件编号一律是**四位数字**：<组><组内编号>（101 就是文件名里的 "0101"）。

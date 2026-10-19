@@ -7,6 +7,7 @@ extends RefCounted
 ##
 ##     身体 + 眼睛 / 头发 / 嘴巴   （hu / el）
 ##     身体 + 帽子                 （st 戴帽子，其他种族可选）
+##     眼睛 / 头发 / 嘴巴 / 帽子   （empty：**不画身体**，只画选中的那几个零件）
 ##
 ## 命名规则原本只写在 scenes/day/interview/interviewee.gd 里；组队界面的头像框
 ## 也要用同一套图，于是抽到这里 —— **改文件名 / 加种族只改本文件**：
@@ -30,7 +31,23 @@ const DIR := "res://assets/art/portrait/"
 const CANVAS := 600
 const CANVAS_H := 675
 
-## 用 tall_* 系列（眼 / 发 / 嘴）的种族；其余（st）用 st_hat_*
+## 「空种族」：**只用于绘制**的一个代号 —— `portrait_race = &"empty"` 的意思就是
+## 「这张立绘不要身体，只画选中的那几个零件」（眼 / 发 / 嘴 / 帽子，各自由 portrait_* 决定）。
+##
+## 它不是玩法意义上的种族：`data/races/` 里没有它的 `RaceDef`，简历上也不会印它，
+## 候选人的 `race` 字段也照旧是 human / elf / dwarf —— 只有 `portrait_race` 这一个
+## 画图用的字段认它。
+##
+## 用途：给「没有躯干、只有零件」的形象留一个不用新画身体的出口
+## （幽灵 / 透明人 / 只露一张脸 / 单看某个零件长什么样），也方便单独检查零件贴图。
+##
+## ⚠️ 画布还是同一张 `CANVAS × CANVAS_H`，所以零件的位置与其它种族**分毫不差**。
+##
+## 判定走 `is_empty_race()`：除了 `empty`，**空串 `&""` 也算**（老数据 / 手搓 .tres 这么写过）。
+const EMPTY_RACE := &"empty"
+
+## 画「眼睛 / 头发」这套部件的种族（矮人 st 不画，只戴帽子）。
+## 空种族也算在内（见 `is_tall()` / `is_empty_race()`）：它没有身体，人就是这几个零件凑出来的。
 const TALL_RACES: Array[StringName] = [&"hu", &"el"]
 
 ## 立绘贴图缓存：key = 配方签名。立绘在界面上是静态的，
@@ -43,14 +60,33 @@ static var _cache: Dictionary = {}
 # ---------------------------------------------------------------------------
 
 
+## 是不是「空种族」（没有身体，只画选中的零件）。代号是 `empty`（`EMPTY_RACE`）。
+##
+## **空串 `&""` 也算**：手搓 / 老 `.tres` 里写 `portrait_race = &""` 的意思就是「不画身体」，
+## 而空串永远不是合法的种族前缀 —— 不兜这一手，它只会拼出 `_body.png` 再报「找不到贴图」，
+## 看起来像丢图，其实只是「没有身体」。
+static func is_empty_race(race: StringName) -> bool:
+	return race == EMPTY_RACE or race == &""
+
+
 ## 该种族是否用「眼睛 / 头发 / 嘴巴」这套人脸部件。
 ## （矮人只有身体 + 帽子 —— 这条规则没变，变的只是文件名。）
+## 空种族也画眼 / 发：它没有身体，剩下能画的就是这些零件。
 static func is_tall(race: StringName) -> bool:
-	return TALL_RACES.has(race)
+	return TALL_RACES.has(race) or is_empty_race(race)
 
 
-## 「不戴帽子」。除矮人外，portrait_hat 填这个值就是不画帽子。
-const NO_HAT := 0
+## 该种族要不要画身体。只有空种族是例外：它**没有**身体那张图。
+static func has_body(race: StringName) -> bool:
+	return not is_empty_race(race)
+
+
+## 「这个零件不画」的哨兵：`portrait_<部件>` 填 0。
+##
+## 四个部件共用它（帽子一直就是这么用的；眼睛 / 头发 / 嘴巴从这个版本起也认，
+## 旧名 `NO_HAT` 就是它）。部件号是四位数字的 `<组><组内编号>`，`0` 永远不是合法部件号，
+## 所以拿它当「这一格空着」不会跟任何真差分撞车 —— 空种族想只戴一顶帽子就靠它。
+const NO_PART := 0
 
 ## 部件编号是**四位数字**：<组><组内编号>。
 ##
@@ -64,23 +100,35 @@ static func part_code(index: int) -> String:
 	return "%04d" % index
 
 
-## 身体：所有种族都有 → <race>_body.png
+## 身体：有身体的种族 → <race>_body.png
+##
+## `empty`（`has_body()` 为假）**返回空串**：这个部件不存在，调用方据此不画 / 不拼。
+## 绝不能拼成 "empty_body" 再去找图 —— 那会 push_error「找不到贴图」，
+## 而这里其实不是「丢了一张图」，是「本来就不该有身体」。
 static func body_stem(race: StringName) -> String:
+	if not has_body(race):
+		return ""
 	return "%s_body" % race
 
 
-## 眼睛：仅 hu / el；不适用的种族返回空串（调用方据此清空贴图）
+## 眼睛：hu / el / empty；不适用的种族、或编号填 0（这个零件不画）→ 空串
 static func eye_stem(race: StringName, index: int) -> String:
-	return "eye_%s" % part_code(index) if is_tall(race) else ""
+	if index == NO_PART or not is_tall(race):
+		return ""
+	return "eye_%s" % part_code(index)
 
 
-## 头发：仅 hu / el
+## 头发：hu / el / empty；编号 0 = 不画
 static func hair_stem(race: StringName, index: int) -> String:
-	return "hair_%s" % part_code(index) if is_tall(race) else ""
+	if index == NO_PART or not is_tall(race):
+		return ""
+	return "hair_%s" % part_code(index)
 
 
-## 嘴巴：所有种族共用一套（新素材的嘴不分种族，编号只分「通用 01 / 特殊 99」）
+## 嘴巴：所有种族共用一套（新素材的嘴不分种族，编号只分「通用 01 / 特殊 99」）；编号 0 = 不画
 static func mouth_stem(_race: StringName, index: int) -> String:
+	if index == NO_PART:
+		return ""
 	return "mouth_%s" % part_code(index)
 
 
@@ -88,11 +136,12 @@ static func mouth_stem(_race: StringName, index: int) -> String:
 ##
 ##   矮人（st）  ：默认就戴（portrait_hat = 101 → hat_0101），换帽子改这个数
 ##   其他种族    ：portrait_hat == 0 = **不戴帽子**；填了数才画
+##   empty       ：同上 —— 空种族也可以只戴一顶帽子（这是它最省的一种画法）
 ##
 ## 旧规则是「只有矮人有帽子、其他人一律没有」，现在变成「谁都可以戴，只是要显式填」。
 ## 参数留 `_race`：戴不戴只由编号决定，但函数签名要与兄弟函数（眼 / 发 / 嘴）一致。
 static func hat_stem(_race: StringName, index: int) -> String:
-	if index == NO_HAT:
+	if index == NO_PART:
 		return ""
 	return "hat_%s" % part_code(index)
 
@@ -115,12 +164,17 @@ static func load_part(stem: String) -> Texture2D:
 
 ## 一位候选人要拼的全部部件，**按绘制顺序**：身体 → 眼睛 → 头发 → 嘴巴 / 帽子。
 ## （与 interviewee.tscn 里 Sprite2D 的节点顺序一致，拼出来的样子才是面试时的样子。）
+##
+## `empty` 没身体：配方里直接少掉身体那一项，剩下的零件顺序不变
+## （所以「空种族 + 眼 / 发 / 嘴」和「有身体的种族」画出来位置完全对得上）。
 static func stems_for(candidate: CandidateResource) -> Array[String]:
 	var stems: Array[String] = []
 	if candidate == null:
 		return stems
 	var race := candidate.portrait_race
-	stems.append(body_stem(race))
+	var body := body_stem(race)
+	if not body.is_empty():
+		stems.append(body)
 	for stem in [
 		eye_stem(race, candidate.portrait_eye),
 		hair_stem(race, candidate.portrait_hair),
@@ -158,7 +212,10 @@ static func clear_cache() -> void:
 	_cache.clear()
 
 
-## 把候选人的部件叠成一张 `CANVAS × CANVAS_H` 的图（相当于「拼装立绘」的静态版本）
+## 把候选人的部件叠成一张 `CANVAS × CANVAS_H` 的图（相当于「拼装立绘」的静态版本）。
+##
+## 画布永远是满尺寸的：`empty`（空种族）只是**少叠一张身体**，其余像素照旧透明 ——
+## 所以头像框的取景窗、立绘坐标都对得上，不会因为「没有身体」而换一套摆法。
 static func compose(candidate: CandidateResource) -> Image:
 	var canvas := Image.create_empty(CANVAS, CANVAS_H, false, Image.FORMAT_RGBA8)
 	canvas.fill(Color(0, 0, 0, 0))

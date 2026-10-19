@@ -291,6 +291,9 @@ func _run() -> void:
 	var who: Array[CandidateResource] = [candidates[0]]
 	await _check_portrait_parts(vp, who)
 
+	# ---- 10b. 空种族（portrait_race = &"empty"）：不画身体，只画零件 ----
+	await _check_empty_race(vp)
+
 	# ---- 11. 全库立绘体检：换立绘 / 加种族 / 换帽子之后这条最先响 ----
 	_check_all_portraits()
 
@@ -965,6 +968,64 @@ func _check_portrait_parts(vp: SubViewport, candidates: Array[CandidateResource]
 ## 空部件名（这个种族不用这个部件）→ 期望「没有贴图」，而不是拼出一个坏路径
 func _part_path(stem: String) -> String:
 	return "" if stem.is_empty() else PortraitComposer.path_of(stem)
+
+
+## 空种族（`portrait_race = &"empty"`，**只用于绘制**：没有身体，只画选中的零件）的锁：
+##   ① 配方里没有身体 —— 不去找 `empty_body.png`（那会 push_error「找不到贴图」）；
+##   ② 拼出来的图 == 只叠那几张零件（逐像素比）—— 身体一个像素都不掺；
+##   ③ 编号 0 = 这个零件不画（眼 / 发 / 嘴 / 帽都认这个哨兵），所以「只戴一顶帽子」画得出来；
+##   ④ 面试立绘那一侧：Body 空着、零件照旧都在（和头像框走的是同一套规则）。
+func _check_empty_race(vp: SubViewport) -> void:
+	var ghost := CandidateResource.new()
+	ghost.id = &"c_empty"
+	ghost.portrait_race = PortraitComposer.EMPTY_RACE
+	ghost.portrait_eye = 101
+	ghost.portrait_hair = 101
+	ghost.portrait_mouth = 101
+	ghost.portrait_hat = PortraitComposer.NO_PART
+
+	var want_parts: Array[String] = ["eye_0101", "hair_0101", "mouth_0101"]
+	var stems := PortraitComposer.stems_for(ghost)
+	_check(stems == want_parts,
+			"空种族的配方只有零件、没有身体（实际 %s）" % str(stems))
+
+	# 期望图：把这几张零件按同一顺序叠在透明画布上 —— 与 compose() 逐像素比。
+	# 只有「偷偷多叠了一张身体」才会对不上，所以这条量的是「身体真的没画」。
+	var expected := Image.create_empty(PortraitComposer.CANVAS, PortraitComposer.CANVAS_H, false,
+			Image.FORMAT_RGBA8)
+	expected.fill(Color(0, 0, 0, 0))
+	for stem in want_parts:
+		var part := PortraitComposer.load_part(stem).get_image()
+		part.convert(Image.FORMAT_RGBA8)
+		expected.blend_rect(part, Rect2i(0, 0, part.get_width(), part.get_height()), Vector2i.ZERO)
+
+	var got := PortraitComposer.compose(ghost)
+	_check(_opaque_box(got).size != Vector2.ZERO, "空种族画得出零件（不是一张空图）")
+	_check(got.get_data() == expected.get_data(), "空种族拼出来的图只有零件，身体一个像素都不掺")
+
+	# 「只戴一顶帽子」：0 = 这个零件不画（眼睛 / 头发 / 嘴巴现在也认这个哨兵）
+	var hat_only := CandidateResource.new()
+	hat_only.id = &"c_empty_hat"
+	hat_only.portrait_race = PortraitComposer.EMPTY_RACE
+	hat_only.portrait_eye = PortraitComposer.NO_PART
+	hat_only.portrait_hair = PortraitComposer.NO_PART
+	hat_only.portrait_mouth = PortraitComposer.NO_PART
+	hat_only.portrait_hat = 201
+	var want_hat: Array[String] = ["hat_0201"]
+	_check(PortraitComposer.stems_for(hat_only) == want_hat,
+			"空种族可以只画一个零件（帽 0201）")
+
+	# 面试立绘那一侧：Body 拿到的应该是空串 → 贴图清空，零件照画
+	var probe := INTERVIEWEE_SCENE.instantiate() as Interviewee
+	vp.add_child(probe)
+	await _settle()
+	probe.apply_candidate(ghost)
+	var body := probe.get_node("Body") as Sprite2D
+	var eye := probe.get_node("Eye") as Sprite2D
+	_check(body != null and body.texture == null, "空种族的面试立绘不画身体")
+	_check(eye != null and eye.texture != null, "空种族的面试立绘照画眼睛")
+	probe.queue_free()
+	await _settle()
 
 
 func _report() -> void:

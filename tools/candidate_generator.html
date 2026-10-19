@@ -119,7 +119,10 @@ const SCRIPTS = {
 };
 const RACES = ["dwarf", "elf", "human"];      // data/races/*.tres
 const JOBS  = ["cleric", "fighter", "mage"];  // data/jobs/*.tres
-const PORTRAIT_RACES = ["hu", "el", "st"];    // 立绘配方代号（hu 人 / el 精灵 / st 矮人）
+/* 立绘配方代号（hu 人 / el 精灵 / st 矮人 / empty 空种族）。
+   ⚠️ empty 是**只用于绘制**的一个代号：不画身体，只画 eye / hair / mouth / hat 这几个零件。
+   它不是 data/races/ 里的种族 —— 「种族 race」那一栏照旧只能选 human / elf / dwarf。 */
+const PORTRAIT_RACES = ["hu", "el", "st", "empty"];
 
 /* true_attributes 的键。就是力量 / 智力 / 感知那三个字段名，一个不多一个不少 ——
    键名对不上时 Godot 那边会当「没写这项」处理（CandidateResource.true_attribute），
@@ -160,7 +163,7 @@ function blankCandidate(n) {
     true_attributes: { strength: "", intelligence: "", wisdom: "" },
     race: "human", job: "fighter", gender: "男", age: 20,
     traits: "",                       // 逗号分隔的 data/traits/*.tres 文件名
-    portrait_race: "hu", portrait_eye: 1, portrait_hair: 1, portrait_mouth: 1, portrait_hat: 1,
+    portrait_race: "hu", portrait_eye: 101, portrait_hair: 101, portrait_mouth: 101, portrait_hat: 0,
     resume_stamp: "",                 // "" = 不盖章；否则是 STAMPS 里的一个文件名（不带 .png）
     team_declaration: "", judgment: "",
     experience: [blankEntry()],
@@ -393,7 +396,8 @@ function lineEditor(ln, arr, i) {
 //    所以这里不按行正则硬切，而是「扫 `键 = 值`，值允许跨行、按括号深度断句」。
 
 /* 只认这些**资源默认值**：文件里没写的键，就是 Godot 的资源默认值，不是本工具模板里的占位。
-   （模板里 strength 默认 10 / portrait_eye 默认 1，那是「新增一位」时的方便值。） */
+   （模板里 strength 默认 10，那是「新增一位」时的方便值；立绘零件两边的默认值一致：
+   眼 / 发 / 嘴 101、帽子 0 = 不戴。） */
 const RES_DEFAULTS = {
   level: 1, strength: 0, intelligence: 0, wisdom: 0, age: 2,
   fake_level: 0, display_race: "",

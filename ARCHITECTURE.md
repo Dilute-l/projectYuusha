@@ -186,12 +186,12 @@ class_name CandidateResource extends Resource
 @export var portrait: Texture2D                 # 整张立绘（可选；当前用拼装立绘，见下）
 @export var resume_stamp: Texture2D             # 简历上那枚印章；留空 = 不盖章（§10.6）
 
-# 拼装立绘的「配方」（见 §10.7）。取值直接对应 assets/art/portrait/ 的文件名。
-@export var portrait_race: StringName = &"hu"   # hu / el / st → {race}_body_phd.png
-@export var portrait_eye: int = 1               # 1..3，仅 hu / el 使用
-@export var portrait_hair: int = 1              # 1..3，仅 hu / el 使用
-@export var portrait_mouth: int = 1             # 1..3，仅 hu / el 使用
-@export var portrait_hat: int = 1               # 1..3，仅 st 使用
+# 拼装立绘的「配方」（见 §11.2）。取值直接对应 assets/art/portrait/ 的文件名。
+@export var portrait_race: StringName = &"hu"   # hu / el / st → {race}_body.png；empty = 不画身体
+@export var portrait_eye: int = 101             # 四位编号（0101…）；0 = 这个零件不画。仅 hu / el / empty
+@export var portrait_hair: int = 101            # 同上
+@export var portrait_mouth: int = 101           # 所有种族共用一套；0 = 不画
+@export var portrait_hat: int = 0               # 可选件；0 = 不戴（矮人填 101）
 ```
 
 > 字段说明：
@@ -213,7 +213,7 @@ class_name CandidateResource extends Resource
 | `fake_level` | 造假程度 | `0`~`3`（0 = 没造假）。**不上任何界面，当前没有任何代码读它** —— 留着给以后的机制（风险 / 举报 / 派系反应）当参考。⚠️ 和 `traits` 里的 `fake0`~`fake3` **不同源**：那个参与相性计算，这个不参与；老 `.tres` 没这一行 = 0 |
 | `display_race` | 简历上印的种族名 | 非空就替换纸面那一栏（例如 `race` 是 `elf`，纸面印「仙灵」）。**只换显示**：相性 / 叙事规则 / `combat_resolver.gd::_is_race()` 读的仍然是 `race`；立绘另看 `portrait_race`。取值走 `CandidateResource.shown_race_name()`，别处别自己拼 |
 | `resume_stamp` | 简历上的印章 | 一张贴图同时决定**显不显示**与**用哪张**：留空 = 不盖章（§10.6） |
-| `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号；面试者的长相也是数据，不是代码里摇的（§10.7） |
+| `portrait_*` | 拼装立绘配方 | 种族 + 各部件差分编号（**0 = 这个零件不画**，四个部件通用这个哨兵）；面试者的长相也是数据，不是代码里摇的（§11.2）。`portrait_race` 填 `empty` = **只用于绘制**的「空种族」：不画身体，只画选中的那几个零件（§11.2） |
 
 #### 属性：纸上写的那三个数 vs 实际的那三个数
 
@@ -1299,7 +1299,7 @@ var asked_entries: Dictionary = {}
 | 目录 | 粒度 | 装什么 |
 | --- | --- | --- |
 | `data/candidates/` | **一位面试者一个文件**（`c_0001.tres` … `c_0025.tres`，另有 `c_0101.tres`） | 姓名、**等级**（`level`，隐藏属性，不上简历纸，§3.1）、种族（引用 `data/races/*.tres`）、职业（引用 `data/jobs/*.tres`）、性别、年龄、三项属性（**简历值**）、**实际属性**（`true_attributes`，只写偏差项，§3.1）、特质（引用 `data/traits/*.tres`）、**个人履历与奖项**（`experience`）、**专长**（`skill`）、**组队宣言**（`team_declaration`）、**简历印章**（`resume_stamp`，§10.6）、**拼装立绘配方**；每条履历/专长 = 描述 + 追问 json 的路径（内联 `sub_resource`，跟着本人走） |
-| `data/races/` | **一个种族一个文件**（`human` / `elf` / `dwarf`） | `RaceDef`：`id` / `display_name` / `description`。与立绘配方代号对应：`hu`→human、`el`→elf、`st`→dwarf |
+| `data/races/` | **一个种族一个文件**（`human` / `elf` / `dwarf`） | `RaceDef`：`id` / `display_name` / `description`。与立绘配方代号对应：`hu`→human、`el`→elf、`st`→dwarf。⚠️ 立绘那边还有个 `empty` 代号，它**不是种族**、这里没有它的文件（§11.2） |
 | `data/asks/` | **一条追问一份 json**（`c_0001_1.json` … `c_0025_3.json`，外加每人的 `<id>_status.json`） | 一份就是「一段对话」，格式与 `data/dialogue.json` 里的一段完全一致，所以 `Typer` 那套逐字显示 / 点击推进照用 |
 | `data/asks/` | **一条追问一个文件**（`c_0001_1.json` … 共 75 份） | 那一条的追问对话本身：行数组，每行 `{ speaker_name, text }`，格式同 `data/dialogue.json` 的一段 |
 | `data/days/` | **一天一个文件**（`day_01.tres` … `day_10.tres`） | `day_index`、`candidates`（当天出场哪几个人，**引用** `data/candidates/*.tres`，数组顺序即出场顺序）、`slots`（当日名额）、`tutorial_step` |
@@ -1331,6 +1331,21 @@ data/days/day_XX.tres
 - `interview.gd` 判定一位就把 `finished_interviewee` +1 并整体重刷 —— 立绘与简历一起翻页。
 - 立绘的种族与部件编号全部读自候选人，**没有任何随机**：以前那段 `_debug_randomize_interviewee()`
   调试代码已删除。`Interviewee` 在拿到配方前保持空白，不画「默认人」。
+- **「哪个种族画哪几个部件」只有一份**（`scripts/util/portrait_composer.gd`，面试立绘与组队头像框共用）：
+
+  | `portrait_race` | 画什么 |
+  | --- | --- |
+  | `hu` / `el` | 身体 + 眼睛 / 头发 / 嘴巴 |
+  | `st` | 身体 + 帽子（不画眼 / 发） |
+  | `empty` | **不画身体**，只画选中的那几个零件（眼 / 发 / 嘴 / 帽，各自看 `portrait_*`） |
+
+  图纸永远叠在同一张 `600×675` 的画布上，所以「空种族 + 眼 / 嘴」和「有身体的人」位置分毫不差。
+- `portrait_race = &"empty"` 是**只用于绘制**的代号：`data/races/` 里没有它的 `RaceDef`，
+  简历上也不会印它，候选人的 `race`（玩法 / 相性 / 叙事规则读的那个）与它无关。
+  它给「没有躯干、只有零件」的形象留了个不用新画身体的出口（幽灵 / 透明人 / 单看某个零件）。
+- **编号 0 = 这个零件不画**（`PortraitComposer.NO_PART`，帽子一直这么用，眼睛 / 头发 / 嘴巴
+  现在也认）：空种族想「只戴一顶帽子」就填 `portrait_eye / hair / mouth = 0`。
+  `0` 永远不是合法部件号（部件号是四位数字 `<组><组内编号>`），不会跟真差分撞车。
 
 ### 11.3 改数据不用改代码
 
@@ -1540,7 +1555,7 @@ data/days/day_XX.tres
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_team_builder.tscn
 ```
 
-147 项：左半边只列通过者（被否掉的不出现）、头像框三张美术的来源与取景窗几何、
+155 项：左半边只列通过者（被否掉的不出现）、头像框三张美术的来源与取景窗几何、
 **立绘按 `PORTRAIT_SCALE` 折算后铺进取景窗、画布中心与窗口中心对齐（横向居中）、
 取景窗里看得见的那个人也居中且没被窗口边缘切掉**、
 **头像框与空位确实按 `AVATAR_SIZE` / `SLOT_SIZE` 渲染**、
@@ -1556,7 +1571,10 @@ approve 滑出来也不戳出视口）、
 **超员点多少次都出不去而减到名额以内一下就走**、
 **悬停样式只剩底色矩形、四边线宽合计为 0**，以及
 **`data/candidates/` 里的候选人逐个拼得出「有内容」的整身立绘**。
-另外还比对了 `Interviewee` 与 `PortraitComposer` 取的是同一套部件图（防两边走偏）。
+另外还比对了 `Interviewee` 与 `PortraitComposer` 取的是同一套部件图（防两边走偏），
+以及**空种族（`empty`）真的没画身体**：配方里没有身体那一条、拼出来的图和「只叠那几张零件」
+逐像素相等、编号 0 的零件真的不画（只戴一顶帽子也画得出来）、面试立绘的 `Body` 是空的
+而零件照旧都在（§11.2）。
 全绿退出码 0。
 
 画布同样是塞进 1152×648 的 `SubViewport` 里测的（理由见 §10.6）。

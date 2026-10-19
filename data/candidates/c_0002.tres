@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3 uid="uid://duxb81sjlseav"]
+
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="1_cq7tv"]
+[ext_resource type="Script" uid="uid://dt1320p3shkn3" path="res://scripts/resources/resume_entry.gd" id="2_niqee"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="3_niqee"]
+[ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="3_v1fib"]
+[ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="4_y71v0"]
+[ext_resource type="Resource" path="res://data/traits/calm.tres" id="5_lsk4f"]
+
+[sub_resource type="Resource" id="Resource_v1fib"]
+script = ExtResource("2_niqee")
+description = "PLACEHOLDER EXPERIENCE 02-1"
+ask_path = "res://data/asks/c_0002_1.json"
+
+[sub_resource type="Resource" id="Resource_y71v0"]
+script = ExtResource("2_niqee")
+description = "PLACEHOLDER EXPERIENCE 02-2"
+ask_path = "res://data/asks/c_0002_2.json"
+
+[sub_resource type="Resource" id="Resource_lsk4f"]
+script = ExtResource("2_niqee")
+description = "PLACEHOLDER SKILL 02-1"
+ask_path = "res://data/asks/c_0002_3.json"
+
+[resource]
+script = ExtResource("3_v1fib")
+id = &"c_0002"
+display_name = "PLACEHOLDER NAME 02"
+strength = 3
+intelligence = 15
+wisdom = 11
+race = ExtResource("3_niqee")
+job = ExtResource("1_cq7tv")
+gender = &"女"
+age = 19
+traits = Array[ExtResource("4_y71v0")]([ExtResource("5_lsk4f")])
+experience = Array[ExtResource("2_niqee")]([SubResource("Resource_v1fib"), SubResource("Resource_y71v0")])
+skill = Array[ExtResource("2_niqee")]([SubResource("Resource_lsk4f")])
+team_declaration = "PLACEHOLDER DECLARATION 02"
+judgment = "placeholder judgement （c_0002）"
+portrait_race = &"el"

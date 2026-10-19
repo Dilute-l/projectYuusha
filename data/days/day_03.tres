@@ -1,11 +1,11 @@
-[gd_resource type="Resource" script_class="DayConfig" format=3 uid="uid://b5gsbcoxsdxcu"]
+[gd_resource type="Resource" script_class="DayConfig" format=3 uid="uid://bu4u7p2wfu3yi"]
 
 [ext_resource type="Script" uid="uid://b6hdx75y270ce" path="res://scripts/resources/candidate_resource.gd" id="1_cand"]
-[ext_resource type="Resource" uid="uid://6vwd3tcjuoko" path="res://data/candidates/c_ct_0014.tres" id="2_c0"]
-[ext_resource type="Resource" uid="uid://rujnt2r46sp0" path="res://data/candidates/c_ct_0030.tres" id="3_c1"]
-[ext_resource type="Resource" uid="uid://dfdo7ome7ykpj" path="res://data/candidates/c_ct_0002.tres" id="4_c2"]
-[ext_resource type="Resource" uid="uid://sj8eajjvrfpn" path="res://data/candidates/c_ct_9901.tres" id="5_c3"]
-[ext_resource type="Resource" uid="uid://b54kq8hl80ysq" path="res://data/candidates/c_ct_0006.tres" id="6_c4"]
+[ext_resource type="Resource" uid="uid://5pfifghdqc8n" path="res://data/candidates/c_ct_0014.tres" id="2_c0"]
+[ext_resource type="Resource" uid="uid://cxn6s6yv3iso8" path="res://data/candidates/c_ct_0030.tres" id="3_c1"]
+[ext_resource type="Resource" uid="uid://mvpua661eypo" path="res://data/candidates/c_ct_0002.tres" id="4_c2"]
+[ext_resource type="Resource" uid="uid://bccnehd5qd85c" path="res://data/candidates/c_ct_9901.tres" id="5_c3"]
+[ext_resource type="Resource" uid="uid://bqd7wxeqk0d0d" path="res://data/candidates/c_ct_0006.tres" id="6_c4"]
 [ext_resource type="Script" uid="uid://cdc3hqvgn7pk2" path="res://scripts/resources/day_config.gd" id="7_script"]
 
 [resource]
