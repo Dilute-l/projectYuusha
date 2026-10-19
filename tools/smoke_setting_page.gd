@@ -105,6 +105,15 @@ func _run() -> void:
 	_check(haohan.z_index > page.z_index,
 			"手的 z_index(%d) > 设置页的 z_index(%d) —— 手画在设置页之上" % [haohan.z_index, page.z_index])
 
+	# ---- 系统光标：窗口模式下**只藏不夹**（全屏才夹，见 haohan.gd::_confines_cursor）----
+	# 自检跑在 headless 里 = 窗口模式。以前一律 CONFINED_HIDDEN，指针被 ClipCursor
+	# 夹死在窗口里拖不出去；这条就是防它退回去。
+	#
+	# ⚠️ 只能断言「判断」那一层：headless 的 DisplayServer 是空实现，
+	#   `Input.get_mouse_mode()` 会被它归零成 VISIBLE，量不到设下去的模式。
+	_check(not haohan._confines_cursor(),
+			"窗口模式下不夹光标（全屏才夹）—— 报 true 的话指针又会被夹死在窗口里")
+
 	# ---- 两张美术确实挂上了，而且尺寸对得上 ----
 	_check(setting_button.texture_normal != null, "设置按钮的贴图已加载")
 	if setting_button.texture_normal != null:

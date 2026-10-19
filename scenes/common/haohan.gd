@@ -4,6 +4,9 @@ extends Control
 ##
 ## 除了跟随鼠标，还支持切换「手」的贴图：主菜单里按下某些按钮会把手换成别的样式
 ## （例如 MenuInk 按钮 → 手变黑）。贴图放在本场景里，切换接口由本脚本对外提供。
+##
+## 系统光标的处理分两种窗口模式（见 `_confines_cursor()` / `_apply_mouse_mode()`）：
+## **全屏**时夹在窗口里，**窗口模式**时只藏不夹 —— 指针拖出游戏窗口是允许的。
 
 ## 默认（白色）的手
 @export var hand_texture: Texture2D
@@ -30,11 +33,14 @@ var _texture_before_signing: Texture2D = null
 ## 回菜单 / 结局那种需要真光标的场合（ending.tscn 里没有手）本来就该恢复。
 static var _live_count: int = 0
 
+## 上一次设下去的光标模式是不是「夹在窗口里」。用来判断要不要重设 ——
+## 全屏 / 窗口模式在运行时被切换过（以后加全屏开关、或玩家自己按了 F11）就得补一次。
+var _cursor_confined: bool = false
+
 
 func _ready() -> void:
 	_live_count += 1
-	# 隐藏系统光标，并限制在窗口内，避免手跑出窗口卡住
-	Input.set_mouse_mode(Input.MOUSE_MODE_CONFINED_HIDDEN)
+	_apply_mouse_mode()
 	# 签名期间换成蘸了墨的那只（§16）。走总线而不是让画布来找手：
 	# 画布埋在 Popup → Dialoguer 底下，穿三层引用才能碰到手；而且每挂一次新场景
 	# 都要重新接线。订阅之后换场景、加新场合都不用改一行（见 event_bus.gd 那一节）。
@@ -79,8 +85,43 @@ func _on_signing_finished() -> void:
 
 
 func _process(_delta: float) -> void:
+	# 全屏 ↔ 窗口在运行时被切过就补一次（以后加全屏开关 / 玩家按 F11 都不用再改这里）
+	if _confines_cursor() != _cursor_confined:
+		_apply_mouse_mode()
 	if _hand != null:
-		_hand.position = get_viewport().get_mouse_position()
+		_hand.position = _hand_position()
+
+
+## 光标模式：**全屏**夹在窗口里，**窗口模式**只藏不夹（能拖出窗口）。
+##
+##   * 全屏（含独占全屏）：`CONFINED_HIDDEN` —— 全屏本来就没有「窗口外」，
+##     夹住只是让手不会跑到屏幕边之外被系统吞掉；
+##   * 窗口模式：`HIDDEN` —— 系统光标藏着，但仍能拖出游戏窗口
+##     （去点别的窗口、拖到第二块屏幕都行）。
+##
+## ⚠️ 以前两种情况**一律** `CONFINED_HIDDEN`：窗口模式下指针被 `ClipCursor` 夹死在
+##   窗口里，拖不出去 —— 那就是「一些场景里鼠标出不了窗口」的来源。现在只有全屏才夹。
+static func _confines_cursor() -> bool:
+	var mode := DisplayServer.window_get_mode()
+	return mode == DisplayServer.WINDOW_MODE_FULLSCREEN \
+			or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+
+
+## 按当前窗口模式设置系统光标，并把「这一版夹没夹」记下来供 `_process()` 比较。
+func _apply_mouse_mode() -> void:
+	_cursor_confined = _confines_cursor()
+	Input.set_mouse_mode(
+			Input.MOUSE_MODE_CONFINED_HIDDEN if _cursor_confined else Input.MOUSE_MODE_HIDDEN)
+
+
+## 手摆在哪儿：指针位置**夹进画布**。
+##
+## 窗口模式下指针能拖出窗口，`get_mouse_position()` 可能给出画布外的坐标
+## （负数 / 超过宽高），不夹的话手就画到看不见的地方去了；夹住之后它停在贴边处。
+## 全屏 + 夹光标时这一句其实是空操作，留着是为了两种模式走同一条路。
+func _hand_position() -> Vector2:
+	var rect := get_viewport_rect()
+	return get_viewport().get_mouse_position().clamp(rect.position, rect.position + rect.size)
 
 
 ## 换成本场景里记录的那只「黑色的手」

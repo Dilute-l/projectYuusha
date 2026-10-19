@@ -362,7 +362,7 @@ class_name DayConfig extends Resource
 | `ending.tscn` | 用于收容所有与结局场景相关的细分场景，十天后按总分与 flag 判定结局 | `restart_requested` |
 | `dialogue.tscn` | 用于在多个场景下创建实例化的对话框 |  |
 | `interview_background.tscn` | 用于在多个场景下实现背景相关动画 | 多种（动画种类） |
-| `haohan.tscn` | 用于在剧情等地方创建实例化的主角的手 |  |
+| `haohan.tscn` | 用于在剧情等地方创建实例化的主角的手。**顺手接管系统光标**：全屏时夹在窗口里（`CONFINED_HIDDEN`），窗口模式下只藏不夹（`HIDDEN`，指针能拖出游戏窗口），手本身由 `haohan.gd::_hand_position()` 夹进画布 |  |
 | `setting_page.tscn` | **设置页浮层**（§14）：常规只有左上角那颗设置按钮，点它或按 Esc 就把整页盖在最上层；页面上有「继续游戏」「退出游戏」两颗按钮，手（光标）也画在这一层里 | `opened` / `closed` |
 
 每日流程由 `day_loop.tscn` 持有状态机驱动：
@@ -1908,8 +1908,9 @@ func _on_exit_pressed() -> void:
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_setting_page.tscn
 ```
 
-74 项：两张美术的来源与尺寸、**常规状态只有那颗按钮可见**、按钮贴在左上角且不缩放、
+75 项：两张美术的来源与尺寸、**常规状态只有那颗按钮可见**、按钮贴在左上角且不缩放、
 **层号压过 FlowHud 且是容器里最高的一层**、**手实例化在本层、可见、z_index 高于设置页**、
+**手那只手接管光标时「窗口模式不夹、只有全屏才夹」**（`haohan.gd::_confines_cursor()`）、
 点按钮 / 按 Esc 都能开、**再点 / 再按一次都能收**、`ui_accept` 不会误开、
 **整页铺满画布且 `MOUSE_FILTER_STOP`（底下的场景点不到）**、
 按钮排在整页之后（真的压在页面上）、**继续游戏按钮在退出按钮正上方且两颗一样宽**、
