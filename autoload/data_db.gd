@@ -222,23 +222,31 @@ func _scan_dir(dir_path: String, kind_hint: StringName) -> void:
 
 
 func _collect(path: String, kind: StringName) -> void:
-	var extension := path.get_extension().to_lower()
+	# ⚠️ 导出后的目录里**看不到 `xxx.tres` 本体**，只剩下 `xxx.tres.remap`：
+	# `editor/export/convert_text_resources_to_binary` 默认开启，文本资源被转成二进制
+	# .res 收进 pck，原路径只留一个 .remap 指向它（DirAccess 也照样把 .remap 列出来）。
+	# `ResourceLoader.load()` 认识 .remap 并自动重定向，所以这里把后缀剥掉再判断、再加载。
+	# 不剥的话 `get_extension()` 是 "remap"，125 个静态资源会被**静默跳过** ——
+	# 表现就是「导出后 DataDB 载入 0 项，职业/种族/特质/候选人/每日配置全部消失」，
+	# 而且一条警告都不打。编辑器内没有 .remap，剥后缀是空操作。
+	var res_path := path.trim_suffix(".remap")
+	var extension := res_path.get_extension().to_lower()
 	if extension != "tres" and extension != "res":
 		return
-	var resource := ResourceLoader.load(path)
+	var resource := ResourceLoader.load(res_path)
 	if resource == null:
-		_warnings.append("加载失败：%s" % path)
+		_warnings.append("加载失败：%s" % res_path)
 		return
 
 	# 相性矩阵单文件：不进常规表，单独持有
-	if path.get_file().get_basename() == _INTERACTION_FILE and kind == &"traits":
+	if res_path.get_file().get_basename() == _INTERACTION_FILE and kind == &"traits":
 		if resource is TraitInteractionTable:
 			_interaction_table = resource
 			return
 
-	var id := _resolve_id(resource, path, kind)
+	var id := _resolve_id(resource, res_path, kind)
 	if id == &"":
-		_warnings.append("无法确定 id，已跳过：%s" % path)
+		_warnings.append("无法确定 id，已跳过：%s" % res_path)
 		return
 
 	if not _tables.has(kind):
