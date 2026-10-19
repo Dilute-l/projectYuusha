@@ -6,9 +6,10 @@ extends Node
 ##   & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_interview_ask.tscn
 ##   全绿退出码 0；有失败项退出码 1。
 ##
-## 验的是「点简历某一条的『追问』→ 顶上对话框播出那条自己的 json」这条路：
+## 验的是「点简历某一条 → 顶上对话框直接播出那条自己的 json」这条路
+## （面试里点词条已经**去掉了二级菜单**：点一下就是追问）：
 ##
-##   点词条 → TokenMenu 的「追问」→ resume.gd 广播 EventBus.resume_entry_asked
+##   点词条 → resume.gd 直接广播 EventBus.resume_entry_asked
 ##          → interview.gd 取 entry.ask_path → typer.load_dialogue_from(path)
 ##          → dialoguer.play()
 ##
@@ -191,21 +192,16 @@ func _run() -> void:
 	var advanced: Array[int] = []
 	interview.phase_finished.connect(func() -> void: advanced.append(1))
 
-	# ---- 点词条 → 开菜单 → 点「追问」----
+	# ---- 点词条 → **直接追问**（这一版去掉了「先弹菜单、再点追问」那一手）----
 	var token0: Control = resume.token_at(0)
-	var ask: Button = menu.get_node("Options/OptionList/AskButton")
 	token0.emit_signal("pressed")
 	await _settle()
-	_check(menu.is_open(), "点词条 → 菜单打开")
 
-	ask.emit_signal("pressed")
-	await _settle()
-
-	_check(not menu.is_open(), "点「追问」→ 菜单收起（让位给对话框）")
+	_check(not menu.is_open(), "点词条 → 不再弹二级菜单")
 
 	# ---- 对话框播的就是这一条的 json ----
 	var typer: Typer = dialoguer.typer
-	_check(dialoguer.visible, "点「追问」→ 对话框显示出来")
+	_check(dialoguer.visible, "点词条 → 对话框直接演出来")
 	_check(typer.lines.size() == expect0.size(),
 			"播出的行数 = 该条追问 json 的行数（%d）" % expect0.size())
 	if typer.lines.size() != expect0.size():
@@ -258,10 +254,9 @@ func _run() -> void:
 	_check(GameState.get_phase() == DayPhase.Phase.INTERVIEW, "阶段仍然是 INTERVIEW")
 
 	# ---- 换一条：播的必须换成那一条自己的 json（换文件要重读）----
+	# 同样只点一下 —— 面试里每一条都是直接追问。
 	token0 = resume.token_at(1)
 	token0.emit_signal("pressed")
-	await _settle()
-	ask.emit_signal("pressed")
 	await _settle()
 	_check(dialoguer.visible, "追问第 2 条 → 对话框再次播出")
 	_check(typer.lines.size() == expect1.size(), "第 2 条播的行数 = 它自己那份 json 的行数")
