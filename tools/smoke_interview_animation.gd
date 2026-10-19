@@ -145,6 +145,19 @@ func _settle() -> void:
 	await get_tree().process_frame
 
 
+## 挑一天「当日名单 ≥2 位」的（第 1 天是教学日，只有 1 位，换人演出演不起来）。
+## 必须在 GameState.start_new_run() 之后调。返回挑到的天数；一天都没有返回 0。
+func _pick_day_with_two() -> int:
+	for day in range(1, GameConfig.TOTAL_DAYS + 1):
+		var config := DataDB.get_day_config(day)
+		if config == null or config.candidates.size() < 2:
+			continue
+		GameState.run_state.day = day
+		GameState.load_day_candidates(day)
+		return day
+	return 0
+
+
 func _make_canvas() -> SubViewport:
 	var vp := SubViewport.new()
 	vp.size = GAME_CANVAS
@@ -192,6 +205,10 @@ func _run() -> void:
 
 	# 数据全部来自 data/：开一局 → 当日名单 → 面试场景照着它铺
 	GameState.start_new_run(20261012)
+	# ⚠️ 第 1 天现在是「教学日」，名单只有 1 位；这一页要验的是**换人演出**，
+	#    至少得 2 位。所以挑第一个名单 ≥2 位的日子（数据还会变，别写死第几天）。
+	var picked_day := _pick_day_with_two()
+	_check(picked_day > 0, "data/days 里存在名单 ≥2 位的日子（挑到第 %d 天）" % picked_day)
 	GameState.set_phase(DayPhase.Phase.INTERVIEW)
 
 	var list := GameState.current_candidates

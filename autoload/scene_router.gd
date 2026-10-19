@@ -12,6 +12,7 @@ extends Node
 const SCENES: Dictionary = {
 	&"boot": "res://scenes/boot/boot.tscn",
 	&"main_menu": "res://scenes/menu/main_menu.tscn",
+	&"opening": "res://scenes/opening/opening.tscn",
 	&"day_loop": "res://scenes/day/day_loop.tscn",
 	&"interview": "res://scenes/day/interview/interview.tscn",
 	&"team_builder": "res://scenes/day/team_builder/team_builder.tscn",

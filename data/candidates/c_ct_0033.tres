@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/mage.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/timid.tres" id="6_tr0"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "咒语吟唱一级甲等"
+ask_path = "res://data/asks/c_ct_0033_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "处理文书工作"
+ask_path = "res://data/asks/c_ct_0033_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "高速吟诵"
+ask_path = "res://data/asks/c_ct_0033_3.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0033"
+display_name = "提克玛"
+level = 2
+strength = 8
+intelligence = 15
+wisdom = 11
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"女"
+age = 141
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("Resource_e2")])
+team_declaration = "唔，我只是想来碰碰运气……我真的很需要这份工作！"
+judgment = "提克玛相当完美的完成了我们交给她的任务。"
+portrait_race = &"el"
+portrait_eye = 203
+portrait_hair = 201
+portrait_mouth = 103
+portrait_hat = 0
+resume_stamp = ExtResource("7_stamp")

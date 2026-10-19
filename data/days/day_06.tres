@@ -3,9 +3,9 @@
 [ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_cand"]
 [ext_resource type="Resource" path="res://data/candidates/c_ct_9904.tres" id="2_c0"]
 [ext_resource type="Resource" path="res://data/candidates/c_ct_0027.tres" id="3_c1"]
-[ext_resource type="Resource" path="res://data/candidates/c_dl_0006.tres" id="4_c2"]
-[ext_resource type="Resource" path="res://data/candidates/c_dl_0005.tres" id="5_c3"]
-[ext_resource type="Resource" path="res://data/candidates/c_md_0191.tres" id="6_c4"]
+[ext_resource type="Resource" path="res://data/candidates/c_ct_0013.tres" id="4_c2"]
+[ext_resource type="Resource" path="res://data/candidates/c_dl_0006.tres" id="5_c3"]
+[ext_resource type="Resource" path="res://data/candidates/c_dl_0005.tres" id="6_c4"]
 [ext_resource type="Script" path="res://scripts/resources/day_config.gd" id="7_script"]
 
 [resource]
@@ -13,5 +13,4 @@ script = ExtResource("7_script")
 day_index = 6
 candidates = Array[ExtResource("1_cand")]([ExtResource("2_c0"), ExtResource("3_c1"), ExtResource("4_c2"), ExtResource("5_c3"), ExtResource("6_c4")])
 slots = 3
-score_request = 1
 tutorial_step = 0

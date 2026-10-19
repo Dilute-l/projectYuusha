@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/human.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/prideful.tres" id="6_tr0"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "王国之声报社 主编"
+ask_path = "res://data/asks/c_ct_0031_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "大学僧祷言背默竞赛 三等奖"
+ask_path = "res://data/asks/c_ct_0031_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "速记"
+ask_path = "res://data/asks/c_ct_0031_3.json"
+
+[sub_resource type="Resource" id="Resource_e3"]
+script = ExtResource("2_entry")
+description = "复述"
+ask_path = "res://data/asks/c_ct_0031_4.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0031"
+display_name = "卡欧利"
+level = 2
+strength = 8
+intelligence = 14
+wisdom = 14
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"男"
+age = 21
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2"), SubResource("Resource_e3")])
+team_declaration = "我的意见？哦，好吧，我的意见就是大家的意见，对吧？"
+judgment = "卡欧利记录了很多珍贵的资料，虽然他对战斗没什么帮助。"
+fake_level = 1
+portrait_race = &"hu"
+portrait_eye = 102
+portrait_hair = 101
+portrait_mouth = 102
+portrait_hat = 0
+resume_stamp = ExtResource("7_stamp")

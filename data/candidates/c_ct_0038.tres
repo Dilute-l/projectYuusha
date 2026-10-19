@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/elf.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/caring.tres" id="6_tr0"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "王国歌手人气大选 第一名"
+ask_path = "res://data/asks/c_ct_0038_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "吸引流量"
+ask_path = "res://data/asks/c_ct_0038_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "安慰别人"
+ask_path = "res://data/asks/c_ct_0038_3.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0038"
+display_name = "伊赤彤·绯"
+level = 3
+strength = 7
+intelligence = 9
+wisdom = 16
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"女"
+age = 24
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("Resource_e2")])
+team_declaration = "无需奖章与头衔，我既是整个王国的奇迹，独属于伊赤彤·绯的奇迹，现在开演！"
+judgment = "这伊赤彤·绯，她既不打怪也不奶人，我也不知道她是来干啥的。"
+fake_level = 1
+portrait_race = &"el"
+portrait_eye = 202
+portrait_hair = 204
+portrait_mouth = 105
+portrait_hat = 0
+resume_stamp = ExtResource("7_stamp")

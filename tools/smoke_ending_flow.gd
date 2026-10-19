@@ -49,19 +49,19 @@ func _run() -> void:
 	# 而「要切到哪个场景」看 EventBus.scene_change_started —— 它在 fade **之前**发。
 	SceneRouter.set_fade_duration(30.0)
 
-	# ---- 1. 数据侧：10 天都有 score_request，且临时值是 1 ----
+	# ---- 1. 数据侧：10 天都有 DayConfig，score_request 读得出来 ----
+	# ⚠️ 不钉具体数值：score_request 已经从"十天统一临时值 1"变成逐日不同的策划配置，
+	#    自检只保证「字段存在且是能用的整数」，具体多少由 data/days/*.tres 决定。
 	var missing := 0
-	var not_one := 0
+	var values: Array[String] = []
 	for day in range(1, GameConfig.TOTAL_DAYS + 1):
 		var cfg := DataDB.get_day_config(day)
 		if cfg == null:
 			missing += 1
 			continue
-		if cfg.score_request != 1:
-			not_one += 1
-			print("      · 第 %d 天 score_request = %d（期望 1）" % [day, cfg.score_request])
+		values.append("day%d=%d" % [day, cfg.score_request])
 	_check(missing == 0, "10 天的 DayConfig 都读得到（缺 %d）" % missing)
-	_check(not_one == 0, "10 天的 score_request 都是临时值 1（不符 %d 天）" % not_one)
+	print("      · 当前 score_request：%s" % ", ".join(values))
 
 	# ---- 2. 判定逻辑：0 = 没要求 / 达标放行 / 不达标判负 ----
 	var vp := SubViewport.new()
@@ -171,6 +171,14 @@ func _run() -> void:
 	# ---- 5. 判定接在流程里：战报结束 → advance() → 达标 / 判负 ----
 	# 第 2 段只验了判定函数本身。这里验它有没有被**接进流程**：
 	# 第 1〜9 天走 DAY_END、第 10 天走 RUN_END，两条路都要在记分之后先判一次。
+	#
+	# 十天的 score_request 临时统一成 100：这一段的「判负 / 放行」必须由自检掌握，
+	# 不能跟着 data/days/*.tres 里正在调的数值变（现在逐日不同，还可能是 0 = 没要求）。
+	var gate_days := DataDB.get_table(&"days")
+	var gate_days_backup: Dictionary = gate_days.duplicate()
+	for day in range(1, GameConfig.TOTAL_DAYS + 1):
+		_patch_day(gate_days, day, 100)
+
 	var requests: Array[StringName] = []
 	EventBus.scene_change_started.connect(
 		func(key: StringName, _path: String) -> void: requests.append(key))
@@ -235,8 +243,23 @@ func _run() -> void:
 		gate.queue_free()
 	await _settle()
 
+	# 还原 data/days 表（第 5 段临时改过的 score_request）
+	for key in gate_days.keys():
+		gate_days.erase(key)
+	for key in gate_days_backup.keys():
+		gate_days[key] = gate_days_backup[key]
+
 	vp.queue_free()
 	await _settle()
+
+
+## 把 data/days 表里第 day 天换成一份可控的 DayConfig（只为自检用，用完要还原）。
+## 和 _set_day1 的区别：它顺便写分数，这里只改 score_request。
+func _patch_day(days: Dictionary, day: int, required: int) -> void:
+	var cfg := DayConfig.new()
+	cfg.day_index = day
+	cfg.score_request = required
+	days[StringName(str(day))] = cfg
 
 
 ## 把流程摆到「第 day 天的战报刚看完」：阶段 = BATTLE_REPORT，当天分数写进战报。

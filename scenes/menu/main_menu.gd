@@ -171,14 +171,48 @@ func _release_button_focus() -> void:
 		win.gui_release_focus()
 
 
+## 火漆按钮（SealButton）现在兼任「重看开场」：
+##   第一次按 → 只提示「再按一次观看开场剧情」；
+##   第二次按 → 进开场场景（播 data/dialogue.json 的 opening，播完回主菜单）。
+##
+## 提示文案在 data/dialogue.json 的这个 id 里 —— 写手改字不用动代码。
+const OPENING_HINT_ID: String = "seal_opening_hint"
+
+## 开场剧情场景的 key（SceneRouter 的 SCENES 里登记）
+const OPENING_SCENE: StringName = &"opening"
+
+## 火漆按钮按过一次没有（「待触发」状态）。
+## 每次进主菜单都从"没按过"重新算 —— 本场景是被 SceneRouter 重新实例化的。
+var _seal_opening_armed: bool = false
+
+
+## 火漆按钮：**两段式**，第一次只提示，第二次才真的播开场。
+##
+## 为什么要按两次：开场是一整段旁白，误触一下就切走不合适。
+## 和「退出游戏」是同一套约定（那边第一下弹退出确认）。
+##
+## 提示用**穿透模式**（play(true)）：玩家第二下点同一个按钮时，
+## 这一次点击既把提示推完、也照常落到按钮上 —— 不用先点空处把提示收掉。
 func _on_seal_button_pressed() -> void:
 	var dialoguer = get_node_or_null("Dialoguer")
 	if dialoguer == null:
 		push_error("[MainMenu] 找不到 Dialoguer")
 		return
-	if not dialoguer.typer.load_dialogue("MenuSeal"):
+
+	if not _seal_opening_armed:
+		_seal_opening_armed = true
+		if not dialoguer.typer.load_dialogue(OPENING_HINT_ID):
+			# 文案缺失不该把玩家卡住：已经进入「待触发」状态了，再按一下就进开场
+			push_warning("[MainMenu] 找不到提示对话「%s」，再按一次即播放开场" % OPENING_HINT_ID)
+			return
+		dialoguer.play(true)
 		return
-	dialoguer.play()
+
+	# 第二次：真的进开场场景（opening 播完自己回主菜单）
+	if SceneRouter.is_transitioning:
+		return
+	_seal_opening_armed = false
+	SceneRouter.goto_scene(OPENING_SCENE)
 
 
 func _on_ink_button_pressed() -> void:

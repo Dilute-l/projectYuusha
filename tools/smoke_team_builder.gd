@@ -51,6 +51,19 @@ func _settle() -> void:
 	await get_tree().process_frame
 
 
+## 挑一天「当日名单 ≥2 位」的（第 1 天是教学日，只有 1 位，验不了「通过 / 否掉」）。
+## 必须在 GameState.start_new_run() 之后调。返回挑到的天数；一天都没有返回 0。
+func _pick_day_with_two() -> int:
+	for day in range(1, GameConfig.TOTAL_DAYS + 1):
+		var config := DataDB.get_day_config(day)
+		if config == null or config.candidates.size() < 2:
+			continue
+		GameState.run_state.day = day
+		GameState.load_day_candidates(day)
+		return day
+	return 0
+
+
 ## 等按钮滑到位（tween 跑完）
 func _settle_slide() -> void:
 	await get_tree().create_timer(CandidateEntry.SLIDE_TIME + 0.12).timeout
@@ -94,12 +107,17 @@ func _run() -> void:
 	# 数据全部来自 data/：开一局 → 当日名单 → 组队界面照着它铺。
 	# 这里**不造**测试用候选人，测的就是「data/days/*.tres → 左半边头像」这条路。
 	GameState.start_new_run(20261011)
+	# ⚠️ 第 1 天现在是「教学日」，名单只有 1 位；而这一页要验「通过者进池、被否掉的不进池」，
+	#    至少得 2 位。所以挑第一个名单 ≥2 位的日子（数据还会变，别写死第几天）。
+	var picked_day := _pick_day_with_two()
+	_check(picked_day > 0, "data/days 里存在名单 ≥2 位的日子（挑到第 %d 天）" % picked_day)
 	# 面试场景在 DAY_BRIEFING 会自己播开场对话；自检不需要那一段，把阶段拨到招人。
 	GameState.set_phase(DayPhase.Phase.INTERVIEW)
 
 	var candidates := GameState.current_candidates
-	_check(candidates.size() >= 2, "第 1 天名单里至少 2 位候选人（实际 %d）" % candidates.size())
-	if candidates.is_empty():
+	_check(candidates.size() >= 2, "第 %d 天名单里至少 2 位候选人（实际 %d）" % [
+		GameState.get_day(), candidates.size()])
+	if candidates.size() < 2:
 		return
 
 	# 面试只录用了第 1 位、否掉了第 2 位 —— 组队上该只看到第 1 位
@@ -645,6 +663,9 @@ func _check_resume_geometry(vp: SubViewport, resume: Resume) -> void:
 
 func _check_new_day(vp: SubViewport) -> void:
 	GameState.start_new_run(20261011)
+	# 同样要挑一天名单 ≥2 位的（第 1 天是教学日，只有 1 位）
+	var picked_day := _pick_day_with_two()
+	_check(picked_day > 0, "重开一局后挑到名单 ≥2 位的日子（第 %d 天）" % picked_day)
 	GameState.set_phase(DayPhase.Phase.TEAM_BUILD)
 	var candidates := GameState.current_candidates
 	_check(candidates.size() >= 2, "重开一局后名单至少 2 位（实际 %d）" % candidates.size())

@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="CandidateResource" format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/candidate_resource.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/resources/resume_entry.gd" id="2_entry"]
+[ext_resource type="Resource" path="res://data/jobs/cleric.tres" id="3_job"]
+[ext_resource type="Resource" path="res://data/races/dwarf.tres" id="4_race"]
+[ext_resource type="Script" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
+[ext_resource type="Resource" path="res://data/traits/caring.tres" id="6_tr0"]
+[ext_resource type="Texture2D" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("2_entry")
+description = "作为神殿见习祭司的实习经验"
+ask_path = "res://data/asks/c_ct_0032_1.json"
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("2_entry")
+description = "战地医护水平进阶等级证书"
+ask_path = "res://data/asks/c_ct_0032_2.json"
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("2_entry")
+description = "请神"
+ask_path = "res://data/asks/c_ct_0032_3.json"
+
+[resource]
+script = ExtResource("1_script")
+id = &"c_ct_0032"
+display_name = "艾欧密丝"
+level = 3
+strength = 9
+intelligence = 12
+wisdom = 16
+race = ExtResource("4_race")
+job = ExtResource("3_job")
+gender = &"女"
+age = 33
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
+team_declaration = "别担心，有咱在，其他人不会受伤！"
+judgment = "艾欧密丝在神术上表现出了相当的素养。"
+portrait_race = &"st"
+portrait_eye = 0
+portrait_hair = 0
+portrait_mouth = 0
+portrait_hat = 103
+resume_stamp = ExtResource("7_stamp")

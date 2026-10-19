@@ -1,0 +1,20 @@
+[
+	{
+		"speaker_name": "面试官",
+		"text": "可以看一下你的证书吗？"
+	},
+	{
+		"speaker_name": "拉斯特",
+		"text": "可以。",
+		"popup": "AwardPhd",
+		"popup_stamp": "resume_stamp_real"
+	},
+	{
+		"speaker_name": "面试官",
+		"text": "……说来，我见过你吗？"
+	},
+	{
+		"speaker_name": "拉斯特",
+		"text": "您见到的是我的哥哥法斯特吧。"
+	}
+]

@@ -407,5 +407,8 @@
   ],
 	"day-1_Boardery": [
 	{ "speaker_name": "阿板", "text": "Mysteries wind~" }
+  ],
+	"seal_opening_hint": [
+	{ "speaker_name": " ", "text": "再按一次观看开场剧情" }
   ]
 }

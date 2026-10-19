@@ -676,10 +676,12 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 
 | 场景 | 脚本 | 职责 |
 | --- | --- | --- |
-| `scenes/menu/main_menu.tscn` | `main_menu.gd` | **项目启动场景**（`application/run/main_scene`）。Startgame → `GameState.start_new_run()` + `SceneRouter.goto_scene("day_loop")`；Continuegame → `SaveService.load_latest()` + 同一个跳转（没存档时按钮是灰的，§15.2）；Exitgame 二次点击确认退出 |
+| `scenes/menu/main_menu.tscn` | `main_menu.gd` | 主菜单。Startgame → `GameState.start_new_run()` + `SceneRouter.goto_scene("day_loop")`；Continuegame → `SaveService.load_latest()` + 同一个跳转（没存档时按钮是灰的，§15.2）；Exitgame 二次点击确认退出；SealButton 二次点击重看开场剧情 |
 | `scenes/day/day_loop.tscn` | `day_loop.gd` | 每日流程容器：订阅 `day_phase_changed` 换阶段子场景；`advance()` 向 `DayDirector` 问下一步；进入每天时自动存档 |
-| `scenes/ending/ending.tscn` | `ending.gd` | 十天的落点：占位显示累计分 + 「返回主菜单」，对外发 `restart_requested` |
-| `scenes/boot/boot.tscn` | `boot.gd` | 备用入口：DataDB 兜底检查 → 主菜单。当前**不是**启动场景，要开场演出时把 `run/main_scene` 改回来即可 |
+| `scenes/ending/ending.tscn` | `ending.gd` | 十天的落点：播 `Ending_Good`（念总分）+ 自动回主菜单，对外发 `restart_requested` |
+| `scenes/boot/boot.tscn` | `boot.gd` | **项目启动场景**（`application/run/main_scene`）：DataDB 兜底检查 → 第一次启动先切 `opening`、之后直接切 `main_menu`（规则见 `scripts/core/flow/opening_flow.gd`） |
+| `scenes/opening/opening.tscn` | `opening.gd` | 开场剧情：播 `opening` → 播完自动回主菜单。第一次启动由 boot 切进来，之后从主菜单火漆按钮重看 |
+| `scenes/ending/true_ending.tscn` | `true_ending.gd` | 真结局：主菜单标题按钮解锁后按下进入，播 `Ending_True` 后回主菜单（解锁条件见 `scripts/core/flow/ending_unlock.gd`） |
 | `scripts/core/flow/day_director.gd` | — | 每日流程推进规则（纯静态）：`advance(phase, day)` / `scene_key_for(phase)` |
 
 - 一天走 5 个阶段：DayBriefing → SpecialEvent → Interview → TeamBuild → BattleReport；
