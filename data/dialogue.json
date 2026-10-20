@@ -68,25 +68,33 @@
 	{ "speaker_name": "柳絮", "text": "但是我很满意！我觉得我重拾了做很多事情的热情！" },
 	{ "speaker_name": "柳絮", "text": "没错，我很开心。我希望你也玩的开心。" },
 	{ "speaker_name": "柳絮", "text": "那么，就这样了。" },
-	{ "speaker_name": "柳絮", "text": "谢谢你见证我的梦。" }
+	{ "speaker_name": "柳絮", "text": "谢谢你见证我的梦。" },
+	{ "speaker_name": "柳絮", "text": "我决定要给队友们写评语。\nm3的头像点了只会喵喵叫，他的评语我写在这里。"},
+	{ "speaker_name": "柳絮", "text": "他摸了。"}
   ],
   "NZ": [
 	{ "speaker_name": "腻子", "text": "我们的游戏采用粗糙手绘风的原因是美工真的只会画粗糙的手绘。" },
-	{ "speaker_name": "腻子", "text": "在测试时，我们的各种图标都是用向日葵来替代的。 现在绝大部分的向日葵都已经删掉了。" }
+	{ "speaker_name": "腻子", "text": "在测试时，我们的各种图标都是用向日葵来替代的。 现在绝大部分的向日葵都已经删掉了。" },
+	{ "speaker_name": "柳絮", "text": "我决定要给队友们写评语。"},
+	{ "speaker_name": "柳絮", "text": "腻子算是主美，他的神人画作完美适配游戏的搞耍风格。\n看了不笑的是给"}
   ],
   "Dilute": [
 	{ "speaker_name": "Dilute", "text": "我们的游戏中真的含有人类编写的代码。" },
 	{ "speaker_name": "Dilute", "text": "干了半个多月，算是看着这个游戏从一开始的骨架一步步长出血肉变成这样一个成品。" },
-    { "speaker_name": "Dilute", "text": "虽然不是很完善吧，但看着还是挺有成就感的。"},
-    { "speaker_name": "Dilute", "text": "什么嘛，我也是有维护这种稍微大型一点的项目的能力的嘛.jpg"},
-    { "speaker_name": "Dilute", "text": "咱不是很有文采，写不出什么特别有意思的文字，只能压榨一下 agent 写写代码这样子；"},
-    { "speaker_name": "Dilute", "text": "不过至少来做游戏算是满足了一下一直以来学计算机的初心了，感谢科技的发展让我这样的半吊子也能写出不错的成品。"},
-    { "speaker_name": "Dilute", "text": "队友们都是特别有意思的人，和他们一起做游戏真的很开心。"},
-    { "speaker_name": "Dilute", "text": "总之我做这个游戏做的很开心，如果你玩的开心的话我会更高兴的。"}
+	{ "speaker_name": "Dilute", "text": "虽然不是很完善吧，但看着还是挺有成就感的。"},
+	{ "speaker_name": "Dilute", "text": "什么嘛，我也是有维护这种稍微大型一点的项目的能力的嘛.jpg"},
+	{ "speaker_name": "Dilute", "text": "咱不是很有文采，写不出什么特别有意思的文字，只能压榨一下 agent 写写代码这样子；"},
+	{ "speaker_name": "Dilute", "text": "不过至少来做游戏算是满足了一下一直以来学计算机的初心了，感谢科技的发展让我这样的半吊子也能写出不错的成品。"},
+	{ "speaker_name": "Dilute", "text": "队友们都是特别有意思的人，和他们一起做游戏真的很开心。"},
+	{ "speaker_name": "Dilute", "text": "总之我做这个游戏做的很开心，如果你玩的开心的话我会更高兴的。"},
+	{ "speaker_name": "柳絮", "text": "我决定要给队友们写评语。"},
+	{ "speaker_name": "柳絮", "text": "lulu算是主程，也是现在队伍里最后一个还在头疼就业的人。\n大悲，加油啊lulu……"}
   ],
 "Midu": [
 	{ "config": { "sound": "normal", "extra_silent": "獭" } },
-	{ "speaker_name": "大米", "text": "我们现在用的这个字体里面有獭这个字" }
+	{ "speaker_name": "大米", "text": "我们现在用的这个字体里面有獭这个字" },
+	{ "speaker_name": "柳絮", "text": "我决定要给队友们写评语。"},
+	{ "speaker_name": "柳絮", "text": "老米算是主文案，也是在开赛后不久就拿到了offer背叛了一切之人。\n他坚称文案和他没有关系，观众朋友们你们信吗。"}
   ],
 "MenuSeal": [
 	{ "speaker_name": "腻子", "text": "这里本来是一个印章的 ^1但是看起来太像清凉油，于是只好改成了火漆" }
