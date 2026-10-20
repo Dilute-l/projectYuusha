@@ -417,7 +417,7 @@ static func _pair_synergy(a: CandidateResource, b: CandidateResource,
 	if _both_have_traits(a, b, &"trait.rude", &"trait.prideful"):
 		before = delta
 		delta -= 0.2
-		_add_synergy_event(report, "在%s吹嘘自己的时候，%s诋毁了他一句，俩人差点打了起来。" %
+		_add_synergy_event(report, "在%s吹嘘自己的时候，%s吐槽了他一句，俩人差点打了起来。" %
 				_rule_names(a, b, &"trait.prideful", &"trait.rude"),
 				&"synergy", _pair_step_factor(before, delta))
 #傲慢+傲慢
