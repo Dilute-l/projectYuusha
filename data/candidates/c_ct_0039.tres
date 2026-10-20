@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/active.tres" id="6_tr0"]
 [ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+[ext_resource type="Resource" path="res://data/traits/slime_slayer.tres" id="8_mddie"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -17,6 +18,12 @@ ask_path = "res://data/asks/c_ct_0039_1.json"
 script = ExtResource("2_entry")
 description = "法术"
 ask_path = "res://data/asks/c_ct_0039_2.json"
+
+[sub_resource type="Resource" id="Resource_xtuk6"]
+script = ExtResource("2_entry")
+description = "处理史莱姆"
+ask_path = "res://data/asks/c_ct_0039_3.json"
+metadata/_custom_type_script = "uid://dt1320p3shkn3"
 
 [resource]
 script = ExtResource("1_script")
@@ -29,9 +36,9 @@ wisdom = 12
 race = ExtResource("4_race")
 job = ExtResource("3_job")
 age = 23
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("8_mddie")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0")])
-skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1")])
+skill = Array[ExtResource("2_entry")]([SubResource("Resource_e1"), SubResource("Resource_xtuk6")])
 team_declaration = "我是村里最好的巫师，有村里最好的法杖！"
 judgment = "拉斯特的法术可靠而优雅的结束了战局。"
 resume_stamp = ExtResource("7_stamp")
