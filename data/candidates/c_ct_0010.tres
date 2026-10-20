@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://cehp2g45qfcng" path="res://scripts/resources/trait_def.gd" id="5_traitscript"]
 [ext_resource type="Resource" path="res://data/traits/rude.tres" id="6_tr0"]
 [ext_resource type="Texture2D" uid="uid://cd7wsjw4cuvnq" path="res://assets/art/interview/resume/stamp/resume_stamp_real.png" id="7_stamp"]
+[ext_resource type="Resource" path="res://data/traits/goblin_slayer.tres" id="8_7c0a2"]
 
 [sub_resource type="Resource" id="Resource_e0"]
 script = ExtResource("2_entry")
@@ -20,7 +21,7 @@ ask_path = "res://data/asks/c_ct_0010_2.json"
 
 [sub_resource type="Resource" id="Resource_e2"]
 script = ExtResource("2_entry")
-description = "火魔法"
+description = "对群火魔法"
 ask_path = "res://data/asks/c_ct_0010_3.json"
 
 [resource]
@@ -34,7 +35,7 @@ wisdom = 8
 race = ExtResource("4_race")
 job = ExtResource("3_job")
 age = 21
-traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0")])
+traits = Array[ExtResource("5_traitscript")]([ExtResource("6_tr0"), ExtResource("8_7c0a2")])
 experience = Array[ExtResource("2_entry")]([SubResource("Resource_e0"), SubResource("Resource_e1")])
 skill = Array[ExtResource("2_entry")]([SubResource("Resource_e2")])
 team_declaration = "我会火魔法。"
