@@ -20,6 +20,17 @@ extends Resource
 
 ## 逐条事件播报，由 narrative_engine.gd 依 NarrativeRule 生成。
 ## 每条形如 { "text": String, "rule_id": StringName, "priority": int }
+##
+## 演出还要两个键（见 scenes/day/battle_report.gd 的「逐行播报」）——
+## 两者都**由 core 算好塞进来**，表现层只管照着播，绝不自己重算一遍分数：
+##
+##   "score"  仅「个人评价」那一条有：这个人**自身**的战力（`powerCaculation()`），
+##            战报上就播成 `+xxx`，底下的总分往上跳这么多。
+##   "factor" 仅相性 / 事件那一条有：这一条**真正乘上去的倍数**（1.0 = 不影响），
+##            战报上就播成 `×1.1`，底下的总分乘这一下。
+##
+## 把全部 score 相加 = `breakdown.true_power`；把全部 factor 相乘 = `breakdown.multiplier`。
+## 所以「一行一行播完」得到的数，和 `day_score` 是同一个数（smoke_report_playback 盯着这条）。
 @export var events: Array[Dictionary] = []
 
 ## 当日分数 = `true_power × multiplier`（见 combat_resolver.gd::resolve）。

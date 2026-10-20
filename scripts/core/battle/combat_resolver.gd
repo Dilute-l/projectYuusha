@@ -49,11 +49,15 @@ static func resolve(day_index: int, member_ids: Array[StringName]) -> BattleRepo
 			push_warning("[CombatResolver] %s 没写 judgment，这一条退回桩文案" % member_id)
 			text = STUB_TEMPLATES[rng.randi_range(0, STUB_TEMPLATES.size() - 1)]
 			rule_id = &"stub"
+		# `score` = 这个人**自身**的战力（§6.5 的「个人战力」），战报上就播成 `+xxx`。
+		# 一条事件自带自己的分数，而不是让表现层回头去算 —— 那是 core 的活，
+		# 而且表现层重算一遍就等于有了第二个真相，两边一旦分岔就没人说得清。
 		report.events.append({
 			"text": text,
 			"actor": member_id,
 			"rule_id": rule_id,
 			"priority": 0,
+			"score": powerCaculation(member),
 		})
 
 	# ── 循环外：全队合计 ──
@@ -258,13 +262,13 @@ static func synergyMultiplier(day_index: int, member_ids: Array[StringName],
 		if _has_trait(a, &"trait.bard"):
 			multiplier *= 1.3
 			_add_synergy_event(report, "不管怎么说，作为吟游诗人的%s确实用音乐鼓舞了士气。" %
-				_member_name(a))
+				_member_name(a), &"synergy", 1.3)
 
 		# 第四面墙
 		if _has_trait(a, &"trait.fourth_wall"):
 			multiplier *= 0.8
 			_add_synergy_event(report, "%s一直在念叨些奇奇怪怪的东西，搞得大家精神状态都很糟糕。" %
-					_member_name(a))
+					_member_name(a), &"synergy", 0.8)
 
 		for j in range(i + 1, member_ids.size()):
 			var b := DataDB.get_candidate(member_ids[j])
@@ -282,7 +286,7 @@ static func synergyMultiplier(day_index: int, member_ids: Array[StringName],
 	var same_job := same_job_id(member_ids)
 	if same_job != &"":
 		multiplier *= SAME_JOB_PENALTY
-		_add_synergy_event(report, _same_job_line(same_job), &"same_job")
+		_add_synergy_event(report, _same_job_line(same_job), &"same_job", SAME_JOB_PENALTY)
 
 	# 队外：每种怪物一次
 	for monster_id in event_monsters(day_index):
@@ -290,11 +294,11 @@ static func synergyMultiplier(day_index: int, member_ids: Array[StringName],
 		if not slayer.is_empty():
 			multiplier *= 1.0 + EVENT_SLAYER_BONUS
 			_add_synergy_event(report, "旅途上遇到了很多%s，%s轻松的处理掉了这些敌人。" % [
-				_monster_name(monster_id), _names_of(slayer)])
+				_monster_name(monster_id), _names_of(slayer)], &"synergy", 1.0 + EVENT_SLAYER_BONUS)
 		else:
 			multiplier *= 1.0 - EVENT_MISSING_SLAYER_PENALTY
 			_add_synergy_event(report, "今日%s大量出没，可是队里没人知道该怎么对付它们。" % [
-				_monster_name(monster_id)])
+				_monster_name(monster_id)], &"synergy", 1.0 - EVENT_MISSING_SLAYER_PENALTY)
 
 	return multiplier
 
@@ -383,46 +387,67 @@ static func _names_of(ids: Array[StringName]) -> String:
 static func _pair_synergy(a: CandidateResource, b: CandidateResource,
 		report: BattleReport = null) -> float:
 	var delta: float = 0.0
+	# 每条规则都记一个 `before`：这一对**可能同时命中好几条**，而结算是
+	# 「(1 + Δ) 整体乘一次」，不是每条形如 x1.2 x0.9 那样各乘一次。
+	# 所以播报上的倍数必须取「这一步真正涨落的那一截」——
+	# 见 _pair_step_factor()，不这么算的话纸上乘出来的数会跟底下跳的数对不上。
+	var before: float = 0.0
 #傲慢+胆小
 	if _both_have_traits(a, b, &"trait.prideful", &"trait.timid"):
+		before = delta
 		delta -= 0.1
 		_add_synergy_event(report, "%s一路上都在压力%s，搞得大家都有点不愉快。" %
-				_rule_names(a, b, &"trait.prideful", &"trait.timid"))
-#积极+积极		
+				_rule_names(a, b, &"trait.prideful", &"trait.timid"),
+				&"synergy", _pair_step_factor(before, delta))
+#积极+积极
 	if _both_have_traits(a, b, &"trait.active", &"trait.active"):
+		before = delta
 		delta += 0.2
 		_add_synergy_event(report, "%s和%s把队伍的气氛调动了起来，所有人都很有干劲。" %
-				_rule_names(a, b, &"trait.active", &"trait.active"))
-#体贴+胆小		
+				_rule_names(a, b, &"trait.active", &"trait.active"),
+				&"synergy", _pair_step_factor(before, delta))
+#体贴+胆小
 	if _both_have_traits(a, b, &"trait.caring", &"trait.timid"):
+		before = delta
 		delta += 0.1
 		_add_synergy_event(report, "虽然%s有点软脚了，但%s就像妈妈一样把他照顾的很好。" %
-				_rule_names(a, b, &"trait.timid", &"trait.caring"))
-#傲慢+粗鲁		
+				_rule_names(a, b, &"trait.timid", &"trait.caring"),
+				&"synergy", _pair_step_factor(before, delta))
+#傲慢+粗鲁
 	if _both_have_traits(a, b, &"trait.rude", &"trait.prideful"):
+		before = delta
 		delta -= 0.2
 		_add_synergy_event(report, "在%s吹嘘自己的时候，%s诋毁了他一句，俩人差点打了起来。" %
-				_rule_names(a, b, &"trait.prideful", &"trait.rude"))
+				_rule_names(a, b, &"trait.prideful", &"trait.rude"),
+				&"synergy", _pair_step_factor(before, delta))
 #傲慢+傲慢
 	if _both_have_traits(a, b, &"trait.prideful", &"trait.prideful"):
+		before = delta
 		delta -= 0.1
 		_add_synergy_event(report, "%s和%s都认为自己才是最强的，导致路上他们一直在吵。" %
-				_rule_names(a, b, &"trait.prideful", &"trait.prideful"))
+				_rule_names(a, b, &"trait.prideful", &"trait.prideful"),
+				&"synergy", _pair_step_factor(before, delta))
 #粗鲁+胆小
 	if _both_have_traits(a, b, &"trait.timid", &"trait.rude"):
+		before = delta
 		delta -= 0.1
 		_add_synergy_event(report, "%s的战斗技巧和为人处世都有些暴躁，搞得%s有些害怕。" %
-				_rule_names(a, b, &"trait.rude", &"trait.timid"))	
+				_rule_names(a, b, &"trait.rude", &"trait.timid"),
+				&"synergy", _pair_step_factor(before, delta))
 #傲慢+活跃
 	if _both_have_traits(a, b, &"trait.active", &"trait.prideful"):
+		before = delta
 		delta += 0.1
 		_add_synergy_event(report, "%s总觉得%s的积极表现是在和自己竞争，然后……他似乎出了更多的力。" %
-				_rule_names(a, b, &"trait.prideful", &"trait.active"))	
+				_rule_names(a, b, &"trait.prideful", &"trait.active"),
+				&"synergy", _pair_step_factor(before, delta))
 #积极+体贴
 	if _both_have_traits(a, b, &"trait.active", &"trait.caring"):
+		before = delta
 		delta += 0.1
 		_add_synergy_event(report, "%s把有些莽撞的%s照顾得很好。" %
-				_rule_names(a, b, &"trait.caring", &"trait.active"))	
+				_rule_names(a, b, &"trait.caring", &"trait.active"),
+				&"synergy", _pair_step_factor(before, delta))
 #吟游诗人
 	# if _has_trait(a, &"trait.bard") or _has_trait(b, &"trait.bard"):
 	# 	delta += 0.3
@@ -435,11 +460,31 @@ static func _pair_synergy(a: CandidateResource, b: CandidateResource,
 	# 			_member_name(a if _has_trait(a, &"trait.fourth_wall") else b))
 #矮人笑话+矮人
 	if _trait_meets_race(a, b, &"trait.dwarf_joke", &"race.st"):
+		before = delta
 		delta -= 0.2
 		_add_synergy_event(report, "%s讲了致死量的矮人笑话，然后被%s记到了仇恨之书里。" % [
-				_trait_owner_name(a, b, &"trait.dwarf_joke"), _race_label(a, b, &"race.st")])
-	
+				_trait_owner_name(a, b, &"trait.dwarf_joke"), _race_label(a, b, &"race.st")],
+				&"synergy", _pair_step_factor(before, delta))
+
 	return delta
+
+
+## 这一对里「第几条命中的规则」真正乘上去的倍数。
+##
+## 一对命中两条规则时，真正乘的不是 (1+d1)×(1+d2)，而是 1+(d1+d2)（见 _pair_synergy
+## 的 delta 累加 + synergyMultiplier 的 `multiplier *= 1.0 + delta`）。于是第 k 条的
+## **有效倍数** = (1 + Σ_{≤k}) / (1 + Σ_{<k})：
+##
+##   d = +0.2 再 +0.1  →  ×1.2 然后 ×1.0833（合起来正好 ×1.3）
+##
+## 播报照这个数写，底下总分照这个数乘，最后一定落回 day_score —— 玩家拿纸笔跟着算也不会错。
+## 只命中一条规则时（绝大多数情况）它退化回 1 + d，也就是 ×1.2 / ×0.8 这种好读的数。
+static func _pair_step_factor(before: float, after: float) -> float:
+	var base := 1.0 + before
+	if is_zero_approx(base):
+		# 理论上到不了（delta 只有 ±0.1 / ±0.2 这种量级）。不要 0 除，退回增量本身。
+		return 1.0 + (after - before)
+	return (1.0 + after) / base
 
 
 ## 命中的相性往战报里追加一条播报。文本里不放 {actor}：
@@ -448,8 +493,12 @@ static func _pair_synergy(a: CandidateResource, b: CandidateResource,
 ## rule_id 默认是 `synergy`（两两相性 / 当日事件的通用标签）。
 ## 「整队同职业」那条传自己的 `same_job`，这样以后要按规则分类统计 / 换文案时，
 ## 不用回头翻文本去猜这条是谁播的。
+##
+## factor = **这一条真正乘上去的倍数**（1.0 = 不影响）。战报照着它播 `×1.1`，
+## 底下的总分也照着它跳 —— 于是「播出来的字」与「跳成那个数的算术」是同一份数据，
+## 玩家自己在纸上乘一遍也对得上。
 static func _add_synergy_event(report: BattleReport, text: String,
-		rule_id: StringName = &"synergy") -> void:
+		rule_id: StringName = &"synergy", factor: float = 1.0) -> void:
 	if report == null:
 		return
 	report.events.append({
@@ -457,6 +506,7 @@ static func _add_synergy_event(report: BattleReport, text: String,
 		"actor": &"",
 		"rule_id": rule_id,
 		"priority": 1,
+		"factor": snappedf(factor, 0.0001),
 	})
 
 
