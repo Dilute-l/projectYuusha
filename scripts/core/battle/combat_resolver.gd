@@ -103,19 +103,19 @@ static func powerCaculation(member: CandidateResource) -> float:
 	var tempower: float = 0
 	match member.job.id:
 		&"job.fighter":
-			tempower += member.true_strength() * member.level * 10
+			tempower += member.true_strength() * (5+member.level) * 10
 		&"job.mage":
-			tempower += member.true_intelligence() * member.level * 10
+			tempower += member.true_intelligence() * (5+member.level) * 10
 		&"job.cleric":
-			tempower += member.true_wisdom() * member.level * 10
+			tempower += member.true_wisdom() * (5+member.level) * 10
 	match member.fake_level:
-		&"fake0":
+		0:
 			tempower *= 1
-		&"fake1":
+		1:
 			tempower *= 0.8
-		&"fake0":
+		2:
 			tempower *= 0.5
-		&"fake0":
+		3:
 			tempower *= 0.1
 	return tempower
 
