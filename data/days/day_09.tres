@@ -16,4 +16,4 @@ day_index = 9
 candidates = Array[ExtResource("1_cand")]([ExtResource("2_c0"), ExtResource("3_c1"), ExtResource("4_c2"), ExtResource("5_c3"), ExtResource("6_c4"), ExtResource("7_c5"), ExtResource("8_c6")])
 slots = 4
 event_pool = Array[StringName]([&"orc", &"goblin"])
-score_request = 794
+score_request = 1809
