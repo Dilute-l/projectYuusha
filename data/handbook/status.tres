@@ -7,9 +7,8 @@ script = ExtResource("1_s1mvf")
 id = &"status"
 category = &"monster"
 title = "属性入门101"
-body = "1.候选人的单项属性不会超过15.
-2.候选人的属性之和一般不会超过35.
-3.不同的职业有不同的主属性。
+body = "1.不同的职业有不同的主属性。
 战士：力量 法师：智力 牧师：感知
-不过例外偶尔也是会有的……好好辨认吧。"
+2.属性可以用于衡量一个人被编入队伍时能做出的奉献。
+3.属性要经过官方机构验证并且还要有印章！"
 metadata/_custom_type_script = "uid://by0tcgfmhfwsq"
