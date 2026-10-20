@@ -363,7 +363,7 @@ class_name DayConfig extends Resource
 | `dialogue.tscn` | 用于在多个场景下创建实例化的对话框 |  |
 | `interview_background.tscn` | 用于在多个场景下实现背景相关动画 | 多种（动画种类） |
 | `haohan.tscn` | 用于在剧情等地方创建实例化的主角的手。**顺手接管系统光标**：全屏时夹在窗口里（`CONFINED_HIDDEN`），窗口模式下只藏不夹（`HIDDEN`，指针能拖出游戏窗口），手本身由 `haohan.gd::_hand_position()` 夹进画布 |  |
-| `setting_page.tscn` | **设置页浮层**（§14）：常规只有左上角那颗设置按钮，点它或按 Esc 就把整页盖在最上层；页面上有「继续游戏」「退出游戏」两颗按钮，手（光标）也画在这一层里 | `opened` / `closed` |
+| `setting_page.tscn` | **设置页浮层**（§14）：常规只有左上角那颗设置按钮，点它或按 Esc 就把整页盖在最上层（**有对话框挡着也点得开**，§14.5）；页面上竖着「继续游戏」「全屏：开 / 关」「回到标题界面」「退出游戏」四颗按钮，手（光标）也画在这一层里 | `opened` / `closed` |
 
 每日流程由 `day_loop.tscn` 持有状态机驱动：
 
@@ -775,7 +775,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 | --- | --- |
 | 简历（本节） | 力量 / 智力 / 感知（`Status`）、个人履历与奖项的词条、专长的词条、词条菜单里那个按钮（菜单当前不再弹出，样式仍共用这一份） |
 | 战报（§4 `battle_report.tscn`） | 「确认」 |
-| 设置（§14） | 「继续游戏」「退出游戏」 |
+| 设置（§14） | 「继续游戏」「全屏：开 / 关」「回到标题界面」「退出游戏」（灰底在本页**上移 13px**，见 §14.4） |
 | 手册（§6.3 `handbook.tscn`） | 右上角的退出键（`quit`） |
 
 - **颜色**：`Color(0.225, 0.225, 0.225, 0.6)` + 圆角 3，不描边。
@@ -790,6 +790,9 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 - **改颜色只改这一个文件**：四个场景各写一行 `theme_override_styles/hover = ExtResource(...)` 引它。
   ⚠️ 在编辑器里点某个节点的那一栏，Godot 会**就地烘一个 `sub_resource`** 出来 —— 当时颜色还对，
   但从此那个界面就脱钩了。所以自检查的是「**还引着同一个资源吗**」，不是「颜色碰巧一样」。
+- ⚠️ **设置页那四颗按钮是个变体**（§14.4）：`.tscn` 里照样引共用这份，但 `setting_page.gd`
+  在 `_ready()` 里**复制一份**再改 `expand_margin`，把画出来的框整体上移 13px（那四颗的字在矩形里偏高，
+  灰底铺满会显得「偏下」）。颜色 / 圆角仍然只有 `hover_gray.tres` 一处 —— 改颜色这边跟着变。
 - ⚠️ **只有 `Button` 画得出这个高亮**：手册右上角那颗退出键原来是 `TextureButton`，
   而 `TextureButton` **根本没有 hover 样式**（默认主题里 `has_stylebox("hover", "TextureButton")`
   是 `false`）—— 它只有一整套贴图，`theme_override_styles/hover` 挂上去一点用都没有。
@@ -804,7 +807,7 @@ EventBus → RngService → DataDB → GameState → SaveService → AudioServic
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_hover_gray.tscn
 ```
 
-24 项：样式本身（颜色 / 圆角 / 不描边 / 内边距与词条 normal 一致）＋ 上表每一栏都引着同一份、
+28 项：样式本身（颜色 / 圆角 / 不描边 / 内边距与词条 normal 一致）＋ 上表每一栏都引着同一份、
 且 normal 不画底色（手册那两栏还验了节点类型与 `QuitIcon` 不吃鼠标）。全绿退出码 0。
 
 #### 版面：一栏一个 Container
@@ -1647,6 +1650,8 @@ func play(pass_through: bool = false) -> void:
   仍旧走默认的阻挡模式，一个字都不用改。
 - **超员那条（`team_over`）故意不穿透**：它是硬拦（§12.8），提醒期间不该顺手点到别处。
 - 播完 / 通话结束时 `_pass_through` 复位为 false，下次 `play()` 忘传参数也不会残留穿透。
+- **唯一的例外是设置页**：`SettingPage.is_any_open()` 为真时，阻挡模式的对话框连点击都不吃、
+  也不推进（否则设置页上的按钮一颗都点不动）—— 见 §14.5。穿透模式不受影响。
 
 ---
 
@@ -1795,14 +1800,14 @@ func play(pass_through: bool = false) -> void:
 
 > 游戏里随时能叫出来的那一页：**平时画面上只多一颗小按钮，
 > 点它或者按 Esc，一整页设置纸就盖在当前场景最上面**；
-> 纸上现在是「继续游戏」和「退出游戏」两颗按钮，
+> 纸上竖着四颗按钮，自上而下是「继续游戏」「全屏：开 / 关」「回到标题界面」「退出游戏」，
 > 而**跟着鼠标的那只手仍然画在这一页之上**（手是光标，被盖住就等于没光标）。
 
 ### 14.1 文件与挂载点
 
 | 文件 | 职责 |
 | --- | --- |
-| `scenes/common/setting_page.gd` / `.tscn` | `class_name SettingPage`：**开关**（按钮 / Esc）、**整页盖上来**、**继续游戏 / 退出游戏**、**手（`haohan.tscn`）也在这一层** |
+| `scenes/common/setting_page.gd` / `.tscn` | `class_name SettingPage`：**开关**（按钮 / Esc）、**整页盖上来**、**继续游戏 / 全屏开关 / 回到标题界面 / 退出游戏**、**手（`haohan.tscn`）也在这一层** |
 | `assets/art/setting/setting_button_phd.png` | 设置按钮，原生 50×50 |
 | `assets/art/setting/setting_page_phd.png` | 设置整页，原生 1152×648（= 整块画布） |
 | `scenes/day/day_loop.tscn` | 把 `SettingPage` **实例化在最后**（和 FlowHud 平级） |
@@ -1812,9 +1817,11 @@ func play(pass_through: bool = false) -> void:
 ```
 SettingPage (CanvasLayer, layer = 100) [setting_page.gd]
 ├─ Page (Control, 全屏 = 画布大小, mouse_filter = STOP)   ← 默认 visible = false
-│   ├─ PagePhd (TextureRect)     setting_page_phd.png，铺满整块画布
-│   ├─ ContinueButton (Button)   「继续游戏」，画布正中偏上
-│   └─ ExitButton (Button)       「退出游戏」，画布正中
+│   ├─ PagePhd (TextureRect)          setting_page_phd.png，铺满整块画布
+│   ├─ ContinueButton (Button)        「继续游戏」，自上而下第 1 颗
+│   ├─ FullscreenButton (Button)      「全屏：开 / 关」，第 2 颗
+│   ├─ BackToTitleButton (Button)     「回到标题界面」，第 3 颗
+│   └─ ExitButton (Button)            「退出游戏」，第 4 颗（最下面）
 ├─ SettingButton (TextureButton)   setting_button_phd.png，贴在画布左上角 (0,0)
 ├─ Haohan (haohan.tscn)            手（光标），z_index = 1 → 画在设置页**之上**
 └─ Dialoguer                       退出确认那段提醒（和主菜单同一个 dialoguer.tscn，z_index = 2）
@@ -1852,28 +1859,61 @@ SettingPage (CanvasLayer, layer = 100) [setting_page.gd]
 
 | 入口 | 行为 |
 | --- | --- |
-| 左键点设置按钮 | `toggle()` |
+| 左键点设置按钮（收着时） | 在 `_input` 里认这一下 → `open()`；有对话框挡着也点得开（§14.5） |
+| 左键点设置按钮（开着时） | 正常 GUI 点击 → `toggle()` 收起 |
 | 按 **Esc** | `toggle()` |
 
-- **两个入口走同一个 `toggle()`**，所以「关着就开、开着就收」的手感必然一致。
+- **两个入口走同一个 `toggle()` / `open()` / `close()`**，所以「关着就开、开着就收」的手感必然一致。
 - 设置按钮**一直画在 `Page` 之上**（它是 `Page` 的兄弟、且排在它后面），所以页面开着时那颗按钮
   仍然点得到、看得见。
+- **收着时走 `_input` 而不是只靠 Button**：有对话框的时候，`dialoguer.gd::_input()` 在 GUI 之前
+  就把左键吃掉了 —— 只靠 Button 的话那颗按钮在有台词时是点不动的。理由与顺序见 §14.5。
 - Esc 走 **`_unhandled_input`** 而不是 `_input`：场景里已经有控件在 `_input` 里处理 `ui_cancel`
   （简历词条菜单 `resume.gd`），它在该吃的时候会 `set_input_as_handled()` ——
   那一下是「收菜单」，不该被抢来开设置页。**设置页永远排在它们后面。**
+  （对话框只吃鼠标左键、不吃 Esc，所以「有台词时按 Esc」本来就能开。）
 - 页面的显隐**只**由 `open()` / `close()` 管，两个方法各自幂等，并对外发 `opened` / `closed`。
 
-### 14.4 两颗按钮：继续游戏 / 退出游戏
+### 14.4 四颗按钮：继续游戏 / 全屏 / 回到标题界面 / 退出游戏
 
-| 按钮 | 位置 | 干什么 |
+| 按钮 | 干什么 | 见 |
 | --- | --- | --- |
-| **继续游戏** | 退出按钮的**正上方**（同宽、左缘对齐、间隔 20px） | 就是 `close()` —— 收起设置页接着玩 |
-| **退出游戏** | 画布正中 | 见下：第一下弹提醒，第二下才退出 |
+| **继续游戏**（第 1 颗） | 就是 `close()` —— 收起设置页接着玩 | — |
+| **全屏：开 / 关**（第 2 颗） | 开 ↔ 关全屏；按钮上的字就是当前状态 | §14.4.2 |
+| **回到标题界面**（第 3 颗） | 回主菜单（`SceneRouter.goto_main_menu()`），单点就走 | §14.4.3 |
+| **退出游戏**（第 4 颗，最下面） | 第一下弹提醒，第二下才退出 | §14.4.1 |
 
-两颗按钮都是同一套观感（`Silver.ttf` + normal / pressed 两个 `StyleBoxEmpty`，和主菜单那几个文字按钮一致），
+四颗按钮都是同一套观感（`Silver.ttf` + normal / pressed 两个 `StyleBoxEmpty`，和主菜单那几个文字按钮一致），
 都 `focus_mode = 0`：不然点过一次之后按空格 / 回车会把它再触发一遍。
-**悬停高亮引的是全游戏共用的那一份**（`ui/styles/hover_gray.tres`，§10.6）——
-和简历页的属性值栏、战报页的「确认」同一款灰，原来这两颗按钮悬停时什么都没画。
+**悬停高亮用的是全游戏共用的那一份灰**（`ui/styles/hover_gray.tres`，§10.6）——
+和简历页的属性值栏、战报页的「确认」同一款灰，原来这几颗按钮悬停时什么都没画。
+
+排版：四颗一样大（260×90）、左缘对齐、横向居中，竖着摞成一列，**相邻两颗间隔 20px**。
+offsets（相对画布中心）：`-245..-155 / -135..-45 / -25..65 / 85..175`，整组占画布 `y 79..499`。
+
+> 整组是**对着纸面居中的**，不是对着画布居中：`setting_page.png` 的黑框上下不等厚
+> （纸面在画布上大约 `y 61..519`、中心 ≈ 289，而画布中心是 324），四颗按钮按纸面中心摞，
+> 上下才留得一样宽。多一颗按钮也不再「退出游戏正好在画布正中」—— 那一列已经是四颗了。
+
+#### 悬停灰底要整体上移 13px（`HOVER_SHIFT`）
+
+灰底是画在**按钮矩形**上的。可这四颗按钮里的字，**墨迹并不在矩形正中**：
+
+- 字是 60 号的 `Silver.ttf`，它的 ascent / descent 是 **38 / 29**（行盒 67）；
+- Godot 拿行盒在 90px 高的按钮里居中，而中文墨迹是**坐在基线上**的、高约 33px；
+- 于是墨迹中心比按钮正中**高了约 13px**（实测：按钮 `79..168`，墨迹 `93..127`）。
+
+灰底老实铺满整个矩形时，下半截就比上半截多出一大块 —— 看着就是「阴影偏下」。
+所以 `setting_page.gd::_apply_hover_styles()` 在 `_ready()` 里**复制一份共用灰**
+（颜色 / 圆角 / 透明度照样只有 `hover_gray.tres` 一处），给它
+`expand_margin_top = +13`、`expand_margin_bottom = -13`：框还是 90px 高，整体上移 13px。
+`expand_margin` 只改**画出来的矩形**，不碰布局、不碰点击区域、也不碰字的位置。
+
+> 实测（渲染一帧量像素）：四颗按钮的灰框都恰好比按钮矩形高 13px，框内墨迹上留白 27 / 下留白 28
+> —— 上下一样宽了。想再调「灰底离字多远」，只改 `HOVER_SHIFT` 一个数。
+
+> ⚠️ 这是设置页**自己**的变体：简历 / 战报 / 手册那三处仍然直接引共用那份 `.tres`（§10.6 的自检盯的
+> 就是「`.tscn` 里还引着同一份」）。以后再加别的「大按钮 + 小字号」的页面，照这个办法处理即可。
 
 > 「继续游戏」和 Esc、和再点一次设置按钮走的是**同一个 `close()`**（§14.3），
 > 顺手也会把退出确认作废 —— 三条退路的行为完全一致。
@@ -1902,23 +1942,117 @@ func _on_exit_pressed() -> void:
 > 这里把标志位放在**读盘成功之后** —— 文案读不出来时这一下就是什么都没发生，
 > 而不是变成「一按就退」。正常路径下两者表现完全一致。
 
-### 14.5 自检
+### 14.4.2 全屏开关：点一下就开 / 关（`toggle_fullscreen()`）
+
+```gdscript
+func set_fullscreen(on: bool) -> void:
+	DisplayServer.window_set_mode(
+			DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED)
+	_sync_fullscreen_button()
+
+func is_fullscreen() -> bool:            # 真值取自**实际**窗口模式，不是本地记的 bool
+	var mode := DisplayServer.window_get_mode()
+	return mode == DisplayServer.WINDOW_MODE_FULLSCREEN \
+			or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+```
+
+- **按钮上的字就是状态**：「全屏：开」/「全屏：关」。字由 `fullscreen_label()` 拼出来，
+  每次切换、每次 `open()`、以及 `_process()` 里发现实际模式变了，都会重新对一次 ——
+  所以窗口在别处被切过（系统窗口菜单、以后加的快捷键）时，按钮不会说反话。
+- **无边框全屏，不是独占全屏**：用 `WINDOW_MODE_FULLSCREEN` 而不是
+  `WINDOW_MODE_EXCLUSIVE_FULLSCREEN` —— 独占全屏切出 / 切回时会黑一下画面，也容易和录屏、
+  叠加层打架；无边框全屏观感一样，切换干净。
+- **画面不会被拉变形**：`project.godot` 里 `window/stretch/mode = "canvas_items"`，
+  全屏只是把 1152×648 的画布等比放大，设置页的版面一个像素都不用改。
+- **手（光标）自动跟上**：全屏时夹在窗口里、窗口模式只藏不夹，这套判断在
+  `haohan.gd::_process()` 里每帧比对一次 —— 切完全屏，光标模式下一帧就补上了（§14.2.1）。
+- **不落盘**：这一下只在本次运行里生效，**每次启动都从窗口模式开始**（和以前一样）。
+  想让它记住，就在 `boot.gd` 里读一个 `user://` 设置文件、把结果交给
+  `set_fullscreen()` —— 现在的接口已经够用（`set_fullscreen()` / `is_fullscreen()` 都是公开的），
+  只是暂不引入这份存档。
+
+### 14.4.3 回到标题界面：单点回主菜单（`SceneRouter.goto_main_menu()`）
+
+```gdscript
+func _on_back_to_title_pressed() -> void:
+	if SceneRouter.is_transitioning:      # 连点两下不会叠两次切场景请求
+		return
+	_cancel_exit_confirm()                # 提醒还开着就切走，别留一个「已确认」
+	SceneRouter.goto_main_menu()          # 切到主菜单，顺手把返回栈清掉
+```
+
+- **为什么单点就走**（不像「退出游戏」要点两次）：离开这一局**不是终止操作** ——
+  每天开始时都自动存过档（§15），回标题之后主菜单的「继续游戏」读最新那份就能接回来。
+  （当天进行到一半的进度不存 —— 和直接关掉游戏一样，读档是从**那一天开始**接着走。）
+- **顺手清返回栈**：`goto_main_menu()` 就是 `clear_history()` + `goto_scene("main_menu")`，
+  所以回到标题之后不会有「退回每日循环」这种后门（§14.4.1 的退出按钮也没这层顾虑）。
+- **切换期间忽略**：`is_transitioning` 期间连点不会再发一次请求 —— 和主菜单那几颗按钮同一个约定。
+- **自检里不点它**：那一下会 `change_scene_to_file`，把跑自检的场景整个换掉（和「第二下真的退出」同理），
+  所以自检只验「接线 + 处理函数在 + `SceneRouter` 里主菜单与 `goto_main_menu()` 都在位」。
+  **真切一次**在编辑器 / 成品里点一下即可，跳的就是主菜单。
+
+### 14.5 有对话框的时候也能打开设置页（§12.9 的例外）
+
+台词（`Dialoguer`，阻挡模式）在 `_input` 阶段就把左键吃掉了 —— **GUI 根本收不到那一下**，
+于是左上角那颗设置按钮在有台词时是点不动的。设置页是系统级的东西，不该被台词挡住，
+所以两头各补一句：
+
+| 在哪 | 做什么 |
+| --- | --- |
+| `setting_page.gd::_input()` | 页面**收着**时自己认「点的是不是那颗设置按钮」：是就 `open()` 并把这一下吃掉（那句台词不该因为「点设置」而翻页） |
+| `dialoguer.gd::_input()` | `SettingPage.is_any_open()` 为真时，**阻挡模式**既不吃点击、也不推进 —— 否则页面上的按钮一颗都点不动 |
+
+- **凭什么 `_input` 先到设置页**：`_input` 是**倒着**派发的（后加的子节点先收到）。`day_loop.tscn`
+  把 `SettingPage` 实例化在**最后**（§14.1），所以同一帧里设置页先拿到这一下，`set_input_as_handled()`
+  之后对话框那个 `_input` 就不会再跑 —— 「点设置不翻页」是这么来的。
+- **为什么要用静态计数**：`is_any_open()` 是 `static`（`SettingPage._open_count`），
+  对话框不必认识任何一个具体的设置页实例。`open()` / `close()` 各自加减，
+  页面开着时被切场景释放了由 `_exit_tree()` 兜底扣掉 —— 不扣的话，下一场里所有对话框都会
+  以为「系统浮层还开着」，点击全不推进。
+- **只给阻挡模式让路**：穿透模式（§12.9）本来就不吃点击，而且设置页自己的「退出确认」
+  用的正是穿透模式 —— 也让它让路的话，那段提醒就永远翻不了页。
+- **页面上的按钮**：页面铺满画布且 `mouse_filter = STOP`，对话框又已经让路，所以点击正常
+  落到「继续游戏 / 全屏 / 回到标题界面 / 退出游戏」上；设置按钮本身则走正常的 GUI 点击收起。
+- **Esc 一直都行**：对话框只吃鼠标左键、不吃 `ui_cancel`，所以「有台词时按 Esc」本来就能开。
+- ⚠️ 这条**只**对阻挡模式 + 设置页成立：以后再加别的「系统浮层」时，要么复用
+  `SettingPage.is_any_open()` 这套让路约定，要么把它抽成一个更通用的「系统浮层开着」标记。
+
+### 14.6 自检
 
 ```
 & "<Godot_console.exe>" --headless --path <项目根> res://tools/smoke_setting_page.tscn
 ```
 
-75 项：两张美术的来源与尺寸、**常规状态只有那颗按钮可见**、按钮贴在左上角且不缩放、
+99 项：两张美术的来源与尺寸、**常规状态只有那颗按钮可见**、按钮贴在左上角且不缩放、
 **层号压过 FlowHud 且是容器里最高的一层**、**手实例化在本层、可见、z_index 高于设置页**、
 **手那只手接管光标时「窗口模式不夹、只有全屏才夹」**（`haohan.gd::_confines_cursor()`）、
 点按钮 / 按 Esc 都能开、**再点 / 再按一次都能收**、`ui_accept` 不会误开、
-**整页铺满画布且 `MOUSE_FILTER_STOP`（底下的场景点不到）**、
-按钮排在整页之后（真的压在页面上）、**继续游戏按钮在退出按钮正上方且两颗一样宽**、
-**点「继续游戏」会收起设置页并作废退出确认**、退出按钮在画布正中、
+**整页铺满画布且 `MOUSE_FILTER_STOP`（底下的场景点不到）**、按钮排在整页之后（真的压在页面上）、
+**四颗按钮自上而下正是「继续游戏 → 全屏 → 回到标题界面 → 退出游戏」、一样大、左缘对齐、
+横向居中、相邻间隔 20px、整组不出画布、四颗的 pressed 全接上了**、
+**四颗按钮的悬停灰底是共用灰的同色同圆角变体、整体上移 HOVER_SHIFT（13px）**、
+**三颗文字按钮的文案逐字对**、**全屏按钮的文案对得上实际窗口模式、点一下 / 显式切回窗口模式之后都不会说反话**
+（`fullscreen_label()` 直接验「全屏：开 / 全屏：关」两句，headless 切不动窗口所以只验状态）、
+**「回到标题界面」接的是 `_on_back_to_title_pressed`，且 `SceneRouter` 里有主菜单场景与 `goto_main_menu()`**、
+**点「继续游戏」会收起设置页并作废退出确认**、
 **第一下只弹提醒不退出（播的就是 `data/dialogue.json` 里那一段，逐字比对）**、
 移出按钮 / 移出窗口 / 收页面三种反悔都作废、
+**有对话框（阻挡模式）时：点设置按钮照样开、那一句不翻页、`is_any_open()` 跟着变、
+页面开着时点「继续游戏」也能收起（对话框让路）、拆掉画布后计数归零、
+页面开着时被释放也会把计数扣回去**、
 以及 **`day_loop.tscn` 里确实实例化了它、挂上去的层号是最高的一层、默认是收起的**。
 全绿退出码 0。
+
+> 对话框那条是**真事件**：`SubViewport.push_input()` 推按下 / 抬起，走的是和主视口一样的
+> 整条输入链路（`_input` → GUI → `_unhandled_input`）；对话框与设置页在同一个画布里，
+> **先加对话框、后加设置页** —— 和 `day_loop` 的树序一致（设置页在最后，`_input` 先收到）。
+
+> 全屏开关的「真把窗口撑成全屏」**headless 验不了**（headless 的 DisplayServer 是空实现）：
+> 自检查的是「文案与 `is_fullscreen()` 对得上」。那一下真正的切换只在真窗口里发生 ——
+> 在编辑器里跑一次、点一下按钮就能看到窗口全屏 / 收回，光标模式也随之切换。
+
+> 「回到标题界面」**故意只验接线不点**：那一下会 `change_scene_to_file`，把跑自检的场景
+> 整个换掉。和「第二下真的退出」是同一种理由（见下一段）。
 
 > 「第二下真的退出」**故意不测**：那一下会 `get_tree().quit()`，把自检自己终结掉 ——
 > 绿着退出，什么都验不到。它和第一下走的是同一个函数，与主菜单那颗按钮是同一条路。

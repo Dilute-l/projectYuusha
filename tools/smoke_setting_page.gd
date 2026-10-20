@@ -10,6 +10,10 @@ extends Node
 ##   **常规只有那颗按钮可见**、**点按钮 / 按 Esc 都把整页盖上来**、
 ##   **整页真的盖满画布且吃鼠标（点得到底下的场景就等于没盖住）**、
 ##   **层号压过 day_loop 里所有的 CanvasLayer（「图层最高」）**、
+##   **四颗按钮的排版与顺序（继续游戏 → 全屏 → 回到标题界面 → 退出游戏）**、
+##   **全屏开关的文案对得上实际窗口模式、点一下不会说反话**、
+##   **「回到标题界面」接的是 `SceneRouter.goto_main_menu()`**（那一下会把自检自己的场景换掉，所以只验接线）、
+##   **有对话框（阻挡模式）时点设置按钮照样开、页面上的按钮点得动**（§14.6）、
 ##   退出按钮**跟主菜单那颗一样：第一下弹提醒、移开鼠标就算反悔**。
 ##
 ## 为什么不测「第二下真的退出」：那一下会 `get_tree().quit()`，把自检自己终结掉 ——
@@ -20,12 +24,22 @@ extends Node
 
 const SETTING_PAGE_SCENE := preload("res://scenes/common/setting_page.tscn")
 const DAY_LOOP_SCENE := preload("res://scenes/day/day_loop.tscn")
+const DIALOGUER_SCENE := preload("res://scenes/common/dialoguer.tscn")
+
+## 点设置按钮时用的坐标：那颗按钮贴在画布左上角、32×32 × scale 1.6（§14.1），
+## 所以 (20,20) 一定在它里面。
+const SETTING_BUTTON_SPOT := Vector2(20, 20)
 
 ## 游戏的实际画布（project.godot 的 canvas_items 拉伸基准）
 const GAME_CANVAS := Vector2i(1152, 648)
 
 ## 退出确认用的那段对话 —— 与 setting_page.gd / main_menu.gd 同一个 id
 const EXIT_CONFIRM_DIALOGUE := "test1"
+
+## 设置页四颗按钮的统一尺寸与竖向间隔（§14.4）。
+## 尺寸是**渲染结果**（画布上的矩形，不是贴图）：四颗一样大、左缘对齐、横向居中。
+const MENU_BUTTON_SIZE := Vector2(260, 90)
+const MENU_BUTTON_GAP := 20.0
 
 ## 设置按钮与设置页两张美术的期望尺寸。
 ##
@@ -64,6 +78,19 @@ func _esc() -> InputEventAction:
 	ev.action = &"ui_cancel"
 	ev.pressed = true
 	return ev
+
+
+## 往一个视图里推一次完整的左键点击（按下 + 抬起），坐标是画布坐标。
+## 走的是 `push_input`：和真实窗口里主视口收到输入是同一条路（GUI、_input、_unhandled_input 都会跑）。
+func _click_at(viewport: Viewport, pos: Vector2) -> void:
+	for pressed in [true, false]:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.pressed = pressed
+		ev.position = pos
+		ev.global_position = pos
+		viewport.push_input(ev)
+	await _settle()
 
 
 func _run() -> void:
@@ -206,26 +233,126 @@ func _run() -> void:
 	await _settle()
 	_check(not page.visible, "ui_accept 不会打开设置页")
 
-	# ---- 退出按钮在画布正中 ----
-	var r := exit_button.get_global_rect()
+	# ---- 四颗按钮：自上而下 继续游戏 / 全屏 / 回到标题界面 / 退出游戏（§14.4）----
 	var center := Vector2(canvas.x * 0.5, canvas.y * 0.5)
-	_check(is_equal_approx(r.get_center().x, center.x) and is_equal_approx(r.get_center().y, center.y),
-			"退出按钮摆在画布正中（%s，期望 %s）" % [r.get_center(), center])
-	_check(exit_button.text == "退出游戏", "退出按钮的文案是「退出游戏」")
-	_check(exit_button.pressed.get_connections().size() > 0, "退出按钮的 pressed 已接到 setting_page.gd")
+	var fullscreen_button: Button = page.get_node_or_null("FullscreenButton") as Button
+	var back_button: Button = page.get_node_or_null("BackToTitleButton") as Button
+	var stack: Array[Button] = [continue_button, fullscreen_button, back_button, exit_button]
+	var stack_names: Array[String] = [
+		"Page/ContinueButton", "Page/FullscreenButton", "Page/BackToTitleButton", "Page/ExitButton"]
 
-	# ---- 继续游戏按钮：就在退出按钮的**正上方** ----
-	var cr := continue_button.get_global_rect()
-	_check(continue_button.text == "继续游戏", "继续游戏按钮的文案是「继续游戏」")
-	_check(continue_button.pressed.get_connections().size() > 0,
-			"继续游戏按钮的 pressed 已接到 setting_page.gd")
-	_check(cr.end.y < r.position.y, "继续游戏按钮在退出按钮**上面**（下缘 %s < 退出按钮上缘 %s）"
-			% [cr.end.y, r.position.y])
-	_check(cr.size == r.size, "两颗按钮一样大（%s）" % cr.size)
-	_check(is_equal_approx(cr.position.x, r.position.x), "两颗按钮左缘对齐（%s / %s）"
-			% [cr.position.x, r.position.x])
-	_check(is_equal_approx(cr.get_center().x, center.x), "两颗按钮都横向居中（中心 x=%s）" % cr.get_center().x)
-	_check(cr.position.y >= 0.0, "继续游戏按钮没有顶出画布上边（y=%s）" % cr.position.y)
+	var missing: Array[String] = []
+	for i in stack.size():
+		if stack[i] == null:
+			missing.append(stack_names[i])
+	_check(missing.is_empty(), "四颗按钮都在（缺：%s）" % [missing])
+	if missing.is_empty():
+		# 顺序 / 间隔 / 尺寸对齐 / 居中 / 不出画布 —— 一次遍历齐活
+		var ordered := true
+		var gaps_ok := true
+		var same_size := true
+		var aligned := true
+		var centered := true
+		var inside := true
+		var prev_bottom := -100000.0
+		var first_rect := stack[0].get_global_rect()
+		for i in stack.size():
+			var br := stack[i].get_global_rect()
+			if br.position.y < prev_bottom:
+				ordered = false
+			if i > 0 and not is_equal_approx(br.position.y - prev_bottom, MENU_BUTTON_GAP):
+				gaps_ok = false
+			prev_bottom = br.end.y
+			if br.size != MENU_BUTTON_SIZE:
+				same_size = false
+			if not is_equal_approx(br.position.x, first_rect.position.x):
+				aligned = false
+			if not is_equal_approx(br.get_center().x, center.x):
+				centered = false
+			if br.position.y < 0.0 or br.end.y > canvas.y:
+				inside = false
+
+		_check(ordered, "四颗按钮自上而下的顺序就是：继续游戏 → 全屏 → 回到标题界面 → 退出游戏")
+		_check(gaps_ok, "相邻两颗的间隔都是 %.0fpx" % MENU_BUTTON_GAP)
+		_check(same_size, "四颗按钮一样大（%s）" % MENU_BUTTON_SIZE)
+		_check(aligned, "四颗按钮左缘对齐（x=%s）" % first_rect.position.x)
+		_check(centered, "四颗按钮都横向居中（中心 x=%s）" % center.x)
+		_check(inside, "四颗按钮整组都留在画布里（%s..%s）"
+				% [first_rect.position.y, prev_bottom])
+
+		# 文案与接线
+		_check(continue_button.text == "继续游戏", "「继续游戏」的文案对")
+		_check(back_button.text == "回到标题界面", "「回到标题界面」的文案对")
+		_check(exit_button.text == "退出游戏", "「退出游戏」的文案对")
+		_check(fullscreen_button.text == SettingPage.fullscreen_label(setting.is_fullscreen()),
+				"全屏按钮的文案对得上实际窗口模式（实际「%s」）" % fullscreen_button.text)
+		var wired: Array[String] = []
+		var wired_names: Array[String] = ["继续游戏", "全屏开关", "回到标题界面", "退出游戏"]
+		for i in stack.size():
+			if stack[i].pressed.get_connections().is_empty():
+				wired.append(wired_names[i])
+		_check(wired.is_empty(), "四颗按钮的 pressed 都接到了 setting_page.gd（没接：%s）" % [wired])
+
+		# ---- 悬停灰底：共用那份灰（§10.6）的一份「整体上移」变体 ----
+		# 字是 60 号 Silver，墨迹比按钮正中高约 13px；灰底铺满整个按钮矩形时会「偏下」，
+		# 所以运行期复制一份共用灰、把画出来的框上移 HOVER_SHIFT（§14.4 排版那段）。
+		var shared_hover := SettingPage.HOVER_STYLE as StyleBoxFlat
+		_check(shared_hover != null, "共用悬停灰（hover_gray.tres）能加载")
+		var hover_detail := ""
+		var hover_ok := true
+		for i in stack.size():
+			var h := stack[i].get_theme_stylebox("hover") as StyleBoxFlat
+			if h == null:
+				hover_ok = false
+				hover_detail = "%s 的悬停不是 StyleBoxFlat" % wired_names[i]
+				continue
+			if shared_hover != null and not h.bg_color.is_equal_approx(shared_hover.bg_color):
+				hover_ok = false
+				hover_detail = "%s 的灰色和共用灰不一样" % wired_names[i]
+			if shared_hover != null and (h.corner_radius_top_left != shared_hover.corner_radius_top_left
+					or h.corner_radius_bottom_right != shared_hover.corner_radius_bottom_right):
+				hover_ok = false
+				hover_detail = "%s 的圆角和共用灰不一样" % wired_names[i]
+			if not (is_equal_approx(h.expand_margin_top, SettingPage.HOVER_SHIFT)
+					and is_equal_approx(h.expand_margin_bottom, -SettingPage.HOVER_SHIFT)):
+				hover_ok = false
+				hover_detail = "%s 的上移量是 %.0f / %.0f（期望 ±%.0f）" % [
+					wired_names[i], h.expand_margin_top, h.expand_margin_bottom, SettingPage.HOVER_SHIFT]
+		_check(hover_ok, "四颗按钮的悬停灰底 = 共用灰的同色同圆角变体，整体上移 %.0fpx（%s）" % [
+				SettingPage.HOVER_SHIFT, hover_detail])
+
+		# ---- 全屏开关：点它 / 调接口，字永远跟着**实际**模式走 ----
+		# ⚠️ headless 的 DisplayServer 切不动窗口：这里只验「状态没被记反」，
+		#    真正把窗口撑成全屏那一下在编辑器 / 成品里跑。
+		_check(SettingPage.fullscreen_label(true) == "全屏：开"
+				and SettingPage.fullscreen_label(false) == "全屏：关",
+				"文案就是「全屏：开」/「全屏：关」")
+		fullscreen_button.pressed.emit()
+		await _settle()
+		_check(fullscreen_button.text == SettingPage.fullscreen_label(setting.is_fullscreen()),
+				"点一下之后文案仍然跟着实际模式（实际「%s」，当前模式全屏=%s）"
+				% [fullscreen_button.text, setting.is_fullscreen()])
+		setting.set_fullscreen(false)
+		await _settle()
+		_check(not setting.is_fullscreen(), "显式切回窗口模式之后 is_fullscreen() 报 false")
+		_check(fullscreen_button.text == "全屏：关",
+				"切回窗口模式之后文案回到「全屏：关」（实际「%s」）" % fullscreen_button.text)
+
+		# ---- 回到标题界面：接的是 SceneRouter.goto_main_menu() ----
+		# ⚠️ **故意不点它**：那一下会 `change_scene_to_file`，把自检自己的场景整个换掉
+		#    （和「第二下真的退出」同一个道理，见文件头）。这里验接线与目标都在位。
+		var targets: Array = []
+		for conn in back_button.pressed.get_connections():
+			# Godot 4 的 get_connections() 给的是 callable（不是 method 字符串）
+			var callable: Callable = conn.get("callable")
+			if callable.is_valid():
+				targets.append(callable.get_method())
+		_check(targets.has(&"_on_back_to_title_pressed"),
+				"回到标题界面接的是 _on_back_to_title_pressed（实际 %s）" % [targets])
+		_check(setting.has_method("_on_back_to_title_pressed"),
+				"setting_page.gd 里确实有这个处理函数")
+		_check(SceneRouter.has_scene(&"main_menu") and SceneRouter.has_method("goto_main_menu"),
+				"SceneRouter 里有主菜单场景与 goto_main_menu()")
 
 	# ---- 继续游戏 = 收起设置页（接着玩） ----
 	setting.open()
@@ -288,6 +415,69 @@ func _run() -> void:
 	page.mouse_exited.emit()
 	await _settle()
 	_check(not dialoguer.visible, "鼠标移出窗口 → 提醒收起")
+
+	# ---- 有对话框（阻挡模式）时也能打开设置页（§14.6） ----
+	# 另一个干净的画布：对话在下（layer 0），设置页在上（layer 100）——
+	# 和 day_loop 的树序一样：**先加对话框、后加设置页**（`_input` 倒着派发，设置页先收到）。
+	var vp2 := SubViewport.new()
+	vp2.size = GAME_CANVAS
+	vp2.disable_3d = true
+	get_tree().root.add_child(vp2)
+
+	var talker := DIALOGUER_SCENE.instantiate() as Dialoguer
+	vp2.add_child(talker)
+	var setting2 := SETTING_PAGE_SCENE.instantiate() as SettingPage
+	vp2.add_child(setting2)
+	await _settle()
+
+	talker.typer.load_dialogue(EXIT_CONFIRM_DIALOGUE)
+	talker.play()  # 不带参数 = 阻挡模式：默认就把左键吃掉
+	await _settle()
+	_check(talker.is_playing() and not talker.is_pass_through(),
+			"前提：对话框在播，且是阻挡模式")
+	_check(not setting2.is_open() and not SettingPage.is_any_open(),
+			"前提：设置页收着，is_any_open() 报 false")
+
+	# 点设置按钮：这一下在阻挡模式下本来会被 dialoguer 在 _input 里吃掉
+	var line_before := talker.typer.current_index
+	await _click_at(vp2, SETTING_BUTTON_SPOT)
+	_check(setting2.is_open(), "对话框挡着时点设置按钮 → 设置页照样打开")
+	_check(SettingPage.is_any_open(), "开着的时候静态的 is_any_open() 报 true")
+	_check(talker.typer.current_index == line_before, "点设置按钮那一下没有把对话翻页（这一下归设置页）")
+
+	# 页面开着时那颗按钮走正常 GUI 点击：再点一次 = 收起
+	await _click_at(vp2, SETTING_BUTTON_SPOT)
+	_check(not setting2.is_open(), "再点一次设置按钮 → 收起（页面开着时走正常 GUI 点击）")
+	_check(not SettingPage.is_any_open(), "收起之后 is_any_open() 回到 false")
+
+	# 页面开着时对话框让路：页面上的按钮点得动，也不会被当成「翻页」
+	await _click_at(vp2, SETTING_BUTTON_SPOT)
+	_check(setting2.is_open(), "前提：设置页又开着（对话框还在播）")
+	var line_now := talker.typer.current_index
+	var continue2: Button = setting2.get_node("Page/ContinueButton") as Button
+	await _click_at(vp2, continue2.get_global_rect().get_center())
+	_check(not setting2.is_open(), "对话框还在播时点「继续游戏」也能收起设置页（对话框让了路）")
+	_check(talker.typer.current_index == line_now, "收起那一下也没有把对话翻页")
+
+	vp2.queue_free()
+	await _settle()
+	_check(not SettingPage.is_any_open(), "画布拆掉之后计数归零")
+
+	# ---- 页面**开着**时被释放（切场景）：计数也要归零（_exit_tree 兜底）----
+	var vp3 := SubViewport.new()
+	vp3.size = GAME_CANVAS
+	vp3.disable_3d = true
+	get_tree().root.add_child(vp3)
+	vp3.add_child(SETTING_PAGE_SCENE.instantiate())
+	await _settle()
+	var setting3 := vp3.get_child(0) as SettingPage
+	setting3.open()
+	await _settle()
+	_check(SettingPage.is_any_open(), "前提：设置页开着")
+	vp3.queue_free()
+	await _settle()
+	_check(not SettingPage.is_any_open(),
+			"页面开着时被释放 → 计数归零（否则下一场的对话框会以为浮层还开着）")
 
 	# ---- day_loop 里确实实例化了它，且没有别的层压过它 ----
 	var day_loop: Node = DAY_LOOP_SCENE.instantiate()

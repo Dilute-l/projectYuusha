@@ -44,9 +44,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -130.0
-offset_top = -155.0
+offset_top = -245.0
 offset_right = 130.0
-offset_bottom = -65.0
+offset_bottom = -155.0
 grow_horizontal = 2
 grow_vertical = 2
 focus_mode = 0
@@ -59,6 +59,52 @@ theme_override_styles/pressed = SubResource("StyleBoxEmpty_pressed")
 theme_override_styles/hover = ExtResource("7_hover")
 text = "继续游戏"
 
+[node name="FullscreenButton" type="Button" parent="Page"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -130.0
+offset_top = -135.0
+offset_right = 130.0
+offset_bottom = -45.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.48235294, 0.25490198, 0, 1)
+theme_override_colors/font_pressed_color = Color(0.2307908, 0.07855659, 0, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxEmpty_normal")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pressed")
+theme_override_styles/hover = ExtResource("7_hover")
+text = "全屏：关"
+
+[node name="BackToTitleButton" type="Button" parent="Page"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -130.0
+offset_top = -25.0
+offset_right = 130.0
+offset_bottom = 65.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.48235294, 0.25490198, 0, 1)
+theme_override_colors/font_pressed_color = Color(0.2307908, 0.07855659, 0, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 60
+theme_override_styles/normal = SubResource("StyleBoxEmpty_normal")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_pressed")
+theme_override_styles/hover = ExtResource("7_hover")
+text = "回到标题界面"
+
 [node name="ExitButton" type="Button" parent="Page" unique_id=89789391]
 layout_mode = 1
 anchors_preset = 8
@@ -67,9 +113,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -130.0
-offset_top = -45.0
+offset_top = 85.0
 offset_right = 130.0
-offset_bottom = 45.0
+offset_bottom = 175.0
 grow_horizontal = 2
 grow_vertical = 2
 focus_mode = 0
@@ -96,6 +142,8 @@ visible = false
 
 [connection signal="mouse_exited" from="Page" to="." method="_on_mouse_exited"]
 [connection signal="pressed" from="Page/ContinueButton" to="." method="_on_continue_pressed"]
+[connection signal="pressed" from="Page/FullscreenButton" to="." method="_on_fullscreen_pressed"]
+[connection signal="pressed" from="Page/BackToTitleButton" to="." method="_on_back_to_title_pressed"]
 [connection signal="mouse_exited" from="Page/ExitButton" to="." method="_on_exit_mouse_exited"]
 [connection signal="pressed" from="Page/ExitButton" to="." method="_on_exit_pressed"]
 [connection signal="pressed" from="SettingButton" to="." method="_on_setting_button_pressed"]

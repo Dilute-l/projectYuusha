@@ -22,6 +22,8 @@ extends Control
 ##
 ##   阻挡模式（默认）——对话框把左键吃掉，点击**不会**落到它下面的按钮上。
 ##     适合「先看完这段话再说」的场合：玩家必须把对话点完，才轮到底下的界面。
+##     **唯一的例外是设置页**（`SettingPage`，系统浮层 §14.5）：那一层开着时本对话框
+##     既不吃点击、也不推进 —— 否则设置页上的按钮一颗都点不动（见 `_input()`）。
 ##
 ##   穿透模式（play(true)）——对话框照常被这一下点击推进，但**不吃掉**它：
 ##     被点到的按钮同一次点击里也会照常收到 pressed（以及 hover / 移出等一切常规交互）。
@@ -108,6 +110,13 @@ func is_playing() -> bool:
 
 func _input(event: InputEvent) -> void:
 	if not is_playing():
+		return
+	# 设置页（系统浮层，§14.5）开着 → 这一下归它：对话框既不推进、也不吃。
+	# 否则点击在 `_input` 阶段就被这里吃掉，设置页上的按钮一颗都点不动。
+	#
+	# ⚠️ 只对**阻挡模式**让路：穿透模式本来就不吃点击，而设置页自己的「退出确认」
+	#    用的正是穿透模式 —— 也让它让路的话，那段提醒就永远翻不了页。
+	if not _pass_through and SettingPage.is_any_open():
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		# ⚠️ 牌子正在等玩家签字 → 这一下**属于画布**：既不推进对话，也不吃掉事件。

@@ -112,6 +112,8 @@ func _check_setting_page(hover: StyleBox) -> void:
 	print("[14] 设置页")
 	var setting := SETTING.instantiate()
 	_check_anchor(setting.get_node_or_null("Page/ContinueButton"), hover, "继续游戏")
+	_check_anchor(setting.get_node_or_null("Page/FullscreenButton"), hover, "全屏开关")
+	_check_anchor(setting.get_node_or_null("Page/BackToTitleButton"), hover, "回到标题界面")
 	_check_anchor(setting.get_node_or_null("Page/ExitButton"), hover, "退出游戏")
 	setting.free()
 

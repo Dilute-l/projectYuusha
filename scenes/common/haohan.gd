@@ -34,7 +34,7 @@ var _texture_before_signing: Texture2D = null
 static var _live_count: int = 0
 
 ## 上一次设下去的光标模式是不是「夹在窗口里」。用来判断要不要重设 ——
-## 全屏 / 窗口模式在运行时被切换过（以后加全屏开关、或玩家自己按了 F11）就得补一次。
+## 全屏 / 窗口模式在运行时被切换过（设置页的全屏开关 §14.4，或者别处切过）就得补一次。
 var _cursor_confined: bool = false
 
 
@@ -85,7 +85,7 @@ func _on_signing_finished() -> void:
 
 
 func _process(_delta: float) -> void:
-	# 全屏 ↔ 窗口在运行时被切过就补一次（以后加全屏开关 / 玩家按 F11 都不用再改这里）
+	# 全屏 ↔ 窗口在运行时被切过就补一次（设置页那颗全屏开关 §14.4 切完，这里自动跟上）
 	if _confines_cursor() != _cursor_confined:
 		_apply_mouse_mode()
 	if _hand != null:
